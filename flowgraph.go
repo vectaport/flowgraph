@@ -1,4 +1,4 @@
-// Package flowgraph layers a ready-send flow mechanism on top of goroutines.
+// Package flowgraph for scalable asynchronous system development
 // https://github.com/vectaport/flowgraph/wiki
 package flowgraph
 
