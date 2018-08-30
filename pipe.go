@@ -4,7 +4,7 @@ import (
 	"github.com/vectaport/fgbase"
 )
 
-// Pipe interface
+// Pipe interface for flowgraph nodes that are connected by Connector edges
 type Pipe interface {
 	// Tracef for debug trace printing.  Use atomic log mechanism.
 	Tracef(format string, v ...interface{})

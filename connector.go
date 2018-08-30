@@ -6,7 +6,7 @@ import (
 
 import ()
 
-// Connector interface
+// Connector interface for flowgraph edges that connect pipe nodes
 type Connector interface {
 
 	// Name returns the connector name

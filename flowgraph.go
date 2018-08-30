@@ -20,14 +20,14 @@ type Putter interface {
 }
 
 // Transformer transforms a variadic list of empty interfaces into an array
-// of empty interfaces, Pipe is for tracing 
+// of empty interfaces, Pipe is for tracing
 type Transformer interface {
 	Transform(p Pipe, c ...interface{}) ([]interface{}, error)
 }
 
 /*=====================================================================*/
 
-// Flowgraph interface
+// Flowgraph interface for flowgraphs assembled out of pipe nodes  and connector edges
 type Flowgraph interface {
 
 	// Name returns the name of a Flowgraph

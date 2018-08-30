@@ -2,8 +2,8 @@ package flowgraph_test
 
 import (
 	"fmt"
-	"github.com/vectaport/flowgraph"
 	"github.com/vectaport/fgbase"
+	"github.com/vectaport/flowgraph"
 	"os"
 	"testing"
 )
