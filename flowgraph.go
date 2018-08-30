@@ -9,14 +9,18 @@ import (
 
 /*=====================================================================*/
 
+// Getter receives an empty interface with the Get method, Pipe is for tracing
 type Getter interface {
 	Get(p Pipe) (interface{}, error)
 }
 
+// Putter transmits an empty interface with the Put method, Pipe is for tracing
 type Putter interface {
 	Put(p Pipe, v interface{}) error
 }
 
+// Transformer transforms a variadic list of empty interfaces into an array
+// of empty interfaces, Pipe is for tracing 
 type Transformer interface {
 	Transform(p Pipe, c ...interface{}) ([]interface{}, error)
 }
