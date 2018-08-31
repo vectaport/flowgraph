@@ -49,9 +49,9 @@ type Flowgraph interface {
 	// FindConnector finds a Connector by name
 	FindConnector(name string) Connector
 
-	// InsertIncoming adds a single input source to a flowgraph that uses a Getter
+	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter)
-	// InsertOutgoing adds a single output source to a flowgraph that uses a Putter
+	// InsertOutgoing adds an output destination that uses a Putter
 	InsertOutgoing(name string, putter Putter)
 
 	// InsertConst adds an input constant as an incoming source.
@@ -127,7 +127,7 @@ func (fg *graph) FindConnector(name string) Connector {
 	return nil
 }
 
-// InsertIncoming adds a single input source to a flowgraph that uses a Getter
+// InsertIncoming adds an input source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
@@ -136,7 +136,7 @@ func (fg *graph) InsertIncoming(name string, getter Getter) {
 	node.Owner = pipe{&node}
 }
 
-// InsertOutgoing adds a single output source to a flowgraph that uses a Putter
+// InsertOutgoing adds a destination that uses a Putter
 func (fg *graph) InsertOutgoing(name string, putter Putter) {
 	node := funcOutgoing(fg.edges[len(fg.edges)-1], putter)
 	fg.nodes = append(fg.nodes, node)
