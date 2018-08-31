@@ -19,7 +19,7 @@ type Putter interface {
 	Put(p Pipe, v interface{}) error
 }
 
-// Transformer transforms a variadic list of empty interfaces into an array
+// Transformer transforms a variadic list of empty interfaces into a slice
 // of empty interfaces, Pipe is for tracing
 type Transformer interface {
 	Transform(p Pipe, c ...interface{}) ([]interface{}, error)
