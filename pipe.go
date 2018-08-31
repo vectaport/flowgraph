@@ -18,7 +18,7 @@ type Pipe interface {
         // Source returns upstream connector by index
 	Source(n int) Connector
 
-	// Destination returns the nth outgoing connector
+	// Destination returns downstream connector by index
 	Destination(n int) Connector
 
 	// NumSource returns the number of upstream connectors
