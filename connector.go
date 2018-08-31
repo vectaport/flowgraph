@@ -15,11 +15,19 @@ type Connector interface {
 	// Value returns the connector's current value
 	Value() interface{}
 
-	// Source returns the nth downstream pipe for this connector
+	// Source returns upstream pipe by index
 	Source(i int) Pipe
 
-	// Destination returns the nth upstream pipe for this connector
+	// Destination return downstream pipe by index
 	Destination(i int) Pipe
+
+	// NumSource returns the number of upstream pipes
+	NumSource() int
+
+        // NumDestination returns the number of downstream pipes
+	NumDestination() int
+
+
 }
 
 // implementation of Connector
@@ -37,12 +45,22 @@ func (c conn) Value() interface{} {
 	return c.edge.Val
 }
 
-// Source returns the nth downstream pipe for this connector
-func (c conn) Source(n int) Pipe {
-	return pipe{c.edge.SrcNode(n)}
+// Source returns upstream pipe by index
+func (c conn) Source(i int) Pipe {
+	return pipe{c.edge.SrcNode(i)}
 }
 
-// Destination returns the nth upstream pipe for this connector
-func (c conn) Destination(n int) Pipe {
-	return pipe{c.edge.DstNode(n)}
+// Destination return upstream pipe by index
+func (c conn) Destination(i int) Pipe {
+	return pipe{c.edge.DstNode(i)}
+}
+
+// NumSource returns the number of upstream pipes
+func (c conn) NumSource() int {
+	return c.edge.SrcCnt()
+}
+
+// NumDestination returns the number of downstream pipes
+func (c conn) NumDestination() int {
+	return c.edge.DstCnt()
 }

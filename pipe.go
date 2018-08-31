@@ -15,14 +15,21 @@ type Pipe interface {
 	// Name returns the pipe name
 	Name() string
 
-	// Source returns the nth incoming connector
+        // Source returns upstream connector by index
 	Source(n int) Connector
 
 	// Destination returns the nth outgoing connector
 	Destination(n int) Connector
 
-	// Auxiliary returns auxiliary storage for this pipe used by
-	// the underlying implementation for storing state
+	// NumSource returns the number of upstream connectors
+	NumSource() int
+
+        // NumDestination returns the number of upstream connectors
+	NumDestination() int
+
+	// Auxiliary returns auxiliary storage used by
+	// underlying implementation for storing state
+	// (only required for external debug of fgbase)
 	Auxiliary() interface{}
 }
 
@@ -46,14 +53,24 @@ func (p pipe) Name() string {
 	return p.node.Name
 }
 
-// Source returns the nth incoming connector
-func (p pipe) Source(n int) Connector {
-	return conn{p.node.Srcs[n]}
+// Source returns upstream connector by index
+func (p pipe) Source(i int) Connector {
+	return conn{p.node.Srcs[i]}
 }
 
-// Destination returns the nth outgoing connector
-func (p pipe) Destination(n int) Connector {
-	return conn{p.node.Dsts[n]}
+// Destination returns downstream connector by index
+func (p pipe) Destination(i int) Connector {
+	return conn{p.node.Dsts[i]}
+}
+
+// NumSource returns the number of upstream connectors
+func (p pipe) NumSource() int {
+	return len(p.node.Srcs)
+}
+
+// NumDestination returns the number of downstream connectors
+func (p pipe) NumDestination() int {
+	return len(p.node.Dsts)
 }
 
 // Auxiliary returns auxiliary storage for this pipe used by
