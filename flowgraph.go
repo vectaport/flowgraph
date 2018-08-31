@@ -75,7 +75,7 @@ type graph struct {
 	edges []fgbase.Edge
 }
 
-// New returns a named flowgraph
+// New returns a named flowgraph implemented with fgbase package
 func New(nm string) Flowgraph {
 	return &graph{nm, nil, nil}
 }
