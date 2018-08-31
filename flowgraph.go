@@ -27,7 +27,7 @@ type Transformer interface {
 
 /*=====================================================================*/
 
-// Flowgraph interface for flowgraphs assembled out of pipe nodes  and connector edges
+// Flowgraph interface for flowgraphs assembled out of pipe nodes and connector edges
 type Flowgraph interface {
 
 	// Name returns the name of a Flowgraph

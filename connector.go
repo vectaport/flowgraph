@@ -24,10 +24,8 @@ type Connector interface {
 	// NumSource returns the number of upstream pipes
 	NumSource() int
 
-        // NumDestination returns the number of downstream pipes
+	// NumDestination returns the number of downstream pipes
 	NumDestination() int
-
-
 }
 
 // implementation of Connector

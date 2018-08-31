@@ -15,7 +15,7 @@ type Pipe interface {
 	// Name returns the pipe name
 	Name() string
 
-        // Source returns upstream connector by index
+	// Source returns upstream connector by index
 	Source(n int) Connector
 
 	// Destination returns downstream connector by index
@@ -24,7 +24,7 @@ type Pipe interface {
 	// NumSource returns the number of upstream connectors
 	NumSource() int
 
-        // NumDestination returns the number of upstream connectors
+	// NumDestination returns the number of upstream connectors
 	NumDestination() int
 
 	// Auxiliary returns auxiliary storage used by
