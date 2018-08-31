@@ -58,7 +58,7 @@ type Flowgraph interface {
 	InsertConst(name string, v interface{})
 	// InsertArray adds an array as an incoming source.
 	InsertArray(name string, arr []interface{})
-	// InsertSink adds a output sink on the latest edge
+	// InsertSink adds an output sink on the latest edge
 	InsertSink(name string)
 
 	// InsertAllOf adds a transform that waits for all inputs before producing outputs
