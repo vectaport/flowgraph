@@ -99,16 +99,16 @@ func (t *transformer) Transform(pipe flowgraph.Pipe, v ...interface{}) ([]interf
 
 func TestInsertAllOf(t *testing.T) {
 
-	fmt.Printf("BEGIN:  TestInsertTransformer")
+	fmt.Printf("BEGIN:  TestInsertAllOf")
 
-	fg := flowgraph.New("TestInsertTransformer")
+	fg := flowgraph.New("TestInsertAllOf")
 	fg.InsertConst("one", 1)
 	fg.InsertAllOf("double", &transformer{})
 	fg.InsertSink("sink")
 
 	fg.Run()
 
-	fmt.Printf("END:    TestInsertTransformer\n")
+	fmt.Printf("END:    TestInsertAllOf\n")
 }
 
 /*=====================================================================*/
