@@ -48,9 +48,9 @@ type Flowgraph interface {
 	// FindConnector finds a connector by name
 	FindConnector(name string) Connector
 
-	// NewPipe returns a new unitialized pipe
+	// NewPipe returns a new uninitialized pipe
 	NewPipe(nm string) Pipe
-	// NewConnector returns a new unitialized connector
+	// NewConnector returns a new uninitialized connector
 	NewConnector(nm string) Connector
 
 	// InsertIncoming adds an input source that uses a Getter
