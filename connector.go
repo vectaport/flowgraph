@@ -12,6 +12,9 @@ type Connector interface {
 	// Name returns the connector name
 	Name() string
 
+	// Connect connects two pipes
+	Connect(us, ds Pipe)
+
 	// Value returns the connector's current value
 	Value() interface{}
 
@@ -36,6 +39,10 @@ type conn struct {
 // Name returns the connector name
 func (c conn) Name() string {
 	return c.edge.Name
+}
+
+// Connect connects two pipes
+func (c conn) Connect(us, ds Pipe) {
 }
 
 // Value returns the connector's current value

@@ -48,6 +48,11 @@ type Flowgraph interface {
 	// FindConnector finds a connector by name
 	FindConnector(name string) Connector
 
+	// NewPipe returns a new unitialized pipe
+	NewPipe(nm string) Pipe
+	// NewConnector returns a new unitialized connector
+	NewConnector(nm string) Connector
+
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Pipe
 	// InsertOutgoing adds an output destination that uses a Putter
@@ -102,6 +107,23 @@ func (fg *graph) NumPipe() int {
 // NumConnector returns the number of pipes
 func (fg *graph) NumConnector() int {
 	return len(fg.edges)
+}
+
+// NewPipe returns a new uninitialized pipe
+func (fg *graph) NewPipe(nm string) Pipe {
+	node := fgbase.MakeNode(nm, nil, nil, nil, nil)
+	fg.nodes = append(fg.nodes, node)
+	return pipe{&fg.nodes[len(fg.nodes)-1]}
+}
+
+// NewConnector returns a new uninitialized connector
+func (fg *graph) NewConnector(nm string) Connector {
+	if nm == "" {
+		nm = fmt.Sprintf("e%d", len(fg.edges))
+	}
+	edge := fgbase.MakeEdge(nm, nil)
+	fg.edges = append(fg.edges, edge)
+	return conn{&fg.edges[len(fg.nodes)-1]}
 }
 
 // FindPipe finds a pipe by name
