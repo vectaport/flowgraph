@@ -42,7 +42,7 @@ func (e edge) Name() string {
 }
 
 // Connect connects an upstream node to a downstream node
-func (e edge) Connect (upstream, dnstream Node, upname, dnname string) {
+func (e edge) Connect(upstream, dnstream Node, upname, dnname string) {
 }
 
 // Value returns the edge's current value
@@ -69,5 +69,3 @@ func (e edge) NumSource() int {
 func (e edge) NumDestination() int {
 	return e.base.DstCnt()
 }
-
-

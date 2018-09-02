@@ -9,20 +9,21 @@ import (
 
 /*=====================================================================*/
 
-// Getter receives an empty interface with the Get method, Node is for tracing
+// Getter receives an empty interface with the Get method. Use Node.Tracef for tracing.
 type Getter interface {
-	Get(p Node) (interface{}, error)
+	Get(n Node) (interface{}, error)
 }
 
-// Putter transmits an empty interface with the Put method, Node is for tracing
+// Putter transmits an empty interface with the Put method. Use Node.Tracef
+// for tracing
 type Putter interface {
-	Put(p Node, v interface{}) error
+	Put(n Node, v interface{}) error
 }
 
 // Transformer transforms a variadic list of empty interfaces into a slice
-// of empty interfaces, Node is for tracing
+// of empty interfaces with the Transform method. Use Node.Tracef for tracing.
 type Transformer interface {
-	Transform(p Node, c ...interface{}) ([]interface{}, error)
+	Transform(n Node, c ...interface{}) ([]interface{}, error)
 }
 
 /*=====================================================================*/
