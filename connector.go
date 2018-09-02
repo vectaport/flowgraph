@@ -12,8 +12,8 @@ type Connector interface {
 	// Name returns the connector name
 	Name() string
 
-	// Connect connects two pipes
-	Connect(us, ds Pipe)
+	// Connect connects an upstream pipe to a downstream pipe
+	Connect(upstream, dnstream Pipe, upname, dnname string)
 
 	// Value returns the connector's current value
 	Value() interface{}
@@ -41,8 +41,8 @@ func (c conn) Name() string {
 	return c.edge.Name
 }
 
-// Connect connects two pipes
-func (c conn) Connect(us, ds Pipe) {
+// Connect connects an upstream pipe to a downstream pipe
+func (c conn) Connect(upstream, dnstream Pipe, upname, dnname string) {
 }
 
 // Value returns the connector's current value
