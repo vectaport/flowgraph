@@ -9,64 +9,64 @@ import (
 
 /*=====================================================================*/
 
-// Getter receives an empty interface with the Get method, Pipe is for tracing
+// Getter receives an empty interface with the Get method, Node is for tracing
 type Getter interface {
-	Get(p Pipe) (interface{}, error)
+	Get(p Node) (interface{}, error)
 }
 
-// Putter transmits an empty interface with the Put method, Pipe is for tracing
+// Putter transmits an empty interface with the Put method, Node is for tracing
 type Putter interface {
-	Put(p Pipe, v interface{}) error
+	Put(p Node, v interface{}) error
 }
 
 // Transformer transforms a variadic list of empty interfaces into a slice
-// of empty interfaces, Pipe is for tracing
+// of empty interfaces, Node is for tracing
 type Transformer interface {
-	Transform(p Pipe, c ...interface{}) ([]interface{}, error)
+	Transform(p Node, c ...interface{}) ([]interface{}, error)
 }
 
 /*=====================================================================*/
 
-// Flowgraph interface for flowgraphs assembled out of pipe nodes and connector edges
+// Flowgraph interface for flowgraphs assembled out of node nodes and connector edges
 type Flowgraph interface {
 
 	// Name returns the name of this flowgraph
 	Name() string
 
-	// Pipe returns a pipe by index
-	Pipe(i int) Pipe
-	// Connector returns a connector by index
-	Connector(i int) Connector
+	// Node returns a node by index
+	Node(i int) Node
+	// Edge returns a connector by index
+	Edge(i int) Edge
 
-	// NumPipe returns the number of pipes
-	NumPipe() int
-	// NumConnector returns the number of pipes
-	NumConnector() int
+	// NumNode returns the number of nodes
+	NumNode() int
+	// NumEdge returns the number of nodes
+	NumEdge() int
 
-	// FindPipe finds a pipe by name
-	FindPipe(name string) Pipe
-	// FindConnector finds a connector by name
-	FindConnector(name string) Connector
+	// FindNode finds a node by name
+	FindNode(name string) Node
+	// FindEdge finds a connector by name
+	FindEdge(name string) Edge
 
-	// NewPipe returns a new uninitialized pipe
-	NewPipe(nm string) Pipe
-	// NewConnector returns a new uninitialized connector
-	NewConnector(nm string) Connector
+	// NewNode returns a new uninitialized node
+	NewNode(nm string) Node
+	// NewEdge returns a new uninitialized connector
+	NewEdge(nm string) Edge
 
 	// InsertIncoming adds an input source that uses a Getter
-	InsertIncoming(name string, getter Getter) Pipe
+	InsertIncoming(name string, getter Getter) Node
 	// InsertOutgoing adds an output destination that uses a Putter
-	InsertOutgoing(name string, putter Putter) Pipe
+	InsertOutgoing(name string, putter Putter) Node
 
 	// InsertConst adds an input constant as an incoming source.
-	InsertConst(name string, v interface{}) Pipe
+	InsertConst(name string, v interface{}) Node
 	// InsertArray adds an array as an incoming source.
-	InsertArray(name string, arr []interface{}) Pipe
+	InsertArray(name string, arr []interface{}) Node
 	// InsertSink adds an output sink
-	InsertSink(name string) Pipe
+	InsertSink(name string) Node
 
 	// InsertAllOf adds a transform that waits for all inputs before producing outputs
-	InsertAllOf(name string, transformer Transformer) Pipe
+	InsertAllOf(name string, transformer Transformer) Node
 
 	// Run runs the flowgraph
 	Run()
@@ -89,115 +89,115 @@ func (fg *graph) Name() string {
 	return fg.Name()
 }
 
-// Pipe returns a pipe by index
-func (fg *graph) Pipe(n int) Pipe {
-	return pipe{&fg.nodes[n]}
+// Node returns a node by index
+func (fg *graph) Node(n int) Node {
+	return node{&fg.nodes[n]}
 }
 
-// Connector returns a connector by index
-func (fg *graph) Connector(n int) Connector {
-	return conn{&fg.edges[n]}
+// Edge returns a connector by index
+func (fg *graph) Edge(n int) Edge {
+	return edge{&fg.edges[n]}
 }
 
-// NumPipe returns the number of pipes
-func (fg *graph) NumPipe() int {
+// NumNode returns the number of nodes
+func (fg *graph) NumNode() int {
 	return len(fg.nodes)
 }
 
-// NumConnector returns the number of pipes
-func (fg *graph) NumConnector() int {
+// NumEdge returns the number of nodes
+func (fg *graph) NumEdge() int {
 	return len(fg.edges)
 }
 
-// NewPipe returns a new uninitialized pipe
-func (fg *graph) NewPipe(nm string) Pipe {
-	node := fgbase.MakeNode(nm, nil, nil, nil, nil)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+// NewNode returns a new uninitialized node
+func (fg *graph) NewNode(nm string) Node {
+	n := fgbase.MakeNode(nm, nil, nil, nil, nil)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
-// NewConnector returns a new uninitialized connector
-func (fg *graph) NewConnector(nm string) Connector {
+// NewEdge returns a new uninitialized edge
+func (fg *graph) NewEdge(nm string) Edge {
 	if nm == "" {
 		nm = fmt.Sprintf("e%d", len(fg.edges))
 	}
-	edge := fgbase.MakeEdge(nm, nil)
-	fg.edges = append(fg.edges, edge)
-	return conn{&fg.edges[len(fg.nodes)-1]}
+	e := fgbase.MakeEdge(nm, nil)
+	fg.edges = append(fg.edges, e)
+	return edge{&fg.edges[len(fg.nodes)-1]}
 }
 
-// FindPipe finds a pipe by name
-func (fg *graph) FindPipe(name string) Pipe {
+// FindNode finds a node by name
+func (fg *graph) FindNode(name string) Node {
 	// simple search for now
 	for i, v := range fg.nodes {
 		if fg.nodes[i].Name == name {
-			return pipe{&v}
+			return node{&v}
 		}
 	}
 	return nil
 }
 
-// FindConnector finds a Connector by name
-func (fg *graph) FindConnector(name string) Connector {
+// FindEdge finds a Edge by name
+func (fg *graph) FindEdge(name string) Edge {
 	// simple search for now
 	for i, v := range fg.edges {
 		if fg.edges[i].Name == name {
-			return conn{&v}
+			return edge{&v}
 		}
 	}
 	return nil
 }
 
 // InsertIncoming adds an input source that uses a Getter
-func (fg *graph) InsertIncoming(name string, getter Getter) Pipe {
+func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
-	node := funcIncoming(e, getter)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+	n := funcIncoming(e, getter)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertOutgoing adds a destination that uses a Putter
-func (fg *graph) InsertOutgoing(name string, putter Putter) Pipe {
-	node := funcOutgoing(fg.edges[len(fg.edges)-1], putter)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+func (fg *graph) InsertOutgoing(name string, putter Putter) Node {
+	n := funcOutgoing(fg.edges[len(fg.edges)-1], putter)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertConst adds an input constant as an incoming source.
-func (fg *graph) InsertConst(name string, v interface{}) Pipe {
+func (fg *graph) InsertConst(name string, v interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
-	node := fgbase.FuncConst(e, v)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+	n := fgbase.FuncConst(e, v)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertArray adds an array as an incoming source.
-func (fg *graph) InsertArray(name string, arr []interface{}) Pipe {
+func (fg *graph) InsertArray(name string, arr []interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
-	node := fgbase.FuncArray(e, arr)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+	n := fgbase.FuncArray(e, arr)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertSink adds a output sink on the latest edge
-func (fg *graph) InsertSink(name string) Pipe {
+func (fg *graph) InsertSink(name string) Node {
 	i := len(fg.edges) - 1
-	node := fgbase.FuncSink(fg.edges[i])
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+	n := fgbase.FuncSink(fg.edges[i])
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertAllOf adds a transform that waits for all inputs before producing outputs
-func (fg *graph) InsertAllOf(name string, transformer Transformer) Pipe {
+func (fg *graph) InsertAllOf(name string, transformer Transformer) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
-	node := funcAllOf([]fgbase.Edge{fg.edges[len(fg.edges)-2]}, []fgbase.Edge{fg.edges[len(fg.edges)-1]},
+	n := funcAllOf([]fgbase.Edge{fg.edges[len(fg.edges)-2]}, []fgbase.Edge{fg.edges[len(fg.edges)-1]},
 		name, transformer)
-	fg.nodes = append(fg.nodes, node)
-	return pipe{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
 // Run runs the flowgraph

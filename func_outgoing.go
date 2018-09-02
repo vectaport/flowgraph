@@ -7,7 +7,7 @@ import (
 func outgoingFire(n *fgbase.Node) {
 	a := n.Srcs[0]
 	d := n.Aux.(Putter)
-	err := d.Put(pipe{n}, a.SrcGet())
+	err := d.Put(node{n}, a.SrcGet())
 	if err != nil {
 		n.LogError(err.Error())
 	}

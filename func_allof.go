@@ -11,7 +11,7 @@ func allOfFire(n *fgbase.Node) {
 	for i, _ := range a {
 		a[i] = n.Srcs[i].SrcGet()
 	}
-	x, _ := t.Transform(pipe{n}, a...)
+	x, _ := t.Transform(node{n}, a...)
 	for i, _ := range x {
 		n.Dsts[i].DstPut(x[i])
 	}
