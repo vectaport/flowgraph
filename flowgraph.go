@@ -9,19 +9,19 @@ import (
 
 /*=====================================================================*/
 
-// Getter receives an empty interface with the Get method. Use Node.Tracef for tracing.
+// Getter receives a value with the Get method. Use Node.Tracef for tracing.
 type Getter interface {
 	Get(n Node) (interface{}, error)
 }
 
-// Putter transmits an empty interface with the Put method. Use Node.Tracef
+// Putter transmits a value with the Put method. Use Node.Tracef
 // for tracing
 type Putter interface {
 	Put(n Node, v interface{}) error
 }
 
-// Transformer transforms a variadic list of empty interfaces into a slice
-// of empty interfaces with the Transform method. Use Node.Tracef for tracing.
+// Transformer transforms a variadic list of values into a slice
+// of values with the Transform method. Use Node.Tracef for tracing.
 type Transformer interface {
 	Transform(n Node, c ...interface{}) ([]interface{}, error)
 }
@@ -54,6 +54,10 @@ type Flowgraph interface {
 	// NewEdge returns a new uninitialized connector
 	NewEdge(nm string) Edge
 
+	// InsertNode adds a Node to the flowgraph, connecting inputs to existing
+	// dangling edges as available and creating dangling output edges as needed.
+	InsertNode(n Node)
+	
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Node
 	// InsertOutgoing adds an output destination that uses a Putter
@@ -149,6 +153,11 @@ func (fg *graph) FindEdge(name string) Edge {
 	return nil
 }
 
+// InsertNode adds a Node to the flowgraph, connecting inputs to existing
+// dangling edges as available and creating dangling output edges as needed.
+InsertNode(n Node) {
+}
+2
 // InsertIncoming adds an input source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
