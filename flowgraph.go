@@ -155,9 +155,9 @@ func (fg *graph) FindEdge(name string) Edge {
 
 // InsertNode adds a Node to the flowgraph, connecting inputs to existing
 // dangling edges as available and creating dangling output edges as needed.
-InsertNode(n Node) {
+func (fg *graph) InsertNode(n Node) {
 }
-2
+
 // InsertIncoming adds an input source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
