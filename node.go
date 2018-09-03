@@ -24,7 +24,7 @@ type Node interface {
 	// NumSource returns the number of upstream edges
 	NumSource() int
 
-	// NumDestination returns the number of upstream edges
+	// NumDestination returns the number of downstream edges
 	NumDestination() int
 
 	// Auxiliary returns auxiliary storage used by
