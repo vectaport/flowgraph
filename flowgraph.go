@@ -158,6 +158,13 @@ func (fg *graph) FindEdge(name string) Edge {
 func (fg *graph) InsertNode(n Node) {
 }
 
+// NewIncoming adds an input source that uses a Getter
+func (fg *graph) NewIncoming(name string, getter Getter) Node {
+	n := funcIncoming(e, getter)
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
+}
+
 // InsertIncoming adds an input source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
