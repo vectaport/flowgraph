@@ -55,8 +55,9 @@ func TestInsertIncoming(t *testing.T) {
 	fmt.Printf("BEGIN:  TestInsertIncoming")
 
 	fg := flowgraph.New("TestInsertIncoming")
-	n := fg.NewIncoming(&getter)
-	fg.Insert("incoming", n)
+	// n := fg.NewIncoming(&getter{})
+	// fg.InsertNode("incoming", n)
+	fg.InsertIncoming("incoming", &getter{})
 	fg.InsertSink("sink")
 
 	fg.Run()

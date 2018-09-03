@@ -21,6 +21,12 @@ type Node interface {
 	// Destination returns downstream edge by index
 	Destination(n int) Edge
 
+	// FindSource returns upstream edge by name
+	FindSource(name string) Edge
+
+	// Destination returns downstream edge by name
+	FindDestination(name string) Edge
+
 	// NumSource returns the number of upstream edges
 	NumSource() int
 
@@ -29,7 +35,6 @@ type Node interface {
 
 	// Auxiliary returns auxiliary storage used by
 	// underlying implementation for storing state
-	// (only required for external debug of fgbase)
 	Auxiliary() interface{}
 }
 
@@ -61,6 +66,16 @@ func (n node) Source(i int) Edge {
 // Destination returns downstream edge by index
 func (n node) Destination(i int) Edge {
 	return edge{n.base.Dsts[i]}
+}
+
+// FindSource returns upstream edge by name
+func (n node) FindSource(name string) Edge {
+	return edge{n.base.FindSrc(name)}
+}
+
+// FindDestination returns downstream edge by name
+func (n node) FindDestination(name string) Edge {
+	return edge{n.base.FindDst(name)}
 }
 
 // NumSource returns the number of upstream edges

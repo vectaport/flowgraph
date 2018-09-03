@@ -56,8 +56,10 @@ type Flowgraph interface {
 
 	// InsertNode adds a Node to the flowgraph, connecting inputs to existing
 	// dangling edges as available and creating dangling output edges as needed.
-	InsertNode(n Node)
-	
+	InsertNode(name string, n Node)
+	// NewIncoming creates an input node that uses a Getter
+	NewIncoming(getter Getter) Node
+
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Node
 	// InsertOutgoing adds an output destination that uses a Putter
@@ -155,17 +157,41 @@ func (fg *graph) FindEdge(name string) Edge {
 
 // InsertNode adds a Node to the flowgraph, connecting inputs to existing
 // dangling edges as available and creating dangling output edges as needed.
-func (fg *graph) InsertNode(n Node) {
+func (fg *graph) InsertNode(name string, n Node) {
+
+	i := 0
+
+	nextDanglingSrcEdge :=
+		func() *fgbase.Edge {
+			for ; len(fg.edges) > i && fg.edges[i].DstCnt() != 0; i++ {
+			}
+			if i == len(fg.edges) {
+				return nil // or makeEdge?
+			} else {
+				return &fg.edges[i]
+			}
+		}
+
+	// connect to input edges
+	for j := 0; j < n.NumSource(); j++ {
+		if n.Source(j) == nil {
+			p := nextDanglingSrcEdge()
+			fmt.Printf("p is now %v\n", p)
+		}
+	}
+
+	// create output edges
+
 }
 
-// NewIncoming adds an input source that uses a Getter
-func (fg *graph) NewIncoming(name string, getter Getter) Node {
-	n := funcIncoming(e, getter)
+// NewIncoming adds an incoming source that uses a Getter
+func (fg *graph) NewIncoming(getter Getter) Node {
+	n := funcIncoming(fgbase.Edge{}, getter)
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
 
-// InsertIncoming adds an input source that uses a Getter
+// InsertIncoming adds an incoming source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
