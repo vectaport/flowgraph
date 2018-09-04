@@ -26,6 +26,10 @@ type Edge interface {
 
 	// NumDestination returns the number of downstream nodes
 	NumDestination() int
+
+	// Base returns the value that implements this edge
+	// The type of this value identifies the implementation.
+	Base() interface{}
 }
 
 // implementation of Edge
@@ -60,4 +64,10 @@ func (e edge) NumSource() int {
 // NumDestination returns the number of downstream nodes
 func (e edge) NumDestination() int {
 	return e.base.DstCnt()
+}
+
+// Base returns the value that implements this edge
+// The type of this value identifies the implementation.
+func (e edge) Base() interface{} {
+	return e.base
 }

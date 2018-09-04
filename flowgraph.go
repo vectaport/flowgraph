@@ -245,5 +245,8 @@ func (fg *graph) InsertAllOf(name string, transformer Transformer) Node {
 
 // Run runs the flowgraph
 func (fg *graph) Run() {
+	for _, nv := range fg.nodes {
+		nv.Init()
+	}
 	fgbase.RunAll(fg.nodes)
 }

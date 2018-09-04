@@ -36,6 +36,10 @@ type Node interface {
 	// Auxiliary returns auxiliary storage used by
 	// underlying implementation for storing state
 	Auxiliary() interface{}
+
+	// Base returns the value that implements this node
+	// The type of this value identifies the implementation.
+	Base() interface{}
 }
 
 // implementation of Node
@@ -78,6 +82,20 @@ func (n node) FindDestination(name string) Edge {
 	return edge{n.base.FindDst(name)}
 }
 
+// AddSource adds a list of source edges
+func (n node) AddSource(e ...Edge) {
+	for _, ev := range e {
+		n.base.Srcs = append(n.base.Srcs, ev.Base().(*fgbase.Edge))
+	}
+}
+
+// AddDestination adds a list of destination edges
+func (n node) AddDestination(e ...Edge) {
+	for _, ev := range e {
+		n.base.Dsts = append(n.base.Dsts, ev.Base().(*fgbase.Edge))
+	}
+}
+
 // NumSource returns the number of upstream edges
 func (n node) NumSource() int {
 	return len(n.base.Srcs)
@@ -92,4 +110,10 @@ func (n node) NumDestination() int {
 // the underlying implementation for storing state
 func (n node) Auxiliary() interface{} {
 	return n.base.Aux
+}
+
+// Base returns the value that implements this edge
+// The type of this value identifies the implementation.
+func (n node) Base() interface{} {
+	return n.base
 }
