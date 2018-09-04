@@ -24,8 +24,14 @@ type Node interface {
 	// FindSource returns upstream edge by name
 	FindSource(name string) Edge
 
-	// Destination returns downstream edge by name
+	// FindDestination returns downstream edge by name
 	FindDestination(name string) Edge
+
+	// AddSource adds a list of source edges
+	AddSource(e ...Edge)
+
+	// AddDestination adds a list of destination edges
+	AddDestination(e ...Edge)
 
 	// NumSource returns the number of upstream edges
 	NumSource() int
