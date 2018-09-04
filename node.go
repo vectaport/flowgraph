@@ -126,26 +126,22 @@ func (n node) NumDestination() int {
 
 // SetSourceNames names the sources
 func (n node) SetSourceNames(nm ...string) {
-	for _, v := range nm {
-		n.base.SrcNames = append(n.base.SrcNames, v)
-	}
+	n.base.SetSrcNames(nm...)
 }
 
-// SetDestinationNames names the destinations
+// SetDestinationNames names the destination
 func (n node) SetDestinationNames(nm ...string) {
-	for _, v := range nm {
-		n.base.DstNames = append(n.base.DstNames, v)
-	}
+	n.base.SetDstNames(nm...)
 }
 
 // SourceNames returns the names of the sources
 func (n node) SourceNames() []string {
-	return n.base.SrcNames
+	return n.base.SrcNames()
 }
 
 // DestinationNames returns the names of the destinatiopns
 func (n node) DestinationNames() []string {
-	return n.base.DstNames
+	return n.base.DstNames()
 }
 
 // Auxiliary returns auxiliary storage for this node used by
