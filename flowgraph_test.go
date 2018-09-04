@@ -11,7 +11,7 @@ import (
 /*=====================================================================*/
 
 func TestMain(m *testing.M) {
-	fgbase.ConfigByFlag(map[string]interface{}{"trace": "Q"})
+	fgbase.ConfigByFlag(map[string]interface{}{"trace": "QQ"})
 	os.Exit(m.Run())
 }
 
@@ -52,7 +52,7 @@ func (g *getter) Get(node flowgraph.Node) (interface{}, error) {
 
 func TestInsertIncoming(t *testing.T) {
 
-	fmt.Printf("BEGIN:  TestInsertIncoming")
+	fmt.Printf("BEGIN:  TestInsertIncoming\n")
 
 	fg := flowgraph.New("TestInsertIncoming")
 	// n := fg.NewIncoming(&getter{})
@@ -78,7 +78,7 @@ func (p *putter) Put(node flowgraph.Node, v interface{}) error {
 
 func TestInsertOutgoing(t *testing.T) {
 
-	fmt.Printf("BEGIN:  TestInsertOutgoing")
+	fmt.Printf("BEGIN:  TestInsertOutgoing\n")
 
 	fg := flowgraph.New("TestInsertOutgoing")
 	fg.InsertConst("one", 1)
@@ -101,7 +101,7 @@ func (t *transformer) Transform(node flowgraph.Node, v ...interface{}) ([]interf
 
 func TestInsertAllOf(t *testing.T) {
 
-	fmt.Printf("BEGIN:  TestInsertAllOf")
+	fmt.Printf("BEGIN:  TestInsertAllOf\n")
 
 	fg := flowgraph.New("TestInsertAllOf")
 	fg.InsertConst("one", 1)
@@ -117,7 +117,7 @@ func TestInsertAllOf(t *testing.T) {
 
 func TestInsertArray(t *testing.T) {
 
-	fmt.Printf("BEGIN:  TestInsertArray")
+	fmt.Printf("BEGIN:  TestInsertArray\n")
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
@@ -128,11 +128,12 @@ func TestInsertArray(t *testing.T) {
 	fg.Run()
 
 	s := fg.FindNode("sink").Auxiliary().(fgbase.SinkStats)
+
 	if s.Cnt != len(arr) {
-		t.Fatalf("SinkStats.Cnt != len(arr)\n")
+		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
 	}
 	if s.Sum != 45 {
-		t.Fatalf("SinkStats.Sum != sum(arr)\n")
+		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
 	}
 
 	fmt.Printf("END:    TestInsertArray\n")
