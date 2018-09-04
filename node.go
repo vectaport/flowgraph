@@ -39,6 +39,18 @@ type Node interface {
 	// NumDestination returns the number of downstream edges
 	NumDestination() int
 
+	// SetSourceNames names the sources
+	SetSourceNames(nm ...string)
+
+	// SetDestinationNames names the destinations
+	SetDestinationNames(nm ...string)
+
+	// SourceNames returns the names of the sources
+	SourceNames() []string
+
+	// DestinationNames returns the names of the destinations
+	DestinationNames() []string
+
 	// Auxiliary returns auxiliary storage used by
 	// underlying implementation for storing state
 	Auxiliary() interface{}
@@ -110,6 +122,30 @@ func (n node) NumSource() int {
 // NumDestination returns the number of downstream edges
 func (n node) NumDestination() int {
 	return len(n.base.Dsts)
+}
+
+// SetSourceNames names the sources
+func (n node) SetSourceNames(nm ...string) {
+	for _, v := range nm {
+		n.base.SrcNames = append(n.base.SrcNames, v)
+	}
+}
+
+// SetDestinationNames names the destinations
+func (n node) SetDestinationNames(nm ...string) {
+	for _, v := range nm {
+		n.base.DstNames = append(n.base.DstNames, v)
+	}
+}
+
+// SourceNames returns the names of the sources
+func (n node) SourceNames() []string {
+	return n.base.SrcNames
+}
+
+// DestinationNames returns the names of the destinatiopns
+func (n node) DestinationNames() []string {
+	return n.base.DstNames
 }
 
 // Auxiliary returns auxiliary storage for this node used by
