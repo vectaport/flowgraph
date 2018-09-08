@@ -4,7 +4,7 @@ import (
 	"github.com/vectaport/fgbase"
 )
 
-func allOfFire(n *fgbase.Node) {
+func allOfFire(n *fgbase.Node) error {
 	var a []interface{}
 	a = make([]interface{}, len(n.Srcs))
 	t := n.Aux.(Transformer)
@@ -15,6 +15,7 @@ func allOfFire(n *fgbase.Node) {
 	for i, _ := range x {
 		n.Dsts[i].DstPut(x[i])
 	}
+	return nil
 }
 
 // funcAllOf waits for all inputs to be ready before transforming them into all outputs

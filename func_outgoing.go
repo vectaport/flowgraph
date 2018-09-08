@@ -4,13 +4,15 @@ import (
 	"github.com/vectaport/fgbase"
 )
 
-func outgoingFire(n *fgbase.Node) {
+func outgoingFire(n *fgbase.Node) error {
 	a := n.Srcs[0]
 	d := n.Aux.(Putter)
 	err := d.Put(node{n}, a.SrcGet())
 	if err != nil {
 		n.LogError(err.Error())
+		return err
 	}
+	return nil
 
 }
 

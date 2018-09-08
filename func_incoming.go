@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func incomingFire(n *fgbase.Node) {
+func incomingFire(n *fgbase.Node) error {
 	x := n.Dsts[0]
 	r := n.Aux.(Getter)
 	v, err := r.Get(node{n})
@@ -14,9 +14,10 @@ func incomingFire(n *fgbase.Node) {
 		if err != io.EOF {
 			n.LogError(err.Error())
 		}
-		return
+		return err
 	}
 	x.DstPut(v)
+	return nil
 }
 
 // funcIncoming imports one input value using a Getter and feeds it to the flowgraph
