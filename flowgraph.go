@@ -3,9 +3,15 @@
 package flowgraph
 
 import (
+	"errors"
 	"fmt"
 	"github.com/vectaport/fgbase"
 )
+
+/*=====================================================================*/
+
+// End of flow
+var EOF = errors.New("EOF")
 
 /*=====================================================================*/
 
