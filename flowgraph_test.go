@@ -138,3 +138,41 @@ func TestInsertArray(t *testing.T) {
 
 	fmt.Printf("END:    TestInsertArray\n")
 }
+
+/*=====================================================================*/
+
+type pass int
+
+func (p pass) Transform(n flowgraph.Node, c ...interface{}) ([]interface{}, error) {
+	return c, nil
+}
+
+var p pass
+
+func TestInsertChain(t *testing.T) {
+
+	fmt.Printf("BEGIN:  TestInsertChain\n")
+
+	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	fg := flowgraph.New("TestInsertChain")
+	fg.InsertArray("array", arr)
+	fg.InsertAllOf("pass", p)
+	for i := 0; i < 1024; i++ {
+		fg.InsertAllOf("pass", p)
+	}
+	fg.InsertSink("sink")
+
+	fg.Run()
+
+	s := fg.FindNode("sink").Auxiliary().(fgbase.SinkStats)
+
+	if s.Cnt != len(arr) {
+		t.Fatalf("SinkStats.Cnt %d != len(arr) %d\n", s.Cnt)
+	}
+	if s.Sum != 45 {
+		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
+	}
+
+	fmt.Printf("END:    TestInsertChain\n")
+}
