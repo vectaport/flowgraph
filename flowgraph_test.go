@@ -6,6 +6,7 @@ import (
 	"github.com/vectaport/flowgraph"
 	"os"
 	"testing"
+	"time"
 )
 
 /*=====================================================================*/
@@ -58,7 +59,9 @@ func TestInsertIncoming(t *testing.T) {
 	// n := fg.NewIncoming(&getter{})
 	// fg.InsertNode("incoming", n)
 	fg.InsertIncoming("incoming", &getter{})
-	fg.InsertSink("sink")
+	// fg.InsertSink("sink")
+	n := fg.NewSink("sink")
+	fg.InsertNode(n)
 
 	fg.Run()
 
@@ -150,25 +153,27 @@ func (p pass) Transform(n flowgraph.Node, c ...interface{}) ([]interface{}, erro
 var p pass
 
 func TestInsertChain(t *testing.T) {
-
+     now := time.Now().UTC()
 	fmt.Printf("BEGIN:  TestInsertChain\n")
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
+	
 	fg := flowgraph.New("TestInsertChain")
 	fg.InsertArray("array", arr)
 	fg.InsertAllOf("pass", p)
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < 1024*1024; i++ {
 		fg.InsertAllOf("pass", p)
 	}
 	fg.InsertSink("sink")
 
+	  fmt.Printf("time since:  %v\n", time.Since(now))
 	fg.Run()
 
 	s := fg.FindNode("sink").Auxiliary().(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
-		t.Fatalf("SinkStats.Cnt %d != len(arr) %d\n", s.Cnt)
+		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
 	}
 	if s.Sum != 45 {
 		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)

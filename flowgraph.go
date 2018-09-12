@@ -62,12 +62,13 @@ type Flowgraph interface {
 
 	// InsertNode adds a Node to the flowgraph, connecting inputs to existing
 	// dangling edges as available and creating dangling output edges as needed.
-	InsertNode(name string, n Node)
-	// NewIncoming creates an input node that uses a Getter
-	NewIncoming(getter Getter) Node
+	InsertNode(n Node)
 
+	// NewIncoming creates an input node that uses a Getter
+	NewIncoming(name string, getter Getter) Node
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Node
+	
 	// InsertOutgoing adds an output destination that uses a Putter
 	InsertOutgoing(name string, putter Putter) Node
 
@@ -75,6 +76,10 @@ type Flowgraph interface {
 	InsertConst(name string, v interface{}) Node
 	// InsertArray adds an array as an incoming source.
 	InsertArray(name string, arr []interface{}) Node
+
+
+	// NewSink creates an output sink node
+	NewSink(name string) Node
 	// InsertSink adds an output sink
 	InsertSink(name string) Node
 
@@ -88,8 +93,8 @@ type Flowgraph interface {
 // implementation of Flowgraph
 type graph struct {
 	name  string
-	nodes []fgbase.Node
-	edges []fgbase.Edge
+	nodes []*fgbase.Node
+	edges []*fgbase.Edge
 }
 
 // New returns a named flowgraph implemented with the fgbase package
@@ -163,14 +168,16 @@ func (fg *graph) FindEdge(name string) Edge {
 
 // InsertNode adds a Node to the flowgraph, connecting inputs to existing
 // dangling edges as available and creating dangling output edges as needed.
-func (fg *graph) InsertNode(name string, n Node) {
+func (fg *graph) InsertNode(n Node) {
+     fmt.Printf("CALL MADE TO INSERTNODE\n")
 
 	i := 0
 
 	nextDanglingSrcEdge :=
 		func() *fgbase.Edge {
-			for ; len(fg.edges) > i && fg.edges[i].DstCnt() != 0; i++ {
+			for ; i < len(fg.edges) && fg.edges[i].DstCnt() != 0; i++ {
 			}
+
 			if i == len(fg.edges) {
 				return nil // or makeEdge?
 			} else {
@@ -191,8 +198,9 @@ func (fg *graph) InsertNode(name string, n Node) {
 }
 
 // NewIncoming adds an incoming source that uses a Getter
-func (fg *graph) NewIncoming(getter Getter) Node {
+func (fg *graph) NewIncoming(name string, getter Getter) Node {
 	n := funcIncoming(fgbase.Edge{}, getter)
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
@@ -202,6 +210,7 @@ func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
 	n := funcIncoming(e, getter)
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
@@ -209,6 +218,7 @@ func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 // InsertOutgoing adds a destination that uses a Putter
 func (fg *graph) InsertOutgoing(name string, putter Putter) Node {
 	n := funcOutgoing(fg.edges[len(fg.edges)-1], putter)
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
@@ -218,6 +228,7 @@ func (fg *graph) InsertConst(name string, v interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
 	n := fgbase.FuncConst(e, v)
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
@@ -227,6 +238,15 @@ func (fg *graph) InsertArray(name string, arr []interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
 	fg.edges = append(fg.edges, e)
 	n := fgbase.FuncArray(e, arr)
+	n.Name = name
+	fg.nodes = append(fg.nodes, n)
+	return node{&fg.nodes[len(fg.nodes)-1]}
+}
+
+// NewSink creates an output sink node
+func (fg *graph) NewSink(name string) Node {
+	n := fgbase.FuncSink(fgbase.Edge{})
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
@@ -235,6 +255,7 @@ func (fg *graph) InsertArray(name string, arr []interface{}) Node {
 func (fg *graph) InsertSink(name string) Node {
 	i := len(fg.edges) - 1
 	n := fgbase.FuncSink(fg.edges[i])
+	n.Name = name
 	fg.nodes = append(fg.nodes, n)
 	return node{&fg.nodes[len(fg.nodes)-1]}
 }
