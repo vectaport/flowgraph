@@ -166,7 +166,6 @@ func TestInsertChain(t *testing.T) {
 	}
 	fg.InsertSink("sink")
 
-	fmt.Printf("time since:  %v\n", time.Since(now))
 	fg.Run()
 
 	s := fg.FindNode("sink").Auxiliary().(fgbase.SinkStats)
