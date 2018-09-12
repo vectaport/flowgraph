@@ -68,7 +68,7 @@ type Flowgraph interface {
 	NewIncoming(name string, getter Getter) Node
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Node
-	
+
 	// InsertOutgoing adds an output destination that uses a Putter
 	InsertOutgoing(name string, putter Putter) Node
 
@@ -76,7 +76,6 @@ type Flowgraph interface {
 	InsertConst(name string, v interface{}) Node
 	// InsertArray adds an array as an incoming source.
 	InsertArray(name string, arr []interface{}) Node
-
 
 	// NewSink creates an output sink node
 	NewSink(name string) Node
@@ -109,12 +108,12 @@ func (fg *graph) Name() string {
 
 // Node returns a node by index
 func (fg *graph) Node(n int) Node {
-	return node{&fg.nodes[n]}
+	return node{fg.nodes[n]}
 }
 
 // Edge returns a connector by index
 func (fg *graph) Edge(n int) Edge {
-	return edge{&fg.edges[n]}
+	return edge{fg.edges[n]}
 }
 
 // NumNode returns the number of nodes
@@ -130,8 +129,8 @@ func (fg *graph) NumEdge() int {
 // NewNode returns a new uninitialized node
 func (fg *graph) NewNode(nm string) Node {
 	n := fgbase.MakeNode(nm, nil, nil, nil, nil)
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // NewEdge returns a new uninitialized edge
@@ -140,8 +139,8 @@ func (fg *graph) NewEdge(nm string) Edge {
 		nm = fmt.Sprintf("e%d", len(fg.edges))
 	}
 	e := fgbase.MakeEdge(nm, nil)
-	fg.edges = append(fg.edges, e)
-	return edge{&fg.edges[len(fg.nodes)-1]}
+	fg.edges = append(fg.edges, &e)
+	return edge{fg.edges[len(fg.nodes)-1]}
 }
 
 // FindNode finds a node by name
@@ -149,7 +148,7 @@ func (fg *graph) FindNode(name string) Node {
 	// simple search for now
 	for i, v := range fg.nodes {
 		if fg.nodes[i].Name == name {
-			return node{&v}
+			return node{v}
 		}
 	}
 	return nil
@@ -160,7 +159,7 @@ func (fg *graph) FindEdge(name string) Edge {
 	// simple search for now
 	for i, v := range fg.edges {
 		if fg.edges[i].Name == name {
-			return edge{&v}
+			return edge{v}
 		}
 	}
 	return nil
@@ -169,7 +168,7 @@ func (fg *graph) FindEdge(name string) Edge {
 // InsertNode adds a Node to the flowgraph, connecting inputs to existing
 // dangling edges as available and creating dangling output edges as needed.
 func (fg *graph) InsertNode(n Node) {
-     fmt.Printf("CALL MADE TO INSERTNODE\n")
+	fmt.Printf("CALL MADE TO INSERTNODE\n")
 
 	i := 0
 
@@ -181,7 +180,7 @@ func (fg *graph) InsertNode(n Node) {
 			if i == len(fg.edges) {
 				return nil // or makeEdge?
 			} else {
-				return &fg.edges[i]
+				return fg.edges[i]
 			}
 		}
 
@@ -201,76 +200,76 @@ func (fg *graph) InsertNode(n Node) {
 func (fg *graph) NewIncoming(name string, getter Getter) Node {
 	n := funcIncoming(fgbase.Edge{}, getter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertIncoming adds an incoming source that uses a Getter
 func (fg *graph) InsertIncoming(name string, getter Getter) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, e)
+	fg.edges = append(fg.edges, &e)
 	n := funcIncoming(e, getter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertOutgoing adds a destination that uses a Putter
 func (fg *graph) InsertOutgoing(name string, putter Putter) Node {
-	n := funcOutgoing(fg.edges[len(fg.edges)-1], putter)
+	n := funcOutgoing(*fg.edges[len(fg.edges)-1], putter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertConst adds an input constant as an incoming source.
 func (fg *graph) InsertConst(name string, v interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, e)
+	fg.edges = append(fg.edges, &e)
 	n := fgbase.FuncConst(e, v)
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertArray adds an array as an incoming source.
 func (fg *graph) InsertArray(name string, arr []interface{}) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, e)
+	fg.edges = append(fg.edges, &e)
 	n := fgbase.FuncArray(e, arr)
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // NewSink creates an output sink node
 func (fg *graph) NewSink(name string) Node {
 	n := fgbase.FuncSink(fgbase.Edge{})
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertSink adds a output sink on the latest edge
 func (fg *graph) InsertSink(name string) Node {
 	i := len(fg.edges) - 1
-	n := fgbase.FuncSink(fg.edges[i])
+	n := fgbase.FuncSink(*fg.edges[i])
 	n.Name = name
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // InsertAllOf adds a transform that waits for all inputs before producing outputs
 func (fg *graph) InsertAllOf(name string, transformer Transformer) Node {
 	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, e)
-	n := funcAllOf([]fgbase.Edge{fg.edges[len(fg.edges)-2]}, []fgbase.Edge{fg.edges[len(fg.edges)-1]},
+	fg.edges = append(fg.edges, &e)
+	n := funcAllOf([]fgbase.Edge{*fg.edges[len(fg.edges)-2]}, []fgbase.Edge{*fg.edges[len(fg.edges)-1]},
 		name, transformer)
-	fg.nodes = append(fg.nodes, n)
-	return node{&fg.nodes[len(fg.nodes)-1]}
+	fg.nodes = append(fg.nodes, &n)
+	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // Run runs the flowgraph
 func (fg *graph) Run() {
-	fgbase.RunAll(fg.nodes)
+	fgbase.RunGraph(fg.nodes)
 }
