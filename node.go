@@ -51,10 +51,6 @@ type Node interface {
 	// DestinationNames returns the names of the destinations
 	DestinationNames() []string
 
-	// Auxiliary returns auxiliary storage used by
-	// underlying implementation for storing state
-	Auxiliary() interface{}
-
 	// Base returns the value that implements this node
 	// The type of this value identifies the implementation.
 	Base() interface{}
@@ -144,13 +140,7 @@ func (n node) DestinationNames() []string {
 	return n.base.DstNames()
 }
 
-// Auxiliary returns auxiliary storage for this node used by
-// the underlying implementation for storing state
-func (n node) Auxiliary() interface{} {
-	return n.base.Aux
-}
-
-// Base returns the value that implements this edge
+// Base returns the value that implements this node
 // The type of this value identifies the implementation.
 func (n node) Base() interface{} {
 	return n.base

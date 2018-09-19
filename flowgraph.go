@@ -56,9 +56,9 @@ type Flowgraph interface {
 	FindEdge(name string) Edge
 
 	// NewNode returns a new uninitialized node
-	NewNode(nm string) Node
+	NewNode(name, code string) Node
 	// NewEdge returns a new uninitialized connector
-	NewEdge(nm string) Edge
+	NewEdge(name string) Edge
 
 	// InsertNode adds a Node to the flowgraph, connecting inputs to existing
 	// dangling edges as available and creating dangling output edges as needed.
@@ -127,8 +127,8 @@ func (fg *graph) NumEdge() int {
 }
 
 // NewNode returns a new uninitialized node
-func (fg *graph) NewNode(nm string) Node {
-	n := fgbase.MakeNode(nm, nil, nil, nil, nil)
+func (fg *graph) NewNode(name, code string) Node {
+	n := fgbase.MakeNode(name, nil, nil, nil, nil)
 	fg.nodes = append(fg.nodes, &n)
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
