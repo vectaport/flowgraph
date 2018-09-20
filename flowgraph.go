@@ -42,7 +42,7 @@ type Flowgraph interface {
 
 	// Hub returns a hub by index
 	Hub(i int) Hub
-	// Stream returns a connector by index
+	// Stream returns a stream by index
 	Stream(i int) Stream
 
 	// NumHub returns the number of hubs
@@ -57,7 +57,7 @@ type Flowgraph interface {
 
 	// NewHub returns a new uninitialized hub
 	NewHub(name, code string) Hub
-	// NewStream returns a new uninitialized connector
+	// NewStream returns a new uninitialized stream
 	NewStream(name string) Stream
 
 	// InsertHub adds a Hub to the flowgraph, connecting inputs to existing
@@ -118,7 +118,7 @@ func (fg *graph) Hub(n int) Hub {
 	return hub{fg.hubs[n]}
 }
 
-// Stream returns a connector by index
+// Stream returns a stream by index
 func (fg *graph) Stream(n int) Stream {
 	return stream{fg.streams[n]}
 }
