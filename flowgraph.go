@@ -15,78 +15,78 @@ var EOF = errors.New("EOF")
 
 /*=====================================================================*/
 
-// Getter receives a value with the Get method. Use Node.Tracef for tracing.
+// Getter receives a value with the Get method. Use Hub.Tracef for tracing.
 type Getter interface {
-	Get(n Node) (interface{}, error)
+	Get(h Hub) (interface{}, error)
 }
 
-// Putter transmits a value with the Put method. Use Node.Tracef
+// Putter transmits a value with the Put method. Use Hub.Tracef
 // for tracing
 type Putter interface {
-	Put(n Node, v interface{}) error
+	Put(h Hub, v interface{}) error
 }
 
 // Transformer transforms a variadic list of values into a slice
-// of values with the Transform method. Use Node.Tracef for tracing.
+// of values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
-	Transform(n Node, c ...interface{}) ([]interface{}, error)
+	Transform(h Hub, c ...interface{}) ([]interface{}, error)
 }
 
 /*=====================================================================*/
 
-// Flowgraph interface for flowgraphs assembled out of node nodes and connector edges
+// Flowgraph interface for flowgraphs assembled out of hubs and streams
 type Flowgraph interface {
 
 	// Name returns the name of this flowgraph
 	Name() string
 
-	// Node returns a node by index
-	Node(i int) Node
-	// Edge returns a connector by index
-	Edge(i int) Edge
+	// Hub returns a hub by index
+	Hub(i int) Hub
+	// Stream returns a connector by index
+	Stream(i int) Stream
 
-	// NumNode returns the number of nodes
-	NumNode() int
-	// NumEdge returns the number of nodes
-	NumEdge() int
+	// NumHub returns the number of hubs
+	NumHub() int
+	// NumStream returns the number of streams
+	NumStream() int
 
-	// FindNode finds a node by name
-	FindNode(name string) Node
-	// FindEdge finds a connector by name
-	FindEdge(name string) Edge
+	// FindHub finds a hub by name
+	FindHub(name string) Hub
+	// FindStream finds a stream by name
+	FindStream(name string) Stream
 
-	// NewNode returns a new uninitialized node
-	NewNode(name, code string) Node
-	// NewEdge returns a new uninitialized connector
-	NewEdge(name string) Edge
+	// NewHub returns a new uninitialized hub
+	NewHub(name, code string) Hub
+	// NewStream returns a new uninitialized connector
+	NewStream(name string) Stream
 
-	// InsertNode adds a Node to the flowgraph, connecting inputs to existing
-	// dangling edges as available and creating dangling output edges as needed.
-	InsertNode(n Node)
+	// InsertHub adds a Hub to the flowgraph, connecting inputs to existing
+	// dangling streams as available and creating dangling output streams as needed.
+	InsertHub(h Hub)
 
-	// NewIncoming creates an input node that uses a Getter
-	NewIncoming(name string, getter Getter) Node
+	// NewIncoming creates an input hub that uses a Getter
+	NewIncoming(name string, getter Getter) Hub
 	// InsertIncoming adds an input source that uses a Getter
-	InsertIncoming(name string, getter Getter) Node
+	InsertIncoming(name string, getter Getter) Hub
 
 	// InsertOutgoing adds an output destination that uses a Putter
-	InsertOutgoing(name string, putter Putter) Node
+	InsertOutgoing(name string, putter Putter) Hub
 
 	// InsertConst adds an input constant as an incoming source.
-	InsertConst(name string, v interface{}) Node
+	InsertConst(name string, v interface{}) Hub
 	// InsertArray adds an array as an incoming source.
-	InsertArray(name string, arr []interface{}) Node
+	InsertArray(name string, arr []interface{}) Hub
 
-	// NewSink creates an output sink node
-	NewSink(name string) Node
+	// NewSink creates an output sink hub
+	NewSink(name string) Hub
 	// InsertSink adds an output sink
-	InsertSink(name string) Node
+	InsertSink(name string) Hub
 
 	// InsertAllOf adds a transform that waits for all inputs before producing outputs
-	InsertAllOf(name string, transformer Transformer) Node
+	InsertAllOf(name string, transformer Transformer) Hub
 
-	// Connect connects two nodes via named ports
-	Connect(node0 Node, port0 string, node1 Node, port1 string)
+	// Connect connects two hubs via named ports
+	Connect(upstream Hub, dstport string, dnstream Hub, srcport string) Stream
 
 	// Run runs the flowgraph
 	Run()
@@ -94,18 +94,18 @@ type Flowgraph interface {
 
 // implementation of Flowgraph
 type graph struct {
-	name       string
-	nodes      []*fgbase.Node
-	edges      []*fgbase.Edge
-	nameToNode map[string]*fgbase.Node
-	nameToEdge map[string]*fgbase.Edge
+	name         string
+	hubs         []*fgbase.Node
+	streams      []*fgbase.Edge
+	nameToHub    map[string]*fgbase.Node
+	nameToStream map[string]*fgbase.Edge
 }
 
 // New returns a named flowgraph implemented with the fgbase package
 func New(nm string) Flowgraph {
-	nameToNode := make(map[string]*fgbase.Node)
-	nameToEdge := make(map[string]*fgbase.Edge)
-	return &graph{nm, nil, nil, nameToNode, nameToEdge}
+	nameToHub := make(map[string]*fgbase.Node)
+	nameToStream := make(map[string]*fgbase.Edge)
+	return &graph{nm, nil, nil, nameToHub, nameToStream}
 }
 
 // Name returns the name of this flowgraph
@@ -113,171 +113,180 @@ func (fg *graph) Name() string {
 	return fg.Name()
 }
 
-// Node returns a node by index
-func (fg *graph) Node(n int) Node {
-	return node{fg.nodes[n]}
+// Hub returns a hub by index
+func (fg *graph) Hub(n int) Hub {
+	return hub{fg.hubs[n]}
 }
 
-// Edge returns a connector by index
-func (fg *graph) Edge(n int) Edge {
-	return edge{fg.edges[n]}
+// Stream returns a connector by index
+func (fg *graph) Stream(n int) Stream {
+	return stream{fg.streams[n]}
 }
 
-// NumNode returns the number of nodes
-func (fg *graph) NumNode() int {
-	return len(fg.nodes)
+// NumHub returns the number of hubs
+func (fg *graph) NumHub() int {
+	return len(fg.hubs)
 }
 
-// NumEdge returns the number of nodes
-func (fg *graph) NumEdge() int {
-	return len(fg.edges)
+// NumStream returns the number of hubs
+func (fg *graph) NumStream() int {
+	return len(fg.streams)
 }
 
-// NewNode returns a new uninitialized node
-func (fg *graph) NewNode(name, code string) Node {
+// NewHub returns a new uninitialized hub
+func (fg *graph) NewHub(name, code string) Hub {
 	n := fgbase.MakeNode(name, nil, nil, nil, nil)
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{&n}
 }
 
-// NewEdge returns a new uninitialized edge
-func (fg *graph) NewEdge(name string) Edge {
+// NewStream returns a new uninitialized stream
+func (fg *graph) NewStream(name string) Stream {
 	if name == "" {
-		name = fmt.Sprintf("e%d", len(fg.edges))
+		name = fmt.Sprintf("e%d", len(fg.streams))
 	}
 	e := fgbase.MakeEdge(name, nil)
-	fg.edges = append(fg.edges, &e)
-	fg.nameToEdge[name] = &e
-	return edge{fg.edges[len(fg.nodes)-1]}
+	fg.streams = append(fg.streams, &e)
+	fg.nameToStream[name] = &e
+	return stream{&e}
 }
 
-// FindNode finds a node by name
-func (fg *graph) FindNode(name string) Node {
-	return node{fg.nameToNode[name]}
+// FindHub finds a hub by name
+func (fg *graph) FindHub(name string) Hub {
+	return hub{fg.nameToHub[name]}
 }
 
-// FindEdge finds a Edge by name
-func (fg *graph) FindEdge(name string) Edge {
-	return edge{fg.nameToEdge[name]}
+// FindStream finds a Stream by name
+func (fg *graph) FindStream(name string) Stream {
+	return stream{fg.nameToStream[name]}
 }
 
-// InsertNode adds a Node to the flowgraph, connecting inputs to existing
-// dangling edges as available and creating dangling output edges as needed.
-func (fg *graph) InsertNode(n Node) {
-	fmt.Printf("CALL MADE TO INSERTNODE\n")
+// InsertHub adds a Hub to the flowgraph, connecting inputs to existing
+// dangling streams as available and creating dangling output streams as needed.
+func (fg *graph) InsertHub(h Hub) {
+	fmt.Printf("CALL MADE TO INSERTHUB\n")
 
 	i := 0
 
-	nextDanglingSrcEdge :=
+	nextDanglingSrcStream :=
 		func() *fgbase.Edge {
-			for ; i < len(fg.edges) && fg.edges[i].DstCnt() != 0; i++ {
+			for ; i < len(fg.streams) && fg.streams[i].DstCnt() != 0; i++ {
 			}
 
-			if i == len(fg.edges) {
-				return nil // or makeEdge?
+			if i == len(fg.streams) {
+				return nil // or makeStream?
 			} else {
-				return fg.edges[i]
+				return fg.streams[i]
 			}
 		}
 
-	// connect to input edges
-	for j := 0; j < n.NumSource(); j++ {
-		if n.Source(j) == nil {
-			p := nextDanglingSrcEdge()
+	// connect to input streams
+	for j := 0; j < h.NumSource(); j++ {
+		if h.Source(j) == nil {
+			p := nextDanglingSrcStream()
 			fmt.Printf("p is now %v\n", p)
 		}
 	}
 
-	// create output edges
+	// create output streams
 
 }
 
 // NewIncoming adds an incoming source that uses a Getter
-func (fg *graph) NewIncoming(name string, getter Getter) Node {
+func (fg *graph) NewIncoming(name string, getter Getter) Hub {
 	n := funcIncoming(fgbase.Edge{}, getter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
 // InsertIncoming adds an incoming source that uses a Getter
-func (fg *graph) InsertIncoming(name string, getter Getter) Node {
-	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, &e)
+func (fg *graph) InsertIncoming(name string, getter Getter) Hub {
+	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
+	fg.streams = append(fg.streams, &e)
 	n := funcIncoming(e, getter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
 // InsertOutgoing adds a destination that uses a Putter
-func (fg *graph) InsertOutgoing(name string, putter Putter) Node {
-	n := funcOutgoing(*fg.edges[len(fg.edges)-1], putter)
+func (fg *graph) InsertOutgoing(name string, putter Putter) Hub {
+	n := funcOutgoing(*fg.streams[len(fg.streams)-1], putter)
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
 // InsertConst adds an input constant as an incoming source.
-func (fg *graph) InsertConst(name string, v interface{}) Node {
-	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, &e)
+func (fg *graph) InsertConst(name string, v interface{}) Hub {
+	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
+	fg.streams = append(fg.streams, &e)
 	n := fgbase.FuncConst(e, v)
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
 // InsertArray adds an array as an incoming source.
-func (fg *graph) InsertArray(name string, arr []interface{}) Node {
-	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, &e)
+func (fg *graph) InsertArray(name string, arr []interface{}) Hub {
+	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
+	fg.streams = append(fg.streams, &e)
 	n := fgbase.FuncArray(e, arr)
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
-// NewSink creates an output sink node
-func (fg *graph) NewSink(name string) Node {
+// NewSink creates an output sink hub
+func (fg *graph) NewSink(name string) Hub {
 	n := fgbase.FuncSink(fgbase.Edge{})
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
-// InsertSink adds a output sink on the latest edge
-func (fg *graph) InsertSink(name string) Node {
-	i := len(fg.edges) - 1
-	n := fgbase.FuncSink(*fg.edges[i])
+// InsertSink adds a output sink on the latest stream
+func (fg *graph) InsertSink(name string) Hub {
+	i := len(fg.streams) - 1
+	n := fgbase.FuncSink(*fg.streams[i])
 	n.Name = name
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
 // InsertAllOf adds a transform that waits for all inputs before producing outputs
-func (fg *graph) InsertAllOf(name string, transformer Transformer) Node {
-	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.edges)), nil)
-	fg.edges = append(fg.edges, &e)
-	n := funcAllOf([]fgbase.Edge{*fg.edges[len(fg.edges)-2]}, []fgbase.Edge{*fg.edges[len(fg.edges)-1]},
+func (fg *graph) InsertAllOf(name string, transformer Transformer) Hub {
+	e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
+	fg.streams = append(fg.streams, &e)
+	n := funcAllOf([]fgbase.Edge{*fg.streams[len(fg.streams)-2]}, []fgbase.Edge{*fg.streams[len(fg.streams)-1]},
 		name, transformer)
-	fg.nodes = append(fg.nodes, &n)
-	fg.nameToNode[name] = &n
-	return node{fg.nodes[len(fg.nodes)-1]}
+	fg.hubs = append(fg.hubs, &n)
+	fg.nameToHub[name] = &n
+	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
-// Connect connects two nodes via named ports
-func (fg *graph) Connect(node0 Node, port0 string, node1 Node, port1 string) {
+// Connect connects two hubs via named ports
+func (fg *graph) Connect(upstream Hub, dstPort string, dnstream Hub, srcPort string) Stream {
+	usEdge, srcok := upstream.Base().(*fgbase.Node).FindDst(dstPort)
+	dsEdge, dstok := dnstream.Base().(*fgbase.Node).FindSrc(srcPort)
+	if !srcok || !dstok {
+		return stream{nil}
+	}
+	if usEdge == nil && dsEdge == nil {
+		fmt.Printf("READY TO CONNECT\n")
+	}
+	return nil
 }
 
 // Run runs the flowgraph
 func (fg *graph) Run() {
-	fgbase.RunGraph(fg.nodes)
+	fgbase.RunGraph(fg.hubs)
 }

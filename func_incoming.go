@@ -9,7 +9,7 @@ import (
 func incomingFire(n *fgbase.Node) error {
 	x := n.Dsts[0]
 	r := n.Aux.(Getter)
-	v, err := r.Get(node{n})
+	v, err := r.Get(hub{n})
 	if err != nil {
 		if err != io.EOF {
 			n.LogError(err.Error())

@@ -6,25 +6,25 @@ import (
 
 import ()
 
-// Stream interface for flowgraph streams that connect flowgraph nodes
+// Stream interface for flowgraph streams that connect flowgraph hubs
 type Stream interface {
 
 	// Name returns the stream name
 	Name() string
 
-	// Connect connects an upstream node to a downstream node
-	Connect(upstream, dnstream Node, upname, dnname string)
+	// Connect connects an upstream hub to a downstream hub
+	Connect(upstream, dnstream Hub, upname, dnname string)
 
-	// Upstream returns upstream node by index
-	Upstream(i int) Node
+	// Upstream returns upstream hub by index
+	Upstream(i int) Hub
 
-	// Downstream return downstream node by index
-	Downstream(i int) Node
+	// Downstream return downstream hub by index
+	Downstream(i int) Hub
 
-	// NumUpstream returns the number of upstream nodes
+	// NumUpstream returns the number of upstream hubs
 	NumUpstream() int
 
-	// NumDownstream returns the number of downstream nodes
+	// NumDownstream returns the number of downstream hubs
 	NumDownstream() int
 
 	// Base returns the value that implements this stream
@@ -42,26 +42,26 @@ func (s stream) Name() string {
 	return s.base.Name
 }
 
-// Connect connects an upstream node to a downstream node
-func (s stream) Connect(upstream, dnstream Node, upname, dnname string) {
+// Connect connects an upstream hub to a downstream hub
+func (s stream) Connect(upstream, dnstream Hub, upname, dnname string) {
 }
 
-// Upstream returns upstream node by index
-func (s stream) Upstream(i int) Node {
-	return node{s.base.SrcNode(i)}
+// Upstream returns upstream hub by index
+func (s stream) Upstream(i int) Hub {
+	return hub{s.base.SrcNode(i)}
 }
 
-// Downstream returns upstream node by index
-func (s stream) Downstream(i int) Node {
-	return node{s.base.DstNode(i)}
+// Downstream returns upstream hub by index
+func (s stream) Downstream(i int) Hub {
+	return hub{s.base.DstNode(i)}
 }
 
-// NumUpstream returns the number of upstream nodes
+// NumUpstream returns the number of upstream hubs
 func (s stream) NumUpstream() int {
 	return s.base.SrcCnt()
 }
 
-// NumDownstream returns the number of downstream nodes
+// NumDownstream returns the number of downstream hubs
 func (s stream) NumDownstream() int {
 	return s.base.DstCnt()
 }

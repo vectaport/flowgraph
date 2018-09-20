@@ -47,7 +47,7 @@ type getter struct {
 	cnt int
 }
 
-func (g *getter) Get(node flowgraph.Node) (interface{}, error) {
+func (g *getter) Get(hub flowgraph.Hub) (interface{}, error) {
 	i := g.cnt
 	g.cnt++
 	return i, nil
@@ -61,11 +61,11 @@ func TestInsertIncoming(t *testing.T) {
 
 	fg := flowgraph.New("TestInsertIncoming")
 	// n := fg.NewIncoming(&getter{})
-	// fg.InsertNode("incoming", n)
+	// fg.InsertHub("incoming", n)
 	fg.InsertIncoming("incoming", &getter{})
 	fg.InsertSink("sink")
 	// n := fg.NewSink("sink")
-	// fg.InsertNode(n)
+	// fg.InsertHub(n)
 
 	fg.Run()
 
@@ -78,7 +78,7 @@ type putter struct {
 	sum int
 }
 
-func (p *putter) Put(node flowgraph.Node, v interface{}) error {
+func (p *putter) Put(hub flowgraph.Hub, v interface{}) error {
 	p.sum += v.(int)
 	return nil
 }
@@ -103,7 +103,7 @@ func TestInsertOutgoing(t *testing.T) {
 type transformer struct {
 }
 
-func (t *transformer) Transform(node flowgraph.Node, v ...interface{}) ([]interface{}, error) {
+func (t *transformer) Transform(hub flowgraph.Hub, v ...interface{}) ([]interface{}, error) {
 	xv := v[0].(int) * 2
 	return []interface{}{xv}, nil
 }
@@ -140,7 +140,7 @@ func TestInsertArray(t *testing.T) {
 
 	fg.Run()
 
-	s := fg.FindNode("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr) %d\n", s.Cnt)
@@ -156,7 +156,7 @@ func TestInsertArray(t *testing.T) {
 
 type pass int
 
-func (p pass) Transform(n flowgraph.Node, c ...interface{}) ([]interface{}, error) {
+func (p pass) Transform(n flowgraph.Hub, c ...interface{}) ([]interface{}, error) {
 	return c, nil
 }
 
@@ -181,7 +181,7 @@ func TestInsertChain(t *testing.T) {
 	// fmt.Printf("time since:  %v\n", time.Since(now))
 	fg.Run()
 
-	s := fg.FindNode("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) || s.Sum != 45 {
 		t.Fatalf("ERROR SinkStats %+V\n", s)
@@ -204,10 +204,10 @@ func TestDotNaming(t *testing.T) {
 
 	fg := flowgraph.New("TestDotNaming")
 
-	n0 := fg.NewNode("name0", "")
+	n0 := fg.NewHub("name0", "")
 	n0.SetDestinationNames("xyz")
 
-	n1 := fg.NewNode("name1", "")
+	n1 := fg.NewHub("name1", "")
 	n1.SetSourceNames("abc")
 
 	fg.Connect(n0, "xyz", n1, "abc")
