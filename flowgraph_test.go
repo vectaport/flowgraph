@@ -20,6 +20,8 @@ func TestMain(m *testing.M) {
 
 func TestNewEqual(t *testing.T) {
 
+	t.Parallel()
+
 	fmt.Printf("BEGIN:  TestNewEqual\n")
 
 	// Different allocations should not be equal.
@@ -53,6 +55,8 @@ func (g *getter) Get(node flowgraph.Node) (interface{}, error) {
 
 func TestInsertIncoming(t *testing.T) {
 
+	t.Parallel()
+
 	fmt.Printf("BEGIN:  TestInsertIncoming\n")
 
 	fg := flowgraph.New("TestInsertIncoming")
@@ -81,6 +85,8 @@ func (p *putter) Put(node flowgraph.Node, v interface{}) error {
 
 func TestInsertOutgoing(t *testing.T) {
 
+	t.Parallel()
+
 	fmt.Printf("BEGIN:  TestInsertOutgoing\n")
 
 	fg := flowgraph.New("TestInsertOutgoing")
@@ -104,6 +110,8 @@ func (t *transformer) Transform(node flowgraph.Node, v ...interface{}) ([]interf
 
 func TestInsertAllOf(t *testing.T) {
 
+	t.Parallel()
+
 	fmt.Printf("BEGIN:  TestInsertAllOf\n")
 
 	fg := flowgraph.New("TestInsertAllOf")
@@ -119,6 +127,8 @@ func TestInsertAllOf(t *testing.T) {
 /*=====================================================================*/
 
 func TestInsertArray(t *testing.T) {
+
+	t.Parallel()
 
 	fmt.Printf("BEGIN:  TestInsertArray\n")
 
@@ -183,27 +193,47 @@ func TestInsertChain(t *testing.T) {
 
 /*=====================================================================*/
 
-type code int
-
-func (x code) Transform(n flowgraph.Node, c ...interface{}) ([]interface{}, error) {
-	return c, nil
-}
-
-var c code
-
 func TestDotNaming(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDotNaming\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = 0
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.VVVV
 
 	fg := flowgraph.New("TestDotNaming")
 
-	n0 := fg.NewNode("name0", "codeA")
+	n0 := fg.NewNode("name0", "")
 	n0.SetDestinationNames("xyz")
 
-	n1 := fg.NewNode("name1", "codeB")
+	n1 := fg.NewNode("name1", "")
 	n1.SetSourceNames("abc")
 
 	fg.Connect(n0, "xyz", n1, "abc")
 
+	e0 := n0.FindDestination("xyz")
+	if e0 == nil {
+		t.Fatalf("ERROR Unable to find destination port named xyz\n")
+	}
+
+	if e0.Base() == nil {
+		t.Fatalf("ERROR Unable to find edge at destination port named xyz\n")
+	}
+
+	e1 := n1.FindSource("abc")
+	if e1 == nil {
+		t.Fatalf("ERROR Unable to find source port named abc\n")
+	}
+
+	if e1.Base() == nil {
+		t.Fatalf("ERROR Unable to find edge at source port named abc\n")
+	}
+
 	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestDotNaming\n")
 }

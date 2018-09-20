@@ -21,34 +21,34 @@ type Node interface {
 	// Destination returns downstream edge by index
 	Destination(n int) Edge
 
-	// FindSource returns upstream edge by name
+	// FindSource returns upstream edge by port name
 	FindSource(name string) Edge
 
-	// FindDestination returns downstream edge by name
+	// FindDestination returns downstream edge by port name
 	FindDestination(name string) Edge
 
-	// AddSource adds a list of source edges
+	// AddSource adds a source port for each edge
 	AddSource(e ...Edge)
 
-	// AddDestination adds a list of destination edges
+	// AddDestination adds a destination port for each edge
 	AddDestination(e ...Edge)
 
-	// NumSource returns the number of upstream edges
+	// NumSource returns the number of upstream ports
 	NumSource() int
 
-	// NumDestination returns the number of downstream edges
+	// NumDestination returns the number of downstream ports
 	NumDestination() int
 
-	// SetSourceNames names the sources
+	// SetSourceNames names the source ports
 	SetSourceNames(nm ...string)
 
-	// SetDestinationNames names the destinations
+	// SetDestinationNames names the destination ports
 	SetDestinationNames(nm ...string)
 
-	// SourceNames returns the names of the sources
+	// SourceNames returns the names of the source ports
 	SourceNames() []string
 
-	// DestinationNames returns the names of the destinations
+	// DestinationNames returns the names of the destination ports
 	DestinationNames() []string
 
 	// Base returns the value that implements this node
@@ -86,56 +86,70 @@ func (n node) Destination(i int) Edge {
 	return edge{n.base.Dsts[i]}
 }
 
-// FindSource returns upstream edge by name
+// FindSource returns upstream edge by port name
 func (n node) FindSource(name string) Edge {
-	return edge{n.base.FindSrc(name)}
+	e, ok := n.base.FindSrc(name)
+	if !ok {
+		return nil
+	}
+	if e == nil {
+		return edge{nil}
+	}
+	return edge{e}
 }
 
-// FindDestination returns downstream edge by name
+// FindDestination returns downstream edge by port name
 func (n node) FindDestination(name string) Edge {
-	return edge{n.base.FindDst(name)}
+	e, ok := n.base.FindDst(name)
+	if !ok {
+		return nil
+	}
+	if e == nil {
+		return edge{nil}
+	}
+	return edge{e}
 }
 
-// AddSource adds a list of source edges
+// AddSource adds a source port for each edge
 func (n node) AddSource(e ...Edge) {
 	for _, ev := range e {
 		n.base.Srcs = append(n.base.Srcs, ev.Base().(*fgbase.Edge))
 	}
 }
 
-// AddDestination adds a list of destination edges
+// AddDestination adds a destination port for each edge
 func (n node) AddDestination(e ...Edge) {
 	for _, ev := range e {
 		n.base.Dsts = append(n.base.Dsts, ev.Base().(*fgbase.Edge))
 	}
 }
 
-// NumSource returns the number of upstream edges
+// NumSource returns the number of upstream ports
 func (n node) NumSource() int {
 	return len(n.base.Srcs)
 }
 
-// NumDestination returns the number of downstream edges
+// NumDestination returns the number of downstream ports
 func (n node) NumDestination() int {
 	return len(n.base.Dsts)
 }
 
-// SetSourceNames names the sources
+// SetSourceNames names the source ports
 func (n node) SetSourceNames(nm ...string) {
 	n.base.SetSrcNames(nm...)
 }
 
-// SetDestinationNames names the destination
+// SetDestinationNames names the destination ports
 func (n node) SetDestinationNames(nm ...string) {
 	n.base.SetDstNames(nm...)
 }
 
-// SourceNames returns the names of the sources
+// SourceNames returns the names of the source ports
 func (n node) SourceNames() []string {
 	return n.base.SrcNames()
 }
 
-// DestinationNames returns the names of the destinatiopns
+// DestinationNames returns the names of the destination ports
 func (n node) DestinationNames() []string {
 	return n.base.DstNames()
 }
