@@ -15,16 +15,16 @@ type Hub interface {
 	// Name returns the hub name
 	Name() string
 
-	// Source returns upstream stream by index
+	// Source returns source stream by index
 	Source(n int) Stream
 
-	// Destination returns downstream stream by index
+	// Destination returns destination stream by index
 	Destination(n int) Stream
 
-	// FindSource returns upstream stream by port name
+	// FindSource returns source stream by port name
 	FindSource(name string) Stream
 
-	// FindDestination returns downstream stream by port name
+	// FindDestination returns destination stream by port name
 	FindDestination(name string) Stream
 
 	// AddSource adds a source port for each stream
@@ -33,10 +33,10 @@ type Hub interface {
 	// AddDestination adds a destination port for each stream
 	AddDestination(e ...Stream)
 
-	// NumSource returns the number of upstream ports
+	// NumSource returns the number of source ports
 	NumSource() int
 
-	// NumDestination returns the number of downstream ports
+	// NumDestination returns the number of destination ports
 	NumDestination() int
 
 	// SetSourceNames names the source ports
@@ -76,17 +76,17 @@ func (n hub) Name() string {
 	return n.base.Name
 }
 
-// Source returns upstream stream by index
+// Source returns source stream by index
 func (n hub) Source(i int) Stream {
 	return stream{n.base.Srcs[i]}
 }
 
-// Destination returns downstream stream by index
+// Destination returns destination stream by index
 func (n hub) Destination(i int) Stream {
 	return stream{n.base.Dsts[i]}
 }
 
-// FindSource returns upstream stream by port name
+// FindSource returns source stream by port name
 func (n hub) FindSource(name string) Stream {
 	e, ok := n.base.FindSrc(name)
 	if !ok {
@@ -98,7 +98,7 @@ func (n hub) FindSource(name string) Stream {
 	return stream{e}
 }
 
-// FindDestination returns downstream stream by port name
+// FindDestination returns destination stream by port name
 func (n hub) FindDestination(name string) Stream {
 	e, ok := n.base.FindDst(name)
 	if !ok {
@@ -124,12 +124,12 @@ func (n hub) AddDestination(e ...Stream) {
 	}
 }
 
-// NumSource returns the number of upstream ports
+// NumSource returns the number of source ports
 func (n hub) NumSource() int {
 	return len(n.base.Srcs)
 }
 
-// NumDestination returns the number of downstream ports
+// NumDestination returns the number of destination ports
 func (n hub) NumDestination() int {
 	return len(n.base.Dsts)
 }

@@ -12,9 +12,6 @@ type Stream interface {
 	// Name returns the stream name
 	Name() string
 
-	// Connect connects an upstream hub to a downstream hub
-	Connect(upstream, dnstream Hub, upname, dnname string)
-
 	// Upstream returns upstream hub by index
 	Upstream(i int) Hub
 
@@ -40,10 +37,6 @@ type stream struct {
 // Name returns the stream name
 func (s stream) Name() string {
 	return s.base.Name
-}
-
-// Connect connects an upstream hub to a downstream hub
-func (s stream) Connect(upstream, dnstream Hub, upname, dnname string) {
 }
 
 // Upstream returns upstream hub by index
