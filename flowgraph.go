@@ -85,20 +85,27 @@ type Flowgraph interface {
 	// InsertAllOf adds a transform that waits for all inputs before producing outputs
 	InsertAllOf(name string, transformer Transformer) Node
 
+	// Connect connects two nodes via named ports
+	Connect(node0 Node, port0 string, node1 Node, port1 string)
+
 	// Run runs the flowgraph
 	Run()
 }
 
 // implementation of Flowgraph
 type graph struct {
-	name  string
-	nodes []*fgbase.Node
-	edges []*fgbase.Edge
+	name       string
+	nodes      []*fgbase.Node
+	edges      []*fgbase.Edge
+	nameToNode map[string]*fgbase.Node
+	nameToEdge map[string]*fgbase.Edge
 }
 
 // New returns a named flowgraph implemented with the fgbase package
 func New(nm string) Flowgraph {
-	return &graph{nm, nil, nil}
+	nameToNode := make(map[string]*fgbase.Node)
+	nameToEdge := make(map[string]*fgbase.Edge)
+	return &graph{nm, nil, nil, nameToNode, nameToEdge}
 }
 
 // Name returns the name of this flowgraph
@@ -130,39 +137,29 @@ func (fg *graph) NumEdge() int {
 func (fg *graph) NewNode(name, code string) Node {
 	n := fgbase.MakeNode(name, nil, nil, nil, nil)
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
 // NewEdge returns a new uninitialized edge
-func (fg *graph) NewEdge(nm string) Edge {
-	if nm == "" {
-		nm = fmt.Sprintf("e%d", len(fg.edges))
+func (fg *graph) NewEdge(name string) Edge {
+	if name == "" {
+		name = fmt.Sprintf("e%d", len(fg.edges))
 	}
-	e := fgbase.MakeEdge(nm, nil)
+	e := fgbase.MakeEdge(name, nil)
 	fg.edges = append(fg.edges, &e)
+	fg.nameToEdge[name] = &e
 	return edge{fg.edges[len(fg.nodes)-1]}
 }
 
 // FindNode finds a node by name
 func (fg *graph) FindNode(name string) Node {
-	// simple search for now
-	for i, v := range fg.nodes {
-		if fg.nodes[i].Name == name {
-			return node{v}
-		}
-	}
-	return nil
+	return node{fg.nameToNode[name]}
 }
 
 // FindEdge finds a Edge by name
 func (fg *graph) FindEdge(name string) Edge {
-	// simple search for now
-	for i, v := range fg.edges {
-		if fg.edges[i].Name == name {
-			return edge{v}
-		}
-	}
-	return nil
+	return edge{fg.nameToEdge[name]}
 }
 
 // InsertNode adds a Node to the flowgraph, connecting inputs to existing
@@ -201,6 +198,7 @@ func (fg *graph) NewIncoming(name string, getter Getter) Node {
 	n := funcIncoming(fgbase.Edge{}, getter)
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -219,6 +217,7 @@ func (fg *graph) InsertOutgoing(name string, putter Putter) Node {
 	n := funcOutgoing(*fg.edges[len(fg.edges)-1], putter)
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -229,6 +228,7 @@ func (fg *graph) InsertConst(name string, v interface{}) Node {
 	n := fgbase.FuncConst(e, v)
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -239,6 +239,7 @@ func (fg *graph) InsertArray(name string, arr []interface{}) Node {
 	n := fgbase.FuncArray(e, arr)
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -247,6 +248,7 @@ func (fg *graph) NewSink(name string) Node {
 	n := fgbase.FuncSink(fgbase.Edge{})
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -256,6 +258,7 @@ func (fg *graph) InsertSink(name string) Node {
 	n := fgbase.FuncSink(*fg.edges[i])
 	n.Name = name
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
 }
 
@@ -266,7 +269,12 @@ func (fg *graph) InsertAllOf(name string, transformer Transformer) Node {
 	n := funcAllOf([]fgbase.Edge{*fg.edges[len(fg.edges)-2]}, []fgbase.Edge{*fg.edges[len(fg.edges)-1]},
 		name, transformer)
 	fg.nodes = append(fg.nodes, &n)
+	fg.nameToNode[name] = &n
 	return node{fg.nodes[len(fg.nodes)-1]}
+}
+
+// Connect connects two nodes via named ports
+func (fg *graph) Connect(node0 Node, port0 string, node1 Node, port1 string) {
 }
 
 // Run runs the flowgraph

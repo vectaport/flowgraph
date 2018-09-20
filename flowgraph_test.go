@@ -180,3 +180,30 @@ func TestInsertChain(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fmt.Printf("END:    TestInsertChain\n")
 }
+
+/*=====================================================================*/
+
+type code int
+
+func (x code) Transform(n flowgraph.Node, c ...interface{}) ([]interface{}, error) {
+	return c, nil
+}
+
+var c code
+
+func TestDotNaming(t *testing.T) {
+	fmt.Printf("BEGIN:  TestDotNaming\n")
+
+	fg := flowgraph.New("TestDotNaming")
+
+	n0 := fg.NewNode("name0", "codeA")
+	n0.SetDestinationNames("xyz")
+
+	n1 := fg.NewNode("name1", "codeB")
+	n1.SetSourceNames("abc")
+
+	fg.Connect(n0, "xyz", n1, "abc")
+
+	fg.Run()
+	fmt.Printf("END:    TestDotNaming\n")
+}

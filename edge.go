@@ -51,7 +51,7 @@ func (e edge) Source(i int) Node {
 	return node{e.base.SrcNode(i)}
 }
 
-// Destination return upstream node by index
+// Destination returns upstream node by index
 func (e edge) Destination(i int) Node {
 	return node{e.base.DstNode(i)}
 }
