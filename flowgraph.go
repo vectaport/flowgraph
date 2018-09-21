@@ -61,7 +61,7 @@ type Flowgraph interface {
 	NewStream(name string) Stream
 
 	// Connect connects two hubs via named ports
-	Connect(upstream Hub, dstport string, dnstream Hub, srcport string) Stream
+	Connect(upstream Hub, upstreamPort string, dnstream Hub, dnstreamPort string) Stream
 
 	// Run runs the flowgraph
 	Run()
@@ -165,10 +165,10 @@ func (fg *graph) FindStream(name string) Stream {
 }
 
 // Connect connects two hubs via named ports
-func (fg *graph) Connect(upstream Hub, dstPort string, dnstream Hub, srcPort string) Stream {
-	usEdge, srcok := upstream.Base().(*fgbase.Node).FindDst(dstPort)
-	dsEdge, dstok := dnstream.Base().(*fgbase.Node).FindSrc(srcPort)
-	if !srcok || !dstok {
+func (fg *graph) Connect(upstream Hub, upstreamPort string, dnstream Hub, dnstreamPort string) Stream {
+	usEdge, usok := upstream.Base().(*fgbase.Node).FindDst(upstreamPort)
+	dsEdge, dsok := dnstream.Base().(*fgbase.Node).FindSrc(dnstreamPort)
+	if !usok || !dsok {
 		return stream{nil}
 	}
 	if usEdge == nil && dsEdge == nil {
@@ -176,8 +176,8 @@ func (fg *graph) Connect(upstream Hub, dstPort string, dnstream Hub, srcPort str
 		fg.streams = append(fg.streams, &e)
 		eup := e
 		edn := e
-		upstream.SetDestination(dstPort, stream{&eup})
-		dnstream.SetSource(srcPort, stream{&edn})
+		upstream.SetDestination(upstreamPort, stream{&eup})
+		dnstream.SetSource(dnstreamPort, stream{&edn})
 		return stream{&e}
 	}
 	return nil
