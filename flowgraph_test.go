@@ -143,7 +143,7 @@ func TestInsertArray(t *testing.T) {
 	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
-		t.Fatalf("SinkStats.Cnt %d != len(arr) %d\n", s.Cnt)
+		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
 	}
 	if s.Sum != 45 {
 		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
