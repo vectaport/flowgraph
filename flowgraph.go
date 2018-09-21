@@ -61,7 +61,8 @@ type Flowgraph interface {
 	NewStream(name string) Stream
 
 	// Connect connects two hubs via named ports
-	Connect(upstream Hub, upstreamPort string, dnstream Hub, dnstreamPort string) Stream
+	Connect(upstream Hub, upstreamPort string,
+		dnstream Hub, dnstreamPort string) Stream
 
 	// Run runs the flowgraph
 	Run()
