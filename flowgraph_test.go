@@ -184,7 +184,7 @@ func TestInsertChain(t *testing.T) {
 	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) || s.Sum != 45 {
-		t.Fatalf("ERROR SinkStats %+V\n", s)
+		t.Fatalf("ERROR SinkStats %+v\n", s)
 	}
 
 	fgbase.RunTime = oldRunTime
