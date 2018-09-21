@@ -11,10 +11,10 @@ type Hub interface {
 
 	/* TRACING */
 
-	// Tracef for debug trace printing.  Use atomic log mechanism.
+	// Tracef for debug trace printing.
 	Tracef(format string, v ...interface{})
 
-	// LogError for logging of error messages.  Use atomic log mechanism.
+	// LogError for logging of error messages.
 	LogError(format string, v ...interface{})
 
 	/* PROBING */
