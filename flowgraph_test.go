@@ -1,9 +1,11 @@
 package flowgraph_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -201,6 +203,8 @@ func TestDotNaming(t *testing.T) {
 	fgbase.RunTime = time.Second / 10000
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
+
+	io.EOF = errors.New("XXX")
 
 	fg := flowgraph.New("TestDotNaming")
 

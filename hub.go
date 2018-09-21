@@ -95,12 +95,12 @@ func (h hub) Name() string {
 
 // Source returns source stream by index
 func (h hub) Source(i int) Stream {
-	return stream{h.base.Srcs[i]}
+	return stream{h.base.SrcGet(i)}
 }
 
 // Destination returns destination stream by index
 func (h hub) Destination(i int) Stream {
-	return stream{h.base.Dsts[i]}
+	return stream{h.base.DstGet(i)}
 }
 
 // FindSource returns source stream by port name
@@ -130,25 +130,25 @@ func (h hub) FindDestination(name string) Stream {
 // AddSource adds a source port for each stream
 func (h hub) AddSource(s ...Stream) {
 	for _, sv := range s {
-		h.base.Srcs = append(h.base.Srcs, sv.Base().(*fgbase.Edge))
+		h.base.SrcAppend(sv.Base().(*fgbase.Edge))
 	}
 }
 
 // AddDestination adds a destination port for each stream
 func (h hub) AddDestination(s ...Stream) {
 	for _, sv := range s {
-		h.base.Dsts = append(h.base.Dsts, sv.Base().(*fgbase.Edge))
+		h.base.DstAppend(sv.Base().(*fgbase.Edge))
 	}
 }
 
 // NumSource returns the number of source ports
 func (h hub) NumSource() int {
-	return len(h.base.Srcs)
+	return h.base.SrcCnt()
 }
 
 // NumDestination returns the number of destination ports
 func (h hub) NumDestination() int {
-	return len(h.base.Dsts)
+	return h.base.DstCnt()
 }
 
 // SetSourceNames names the source ports
@@ -177,7 +177,7 @@ func (h hub) SetSource(port string, s Stream) error {
 	if !ok {
 		return fmt.Errorf("source port %s not found on hub %s\n", port, h.Name())
 	}
-	h.base.Srcs[i] = s.Base().(*fgbase.Edge)
+	h.base.SrcSet(i, s.Base().(*fgbase.Edge))
 	return nil
 }
 
@@ -187,7 +187,7 @@ func (h hub) SetDestination(port string, s Stream) error {
 	if !ok {
 		return fmt.Errorf("destination port %s not found on hub %s\n", port, h.Name())
 	}
-	h.base.Dsts[i] = s.Base().(*fgbase.Edge)
+	h.base.DstSet(i, s.Base().(*fgbase.Edge))
 	return nil
 }
 
