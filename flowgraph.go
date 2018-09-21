@@ -165,7 +165,10 @@ func (fg *graph) FindStream(name string) Stream {
 }
 
 // Connect connects two hubs via named ports
-func (fg *graph) Connect(upstream Hub, upstreamPort string, dnstream Hub, dnstreamPort string) Stream {
+func (fg *graph) Connect(
+	upstream Hub, upstreamPort string,
+	dnstream Hub, dnstreamPort string) Stream {
+
 	usEdge, usok := upstream.Base().(*fgbase.Node).FindDst(upstreamPort)
 	dsEdge, dsok := dnstream.Base().(*fgbase.Node).FindSrc(dnstreamPort)
 	if !usok || !dsok {
