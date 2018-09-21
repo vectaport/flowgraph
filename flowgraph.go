@@ -60,6 +60,14 @@ type Flowgraph interface {
 	// NewStream returns a new uninitialized stream
 	NewStream(name string) Stream
 
+	// Connect connects two hubs via named ports
+	Connect(upstream Hub, dstport string, dnstream Hub, srcport string) Stream
+
+	// Run runs the flowgraph
+	Run()
+
+	/* POTENTIALLY OBSOLETE API AFTER HERE -- BOUND TO BE RESTRUCTURED */
+
 	// InsertHub adds a Hub to the flowgraph, connecting inputs to existing
 	// dangling streams as available and creating dangling output streams as needed.
 	InsertHub(h Hub)
@@ -84,12 +92,6 @@ type Flowgraph interface {
 
 	// InsertAllOf adds a transform that waits for all inputs before producing outputs
 	InsertAllOf(name string, transformer Transformer) Hub
-
-	// Connect connects two hubs via named ports
-	Connect(upstream Hub, dstport string, dnstream Hub, srcport string) Stream
-
-	// Run runs the flowgraph
-	Run()
 }
 
 // implementation of Flowgraph
@@ -160,6 +162,30 @@ func (fg *graph) FindHub(name string) Hub {
 // FindStream finds a Stream by name
 func (fg *graph) FindStream(name string) Stream {
 	return stream{fg.nameToStream[name]}
+}
+
+// Connect connects two hubs via named ports
+func (fg *graph) Connect(upstream Hub, dstPort string, dnstream Hub, srcPort string) Stream {
+	usEdge, srcok := upstream.Base().(*fgbase.Node).FindDst(dstPort)
+	dsEdge, dstok := dnstream.Base().(*fgbase.Node).FindSrc(srcPort)
+	if !srcok || !dstok {
+		return stream{nil}
+	}
+	if usEdge == nil && dsEdge == nil {
+		e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
+		fg.streams = append(fg.streams, &e)
+		eup := e
+		edn := e
+		upstream.SetDestination(dstPort, stream{&eup})
+		dnstream.SetSource(srcPort, stream{&edn})
+		return stream{&e}
+	}
+	return nil
+}
+
+// Run runs the flowgraph
+func (fg *graph) Run() {
+	fgbase.RunGraph(fg.hubs)
 }
 
 // InsertHub adds a Hub to the flowgraph, connecting inputs to existing
@@ -271,22 +297,4 @@ func (fg *graph) InsertAllOf(name string, transformer Transformer) Hub {
 	fg.hubs = append(fg.hubs, &n)
 	fg.nameToHub[name] = &n
 	return hub{fg.hubs[len(fg.hubs)-1]}
-}
-
-// Connect connects two hubs via named ports
-func (fg *graph) Connect(upstream Hub, dstPort string, dnstream Hub, srcPort string) Stream {
-	usEdge, srcok := upstream.Base().(*fgbase.Node).FindDst(dstPort)
-	dsEdge, dstok := dnstream.Base().(*fgbase.Node).FindSrc(srcPort)
-	if !srcok || !dstok {
-		return stream{nil}
-	}
-	if usEdge == nil && dsEdge == nil {
-		fmt.Printf("READY TO CONNECT\n")
-	}
-	return nil
-}
-
-// Run runs the flowgraph
-func (fg *graph) Run() {
-	fgbase.RunGraph(fg.hubs)
 }

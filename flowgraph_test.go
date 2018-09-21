@@ -6,7 +6,7 @@ import (
 	"github.com/vectaport/flowgraph"
 	"os"
 	"testing"
-	// "time"
+	"time"
 )
 
 /*=====================================================================*/
@@ -198,36 +198,50 @@ func TestDotNaming(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = 0
+	fgbase.RunTime = time.Second / 10
 	fgbase.TracePorts = true
-	fgbase.TraceLevel = fgbase.VVVV
+	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestDotNaming")
 
-	n0 := fg.NewHub("name0", "")
-	n0.SetDestinationNames("xyz")
+	h0 := fg.NewHub("name0", "")
+	h0.SetDestinationNames("xyz")
 
-	n1 := fg.NewHub("name1", "")
-	n1.SetSourceNames("abc")
+	h1 := fg.NewHub("name1", "")
+	h1.SetSourceNames("abc")
 
-	fg.Connect(n0, "xyz", n1, "abc")
-
-	e0 := n0.FindDestination("xyz")
-	if e0 == nil {
+	s0 := h0.FindDestination("xyz")
+	if s0 == nil {
 		t.Fatalf("ERROR Unable to find destination port named xyz\n")
 	}
 
-	if e0.Base() == nil {
-		t.Fatalf("ERROR Unable to find edge at destination port named xyz\n")
+	if s0.Base() == nil {
+		t.Fatalf("ERROR Unable to find stream at destination port named xyz\n")
 	}
 
-	e1 := n1.FindSource("abc")
-	if e1 == nil {
+	s1 := h1.FindSource("abc")
+	if s1 == nil {
 		t.Fatalf("ERROR Unable to find source port named abc\n")
 	}
 
-	if e1.Base() == nil {
-		t.Fatalf("ERROR Unable to find edge at source port named abc\n")
+	if s1.Base() == nil {
+		t.Fatalf("ERROR Unable to find stream at source port named abc\n")
+	}
+
+	fg.Connect(h0, "xyz", h1, "abc")
+
+	if h0.Destination(0) == nil {
+		t.Fatalf("ERROR Unable to find destination port numbered 0\n")
+	}
+	if h0.Destination(0).Base().(*fgbase.Edge) == nil {
+		t.Fatalf("ERROR Unable to find stream at destination port numbered 0\n")
+	}
+
+	if h1.Source(0) == nil {
+		t.Fatalf("ERROR Unable to find source port numbered 0\n")
+	}
+	if h1.Source(0).Base().(*fgbase.Edge) == nil {
+		t.Fatalf("ERROR Unable to find stream at source port numbered 0\n")
 	}
 
 	fg.Run()
