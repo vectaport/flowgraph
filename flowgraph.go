@@ -3,9 +3,11 @@
 package flowgraph
 
 import (
+	"github.com/vectaport/fgbase"
+
 	"errors"
 	"fmt"
-	"github.com/vectaport/fgbase"
+	"log"
 )
 
 /*=====================================================================*/
@@ -56,7 +58,7 @@ type Flowgraph interface {
 	FindStream(name string) Stream
 
 	// NewHub returns a new uninitialized hub
-	NewHub(name, code string) Hub
+	NewHub(name, code string, init interface{}) Hub
 	// NewStream returns a new uninitialized stream
 	NewStream(name string) Stream
 
@@ -138,8 +140,38 @@ func (fg *graph) NumStream() int {
 }
 
 // NewHub returns a new uninitialized hub
-func (fg *graph) NewHub(name, code string) Hub {
-	n := fgbase.MakeNode(name, nil, nil, nil, nil)
+//
+// code is "command srcnames;dstnames"
+//
+// command is one of a set of predefined commands
+//
+// srcnames is:
+// 	    "name[...,name]" for AllOf
+// 	    "name[...|name]" for OneOf
+// 	    "(name),name[...,name]" for Select
+// 	    "<name>,name[...,name]" for Steer
+// 	    "" for no sources
+//
+// dstnames is "name[...,name]" ("" for no destinations)
+//
+func (fg *graph) NewHub(name, code string, init interface{}) Hub {
+
+	var n fgbase.Node
+
+	switch code {
+	case "const":
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
+		n.Aux = init
+		break
+	case "sink":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
+		n.Aux = fgbase.SinkStats{0, 0}
+		break
+	default:
+		log.Panicf("Unexpected Hub code:  %s\n", code)
+		break
+	}
+
 	fg.hubs = append(fg.hubs, &n)
 	fg.nameToHub[name] = &n
 	return hub{&n}

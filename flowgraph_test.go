@@ -208,10 +208,10 @@ func TestDotNaming(t *testing.T) {
 
 	fg := flowgraph.New("TestDotNaming")
 
-	h0 := fg.NewHub("name0", "")
+	h0 := fg.NewHub("name0", "const", 100)
 	h0.SetDestinationNames("xyz")
 
-	h1 := fg.NewHub("name1", "")
+	h1 := fg.NewHub("name1", "sink", nil)
 	h1.SetSourceNames("abc")
 
 	s0 := h0.FindDestination("xyz")
