@@ -153,11 +153,17 @@ func (h hub) NumDestination() int {
 
 // SetSourceNames names the source ports
 func (h hub) SetSourceNames(nm ...string) {
+        if len(nm)!=h.base.SrcCnt() {
+	   h.LogError("Number of source ports does not match number of names (%d!=%d)\n", h.base.SrcCnt(), len(nm))
+	}
 	h.base.SetSrcNames(nm...)
 }
 
 // SetDestinationNames names the destination ports
 func (h hub) SetDestinationNames(nm ...string) {
+        if len(nm)!=h.base.DstCnt() {
+	   h.LogError("Number of destination ports does not match number of names (%d!=%d)\n", h.base.DstCnt(), len(nm))
+	}
 	h.base.SetDstNames(nm...)
 }
 
