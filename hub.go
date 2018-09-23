@@ -60,10 +60,10 @@ type Hub interface {
 	// SetDestinationNames names the destination ports
 	SetDestinationNames(nm ...string)
 
-	// SetSource sets the stream for a named (string) or indexed (int) source port
+	// SetSource sets a stream on a source port selected by string or int
 	SetSource(port interface{}, s Stream) error
 
-	// SetDestination sets the stream for a named (string) or indexed (int) destination port
+	// SetDestination sets a stream on a destination port selected by string or int
 	SetDestination(port interface{}, s Stream) error
 
 	/* IMPLEMENTATION */
@@ -177,7 +177,7 @@ func (h hub) DestinationNames() []string {
 	return h.base.DstNames()
 }
 
-// SetSource sets the stream for a named (string) or indexed (int) source port
+// SetSource sets a stream on a source port selected by string or int
 func (h hub) SetSource(port interface{}, s Stream) error {
 	var i int
 	var ok bool
@@ -188,7 +188,7 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Base().(*fgbase.Node).Panicf("Need string or int to specify port on hub %s\n", h.Name())
+		h.Base().(*fgbase.Node).Panicf("Need string or int to select port on hub %s\n", h.Name())
 	}
 
 	if !ok {
@@ -199,7 +199,7 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 	return nil
 }
 
-// SetDestination sets the stream for a named (string) or indexed (int) destination port
+// SetDestination sets a stream on a destination port selected by string or int
 func (h hub) SetDestination(port interface{}, s Stream) error {
 	var i int
 	var ok bool
@@ -210,7 +210,7 @@ func (h hub) SetDestination(port interface{}, s Stream) error {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Base().(*fgbase.Node).Panicf("Need string or int to specify destination port on hub %s\n", h.Name())
+		h.Base().(*fgbase.Node).Panicf("Need string or int to select destination port on hub %s\n", h.Name())
 	}
 
 	if !ok {

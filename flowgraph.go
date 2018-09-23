@@ -220,9 +220,7 @@ func (fg *graph) Connect(
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
-		fmt.Printf("dnstream.Base().(*fgbase.Node) is %+v\n", dnstream.Base().(*fgbase.Node))
 		dsEdge, dsok = dnstream.Base().(*fgbase.Node).FindSrc(v)
-		fmt.Printf("AFTERWARDS\n")
 	case int:
 		dsok = v >= 0 && v < dnstream.Base().(*fgbase.Node).SrcCnt()
 		if dsok {
