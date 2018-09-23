@@ -17,8 +17,8 @@ var EOF = errors.New("EOF")
 
 /*=====================================================================*/
 
-// Transformer transforms a variadic list of values into a slice
-// of values with the Transform method. Use Hub.Tracef for tracing.
+// Transformer transforms a slice of source values into a slice
+// of result values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
 	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
