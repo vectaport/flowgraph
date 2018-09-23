@@ -220,7 +220,7 @@ func (fg *graph) Connect(
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
-	        fmt.Printf("dnstream.Base().(*fgbase.Node) is %+v\n", dnstream.Base().(*fgbase.Node))
+		fmt.Printf("dnstream.Base().(*fgbase.Node) is %+v\n", dnstream.Base().(*fgbase.Node))
 		dsEdge, dsok = dnstream.Base().(*fgbase.Node).FindSrc(v)
 		fmt.Printf("AFTERWARDS\n")
 	case int:
@@ -363,4 +363,3 @@ func (fg *graph) InsertAllOf(name string, transformer Transformer) Hub {
 	fg.nameToHub[name] = &n
 	return hub{fg.hubs[len(fg.hubs)-1]}
 }
-
