@@ -177,7 +177,7 @@ func (h hub) DestinationNames() []string {
 	return h.base.DstNames()
 }
 
-// SetSource sets the stream for a named source port
+// SetSource sets the stream for a named (string) or indexed (int) source port
 func (h hub) SetSource(port interface{}, s Stream) error {
 	var i int
 	var ok bool
@@ -199,7 +199,7 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 	return nil
 }
 
-// SetDestination sets the stream for a named destination port
+// SetDestination sets the stream for a named (string) or indexed (int) destination port
 func (h hub) SetDestination(port interface{}, s Stream) error {
 	var i int
 	var ok bool

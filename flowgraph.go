@@ -62,7 +62,7 @@ type Flowgraph interface {
 	// NewStream returns a new uninitialized stream
 	NewStream(name string) Stream
 
-	// Connect connects two hubs via named ports
+	// Connect connects two hubs via named (string) or indexed (int) ports
 	Connect(
 		upstream Hub, upstreamPort interface{},
 		dnstream Hub, dnstreamPort interface{}) Stream
