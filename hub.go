@@ -22,11 +22,11 @@ type Hub interface {
 	// Name returns the hub name
 	Name() string
 
-	// Source returns source stream by index
-	Source(n int) Stream
+	// Source returns source stream by port index
+	Source(i int) Stream
 
-	// Result returns result stream by index
-	Result(n int) Stream
+	// Result returns result stream by port index
+	Result(i int) Stream
 
 	// FindSource returns source stream by port name
 	FindSource(name string) Stream

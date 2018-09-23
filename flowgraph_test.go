@@ -209,18 +209,18 @@ func TestDotNaming(t *testing.T) {
 	fg := flowgraph.New("TestDotNaming")
 
 	h0 := fg.NewHub("name0", "CONST", 100)
-	h0.SetDestinationNames("XYZ")
+	h0.SetResultNames("XYZ")
 
 	h1 := fg.NewHub("name1", "SINK", nil)
 	h1.SetSourceNames("ABC")
 
-	s0 := h0.FindDestination("XYZ")
+	s0 := h0.FindResult("XYZ")
 	if s0 == nil {
-		t.Fatalf("ERROR Unable to find destination port named XYZ\n")
+		t.Fatalf("ERROR Unable to find result port named XYZ\n")
 	}
 
 	if s0.Base() == nil {
-		t.Fatalf("ERROR Unable to find stream at destination port named XYZ\n")
+		t.Fatalf("ERROR Unable to find stream at result port named XYZ\n")
 	}
 
 	s1 := h1.FindSource("ABC")
@@ -234,11 +234,11 @@ func TestDotNaming(t *testing.T) {
 
 	fg.Connect(h0, "XYZ", h1, "ABC")
 
-	if h0.Destination(0) == nil {
-		t.Fatalf("ERROR Unable to find destination port numbered 0\n")
+	if h0.Result(0) == nil {
+		t.Fatalf("ERROR Unable to find result port numbered 0\n")
 	}
-	if h0.Destination(0).Base().(*fgbase.Edge) == nil {
-		t.Fatalf("ERROR Unable to find stream at destination port numbered 0\n")
+	if h0.Result(0).Base().(*fgbase.Edge) == nil {
+		t.Fatalf("ERROR Unable to find stream at result port numbered 0\n")
 	}
 
 	if h1.Source(0) == nil {
@@ -270,14 +270,14 @@ func TestAdd(t *testing.T) {
 	fg := flowgraph.New("TestAdd")
 
 	const100 := fg.NewHub("const100", "CONST", 100)
-	const100.SetDestinationNames("X")
+	const100.SetResultNames("X")
 
 	const1 := fg.NewHub("const1", "CONST", 1)
-	const1.SetDestinationNames("X")
+	const1.SetResultNames("X")
 
 	add := fg.NewHub("add", "ADD", nil)
 	add.SetSourceNames("A", "B")
-	add.SetDestinationNames("X")
+	add.SetResultNames("X")
 
 	sink := fg.NewHub("sink", "SINK", nil)
 	sink.SetSourceNames("A")

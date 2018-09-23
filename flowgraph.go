@@ -57,9 +57,9 @@ type Flowgraph interface {
 	// FindStream finds a stream by name
 	FindStream(name string) Stream
 
-	// NewHub returns a new uninitialized hub
+	// NewHub returns a new unconnected hub
 	NewHub(name, code string, init interface{}) Hub
-	// NewStream returns a new uninitialized stream
+	// NewStream returns a new unconnected stream
 	NewStream(name string) Stream
 
 	// Connect connects two hubs via named (string) or indexed (int) ports
@@ -81,7 +81,7 @@ type Flowgraph interface {
 	// InsertIncoming adds an input source that uses a Getter
 	InsertIncoming(name string, getter Getter) Hub
 
-	// InsertOutgoing adds an output destination that uses a Putter
+	// InsertOutgoing adds an output result that uses a Putter
 	InsertOutgoing(name string, putter Putter) Hub
 
 	// InsertConst adds an input constant as an incoming source.
@@ -152,7 +152,7 @@ func (fg *graph) NumStream() int {
 // 	    "<name>,name[...,name]" for Steer
 // 	    "" for no sources
 //
-// dstnames is "name[...,name]" ("" for no destinations)
+// dstnames is "name[...,name]" ("" for no results)
 //
 func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 
@@ -239,7 +239,7 @@ func (fg *graph) Connect(
 		fg.streams = append(fg.streams, &e)
 		eup := e
 		edn := e
-		upstream.SetDestination(upstreamPort, stream{&eup})
+		upstream.SetResult(upstreamPort, stream{&eup})
 		dnstream.SetSource(dnstreamPort, stream{&edn})
 		return stream{&e}
 	}
@@ -301,7 +301,7 @@ func (fg *graph) InsertIncoming(name string, getter Getter) Hub {
 	return hub{fg.hubs[len(fg.hubs)-1]}
 }
 
-// InsertOutgoing adds a destination that uses a Putter
+// InsertOutgoing adds a result that uses a Putter
 func (fg *graph) InsertOutgoing(name string, putter Putter) Hub {
 	n := funcOutgoing(*fg.streams[len(fg.streams)-1], putter)
 	n.Name = name
