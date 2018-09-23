@@ -61,10 +61,10 @@ type Hub interface {
 	SetDestinationNames(nm ...string)
 
 	// SetSource sets the stream for a named source port
-	SetSource(port string, s Stream) error
+	SetSource(port interface{}, s Stream) error
 
 	// SetDestination sets the stream for a named destination port
-	SetDestination(port string, s Stream) error
+	SetDestination(port interface{}, s Stream) error
 
 	/* IMPLEMENTATION */
 
@@ -80,12 +80,12 @@ type hub struct {
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
 func (h hub) Tracef(format string, v ...interface{}) {
-	h.base.Tracef(format, v)
+	h.base.Tracef(format, v...)
 }
 
 // LogError for logging of error messages.  Uses atomic log mechanism.
 func (h hub) LogError(format string, v ...interface{}) {
-	h.base.LogError(format, v)
+	h.base.LogError(format, v...)
 }
 
 // Name returns the hub name
@@ -95,12 +95,12 @@ func (h hub) Name() string {
 
 // Source returns source stream by index
 func (h hub) Source(i int) Stream {
-	return stream{h.base.SrcGet(i)}
+	return stream{h.base.Src(i)}
 }
 
 // Destination returns destination stream by index
 func (h hub) Destination(i int) Stream {
-	return stream{h.base.DstGet(i)}
+	return stream{h.base.Dst(i)}
 }
 
 // FindSource returns source stream by port name
@@ -153,16 +153,16 @@ func (h hub) NumDestination() int {
 
 // SetSourceNames names the source ports
 func (h hub) SetSourceNames(nm ...string) {
-        if len(nm)!=h.base.SrcCnt() {
-	   h.LogError("Number of source ports does not match number of names (%d!=%d)\n", h.base.SrcCnt(), len(nm))
+	if len(nm) != h.base.SrcCnt() {
+		h.base.Panicf("Number of source ports names %v does not match number of source ports (%d)\n", nm, h.base.SrcCnt())
 	}
 	h.base.SetSrcNames(nm...)
 }
 
 // SetDestinationNames names the destination ports
 func (h hub) SetDestinationNames(nm ...string) {
-        if len(nm)!=h.base.DstCnt() {
-	   h.LogError("Number of destination ports does not match number of names (%d!=%d)\n", h.base.DstCnt(), len(nm))
+	if len(nm) != h.base.DstCnt() {
+		h.base.Panicf("Number of destination port names %v does not match number of destination ports (%d)\n", nm, h.base.DstCnt())
 	}
 	h.base.SetDstNames(nm...)
 }
@@ -178,21 +178,45 @@ func (h hub) DestinationNames() []string {
 }
 
 // SetSource sets the stream for a named source port
-func (h hub) SetSource(port string, s Stream) error {
-	i, ok := h.base.FindSrcIndex(port)
-	if !ok {
-		return fmt.Errorf("source port %s not found on hub %s\n", port, h.Name())
+func (h hub) SetSource(port interface{}, s Stream) error {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i, ok = h.base.FindSrcIndex(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		i = v
+	default:
+		h.Base().(*fgbase.Node).Panicf("Need string or int to specify port on hub %s\n", h.Name())
 	}
+
+	if !ok {
+		return fmt.Errorf("source port %s not found on hub %v\n", port, h.Name())
+	}
+
 	h.base.SrcSet(i, s.Base().(*fgbase.Edge))
 	return nil
 }
 
 // SetDestination sets the stream for a named destination port
-func (h hub) SetDestination(port string, s Stream) error {
-	i, ok := h.base.FindDstIndex(port)
-	if !ok {
-		return fmt.Errorf("destination port %s not found on hub %s\n", port, h.Name())
+func (h hub) SetDestination(port interface{}, s Stream) error {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i, ok = h.base.FindDstIndex(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		i = v
+	default:
+		h.Base().(*fgbase.Node).Panicf("Need string or int to specify destination port on hub %s\n", h.Name())
 	}
+
+	if !ok {
+		return fmt.Errorf("destination port %s not found on hub %v\n", port, h.Name())
+	}
+
 	h.base.DstSet(i, s.Base().(*fgbase.Edge))
 	return nil
 }

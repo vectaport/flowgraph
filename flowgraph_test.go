@@ -208,31 +208,31 @@ func TestDotNaming(t *testing.T) {
 
 	fg := flowgraph.New("TestDotNaming")
 
-	h0 := fg.NewHub("name0", "const", 100)
-	h0.SetDestinationNames("xyz")
+	h0 := fg.NewHub("name0", "CONST", 100)
+	h0.SetDestinationNames("XYZ")
 
-	h1 := fg.NewHub("name1", "sink", nil)
-	h1.SetSourceNames("abc")
+	h1 := fg.NewHub("name1", "SINK", nil)
+	h1.SetSourceNames("ABC")
 
-	s0 := h0.FindDestination("xyz")
+	s0 := h0.FindDestination("XYZ")
 	if s0 == nil {
-		t.Fatalf("ERROR Unable to find destination port named xyz\n")
+		t.Fatalf("ERROR Unable to find destination port named XYZ\n")
 	}
 
 	if s0.Base() == nil {
-		t.Fatalf("ERROR Unable to find stream at destination port named xyz\n")
+		t.Fatalf("ERROR Unable to find stream at destination port named XYZ\n")
 	}
 
-	s1 := h1.FindSource("abc")
+	s1 := h1.FindSource("ABC")
 	if s1 == nil {
-		t.Fatalf("ERROR Unable to find source port named abc\n")
+		t.Fatalf("ERROR Unable to find source port named ABC\n")
 	}
 
 	if s1.Base() == nil {
-		t.Fatalf("ERROR Unable to find stream at source port named abc\n")
+		t.Fatalf("ERROR Unable to find stream at source port named ABC\n")
 	}
 
-	fg.Connect(h0, "xyz", h1, "abc")
+	fg.Connect(h0, "XYZ", h1, "ABC")
 
 	if h0.Destination(0) == nil {
 		t.Fatalf("ERROR Unable to find destination port numbered 0\n")
@@ -254,4 +254,42 @@ func TestDotNaming(t *testing.T) {
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestDotNaming\n")
+}
+
+/*=====================================================================*/
+
+func TestAdd(t *testing.T) {
+	fmt.Printf("BEGIN:  TestAdd\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second / 10
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestAdd")
+
+	const100 := fg.NewHub("const100", "CONST", 100)
+	const100.SetDestinationNames("X")
+
+	const1 := fg.NewHub("const1", "CONST", 1)
+	const1.SetDestinationNames("X")
+
+	add := fg.NewHub("add", "ADD", nil)
+	add.SetSourceNames("A", "B")
+	add.SetDestinationNames("X")
+
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(const100, "X", add, "A")
+	fg.Connect(const1, "X", add, "B")
+	fg.Connect(add, "X", sink, "A")
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestAdd\n")
 }

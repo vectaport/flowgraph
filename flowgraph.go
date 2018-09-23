@@ -64,8 +64,8 @@ type Flowgraph interface {
 
 	// Connect connects two hubs via named ports
 	Connect(
-		upstream Hub, upstreamPort string,
-		dnstream Hub, dnstreamPort string) Stream
+		upstream Hub, upstreamPort interface{},
+		dnstream Hub, dnstreamPort interface{}) Stream
 
 	// Run runs the flowgraph
 	Run()
@@ -159,17 +159,16 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	var n fgbase.Node
 
 	switch code {
-	case "const":
+	case "CONST":
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
 		n.Aux = init
-		break
-	case "sink":
+	case "SINK":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
-		break
+	case "ADD":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
 	default:
 		log.Panicf("Unexpected Hub code:  %s\n", code)
-		break
 	}
 
 	fg.hubs = append(fg.hubs, &n)
@@ -200,14 +199,43 @@ func (fg *graph) FindStream(name string) Stream {
 
 // Connect connects two hubs via named ports
 func (fg *graph) Connect(
-	upstream Hub, upstreamPort string,
-	dnstream Hub, dnstreamPort string) Stream {
+	upstream Hub, upstreamPort interface{},
+	dnstream Hub, dnstreamPort interface{}) Stream {
 
-	usEdge, usok := upstream.Base().(*fgbase.Node).FindDst(upstreamPort)
-	dsEdge, dsok := dnstream.Base().(*fgbase.Node).FindSrc(dnstreamPort)
+	var usEdge *fgbase.Edge
+	var usok bool
+	switch v := upstreamPort.(type) {
+	case string:
+		usEdge, usok = upstream.Base().(*fgbase.Node).FindDst(v)
+	case int:
+		usok = v >= 0 && v < upstream.Base().(*fgbase.Node).DstCnt()
+		if usok {
+			usEdge = upstream.Base().(*fgbase.Node).Dst(v)
+		}
+	default:
+		upstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on upstream hub %s\n", upstream.Name())
+	}
+
+	var dsEdge *fgbase.Edge
+	var dsok bool
+	switch v := dnstreamPort.(type) {
+	case string:
+	        fmt.Printf("dnstream.Base().(*fgbase.Node) is %+v\n", dnstream.Base().(*fgbase.Node))
+		dsEdge, dsok = dnstream.Base().(*fgbase.Node).FindSrc(v)
+		fmt.Printf("AFTERWARDS\n")
+	case int:
+		dsok = v >= 0 && v < dnstream.Base().(*fgbase.Node).SrcCnt()
+		if dsok {
+			dsEdge = dnstream.Base().(*fgbase.Node).Src(v)
+		}
+	default:
+		dnstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on downstream hub %s\n", dnstream.Name())
+	}
+
 	if !usok || !dsok {
 		return stream{nil}
 	}
+
 	if usEdge == nil && dsEdge == nil {
 		e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
 		fg.streams = append(fg.streams, &e)
@@ -335,3 +363,4 @@ func (fg *graph) InsertAllOf(name string, transformer Transformer) Hub {
 	fg.nameToHub[name] = &n
 	return hub{fg.hubs[len(fg.hubs)-1]}
 }
+
