@@ -17,21 +17,10 @@ var EOF = errors.New("EOF")
 
 /*=====================================================================*/
 
-// Getter receives a value with the Get method. Use Hub.Tracef for tracing.
-type Getter interface {
-	Get(h Hub) (interface{}, error)
-}
-
-// Putter transmits a value with the Put method. Use Hub.Tracef
-// for tracing
-type Putter interface {
-	Put(h Hub, v interface{}) error
-}
-
 // Transformer transforms a variadic list of values into a slice
 // of values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
-	Transform(h Hub, c ...interface{}) ([]interface{}, error)
+	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
 
 /*=====================================================================*/
