@@ -60,10 +60,10 @@ type Hub interface {
 	// SetDestinationNames names the destination ports
 	SetDestinationNames(nm ...string)
 
-	// SetSource sets the stream for a named source port
+	// SetSource sets the stream for a named (string) or indexed (int) source port
 	SetSource(port interface{}, s Stream) error
 
-	// SetDestination sets the stream for a named destination port
+	// SetDestination sets the stream for a named (string) or indexed (int) destination port
 	SetDestination(port interface{}, s Stream) error
 
 	/* IMPLEMENTATION */

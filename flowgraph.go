@@ -197,7 +197,7 @@ func (fg *graph) FindStream(name string) Stream {
 	return stream{fg.nameToStream[name]}
 }
 
-// Connect connects two hubs via named ports
+// Connect connects two hubs via named (string) or indexed (int) ports
 func (fg *graph) Connect(
 	upstream Hub, upstreamPort interface{},
 	dnstream Hub, dnstreamPort interface{}) Stream {

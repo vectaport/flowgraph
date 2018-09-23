@@ -263,7 +263,7 @@ func TestAdd(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second / 10
+	fgbase.RunTime = time.Second / 20
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
