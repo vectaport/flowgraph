@@ -25,46 +25,46 @@ type Hub interface {
 	// Source returns source stream by index
 	Source(n int) Stream
 
-	// Destination returns destination stream by index
-	Destination(n int) Stream
+	// Result returns result stream by index
+	Result(n int) Stream
 
 	// FindSource returns source stream by port name
 	FindSource(name string) Stream
 
-	// FindDestination returns destination stream by port name
-	FindDestination(name string) Stream
+	// FindResult returns result stream by port name
+	FindResult(name string) Stream
 
 	// NumSource returns the number of source ports
 	NumSource() int
 
-	// NumDestination returns the number of destination ports
-	NumDestination() int
+	// NumResult returns the number of result ports
+	NumResult() int
 
 	// SourceNames returns the names of the source ports
 	SourceNames() []string
 
-	// DestinationNames returns the names of the destination ports
-	DestinationNames() []string
+	// ResultNames returns the names of the result ports
+	ResultNames() []string
 
 	/* CONFIGURING */
 
 	// AddSource adds a source port for each stream
 	AddSource(s ...Stream)
 
-	// AddDestination adds a destination port for each stream
-	AddDestination(s ...Stream)
+	// AddResult adds a result port for each stream
+	AddResult(s ...Stream)
 
 	// SetSourceNames names the source ports
 	SetSourceNames(nm ...string)
 
-	// SetDestinationNames names the destination ports
-	SetDestinationNames(nm ...string)
+	// SetResultNames names the result ports
+	SetResultNames(nm ...string)
 
 	// SetSource sets a stream on a source port selected by string or int
 	SetSource(port interface{}, s Stream) error
 
-	// SetDestination sets a stream on a destination port selected by string or int
-	SetDestination(port interface{}, s Stream) error
+	// SetResult sets a stream on a result port selected by string or int
+	SetResult(port interface{}, s Stream) error
 
 	/* IMPLEMENTATION */
 
@@ -98,8 +98,8 @@ func (h hub) Source(i int) Stream {
 	return stream{h.base.Src(i)}
 }
 
-// Destination returns destination stream by index
-func (h hub) Destination(i int) Stream {
+// Result returns result stream by index
+func (h hub) Result(i int) Stream {
 	return stream{h.base.Dst(i)}
 }
 
@@ -115,8 +115,8 @@ func (h hub) FindSource(name string) Stream {
 	return stream{e}
 }
 
-// FindDestination returns destination stream by port name
-func (h hub) FindDestination(name string) Stream {
+// FindResult returns result stream by port name
+func (h hub) FindResult(name string) Stream {
 	e, ok := h.base.FindDst(name)
 	if !ok {
 		return nil
@@ -134,8 +134,8 @@ func (h hub) AddSource(s ...Stream) {
 	}
 }
 
-// AddDestination adds a destination port for each stream
-func (h hub) AddDestination(s ...Stream) {
+// AddResult adds a result port for each stream
+func (h hub) AddResult(s ...Stream) {
 	for _, sv := range s {
 		h.base.DstAppend(sv.Base().(*fgbase.Edge))
 	}
@@ -146,8 +146,8 @@ func (h hub) NumSource() int {
 	return h.base.SrcCnt()
 }
 
-// NumDestination returns the number of destination ports
-func (h hub) NumDestination() int {
+// NumResult returns the number of result ports
+func (h hub) NumResult() int {
 	return h.base.DstCnt()
 }
 
@@ -159,10 +159,10 @@ func (h hub) SetSourceNames(nm ...string) {
 	h.base.SetSrcNames(nm...)
 }
 
-// SetDestinationNames names the destination ports
-func (h hub) SetDestinationNames(nm ...string) {
+// SetResultNames names the result ports
+func (h hub) SetResultNames(nm ...string) {
 	if len(nm) != h.base.DstCnt() {
-		h.base.Panicf("Number of destination port names %v does not match number of destination ports (%d)\n", nm, h.base.DstCnt())
+		h.base.Panicf("Number of result port names %v does not match number of result ports (%d)\n", nm, h.base.DstCnt())
 	}
 	h.base.SetDstNames(nm...)
 }
@@ -172,8 +172,8 @@ func (h hub) SourceNames() []string {
 	return h.base.SrcNames()
 }
 
-// DestinationNames returns the names of the destination ports
-func (h hub) DestinationNames() []string {
+// ResultNames returns the names of the result ports
+func (h hub) ResultNames() []string {
 	return h.base.DstNames()
 }
 
@@ -199,8 +199,8 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 	return nil
 }
 
-// SetDestination sets a stream on a destination port selected by string or int
-func (h hub) SetDestination(port interface{}, s Stream) error {
+// SetResult sets a stream on a result port selected by string or int
+func (h hub) SetResult(port interface{}, s Stream) error {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -210,11 +210,11 @@ func (h hub) SetDestination(port interface{}, s Stream) error {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Base().(*fgbase.Node).Panicf("Need string or int to select destination port on hub %s\n", h.Name())
+		h.Base().(*fgbase.Node).Panicf("Need string or int to select result port on hub %s\n", h.Name())
 	}
 
 	if !ok {
-		return fmt.Errorf("destination port %s not found on hub %v\n", port, h.Name())
+		return fmt.Errorf("result port %s not found on hub %v\n", port, h.Name())
 	}
 
 	h.base.DstSet(i, s.Base().(*fgbase.Edge))
