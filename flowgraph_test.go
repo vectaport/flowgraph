@@ -44,7 +44,7 @@ func TestNewEqual(t *testing.T) {
 }
 
 /*=====================================================================*/
-
+/*
 type getter struct {
 	cnt int
 }
@@ -73,9 +73,9 @@ func TestInsertIncoming(t *testing.T) {
 
 	fmt.Printf("END:    TestInsertIncoming\n")
 }
-
+*/
 /*=====================================================================*/
-
+/*
 type putter struct {
 	sum int
 }
@@ -99,9 +99,9 @@ func TestInsertOutgoing(t *testing.T) {
 
 	fmt.Printf("END:    TestInsertOutgoing\n")
 }
-
+*/
 /*=====================================================================*/
-
+/*
 type transformer struct {
 }
 
@@ -125,9 +125,9 @@ func TestInsertAllOf(t *testing.T) {
 
 	fmt.Printf("END:    TestInsertAllOf\n")
 }
-
+*/
 /*=====================================================================*/
-
+/*
 func TestInsertArray(t *testing.T) {
 
 	t.Parallel()
@@ -153,9 +153,9 @@ func TestInsertArray(t *testing.T) {
 
 	fmt.Printf("END:    TestInsertArray\n")
 }
-
+*/
 /*=====================================================================*/
-
+/*
 type pass int
 
 func (p pass) Transform(n flowgraph.Hub, c ...interface{}) ([]interface{}, error) {
@@ -192,6 +192,7 @@ func TestInsertChain(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fmt.Printf("END:    TestInsertChain\n")
 }
+*/
 
 /*=====================================================================*/
 
