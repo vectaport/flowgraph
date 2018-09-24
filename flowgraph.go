@@ -130,7 +130,7 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	case "SINK":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
-	case "TRANS":
+	case "ALLOF":
 		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
 	default:
 		log.Panicf("Unexpected Hub code:  %s\n", code)

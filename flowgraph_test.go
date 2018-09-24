@@ -63,7 +63,7 @@ func TestIncoming(t *testing.T) {
 
 	fg := flowgraph.New("TestIncoming")
 
-	incoming := fg.NewHub("incoming", "TRANS", &getter{})
+	incoming := fg.NewHub("incoming", "ALLOF", &getter{})
 	incoming.SetResultNames("X")
 
 	sink := fg.NewHub("sink", "SINK", nil)
@@ -98,7 +98,7 @@ func TestOutgoing(t *testing.T) {
 	const1 := fg.NewHub("const1", "CONST", 1)
 	const1.SetResultNames("X")
 
-	outgoing := fg.NewHub("outgoing", "TRANS", &putter{})
+	outgoing := fg.NewHub("outgoing", "ALLOF", &putter{})
 	outgoing.SetSourceNames("A")
 
 	fg.Connect(const1, "X", outgoing, "A")
@@ -129,7 +129,7 @@ func TestAllOf(t *testing.T) {
 	const1 := fg.NewHub("const1", "CONST", 1)
 	const1.SetResultNames("X")
 
-	transformer := fg.NewHub("outgoing", "TRANS", &transformer{})
+	transformer := fg.NewHub("outgoing", "ALLOF", &transformer{})
 	transformer.SetSourceNames("A")
 	transformer.SetResultNames("X")
 
@@ -206,7 +206,7 @@ func TestInsertChain(t *testing.T) {
 	p := make([]flowgraph.Hub, l)
 
 	for i := 0; i < l; i++ {
-		p[i] = fg.NewHub(fmt.Sprintf("t%d\n", i), "TRANS", &pass{})
+		p[i] = fg.NewHub(fmt.Sprintf("t%d\n", i), "ALLOF", &pass{})
 		p[i].SetSourceNames("A")
 		p[i].SetResultNames("X")
 	}
