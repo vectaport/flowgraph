@@ -111,11 +111,10 @@ func TestOutgoing(t *testing.T) {
 
 /*=====================================================================*/
 
-type transformer struct {
-}
+type transformer struct{}
 
-func (t *transformer) Transform(hub flowgraph.Hub, v ...interface{}) ([]interface{}, error) {
-	xv := v[0].(int) * 2
+func (t *transformer) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	xv := source[0].(int) * 2
 	return []interface{}{xv}, nil
 }
 
@@ -130,7 +129,7 @@ func TestAllOf(t *testing.T) {
 	const1 := fg.NewHub("const1", "CONST", 1)
 	const1.SetResultNames("X")
 
-	transformer := fg.NewHub("outgoing", "TRANS", &putter{})
+	transformer := fg.NewHub("outgoing", "TRANS", &transformer{})
 	transformer.SetSourceNames("A")
 	transformer.SetResultNames("X")
 
@@ -146,6 +145,7 @@ func TestAllOf(t *testing.T) {
 }
 
 /*=====================================================================*/
+
 func TestArray(t *testing.T) {
 
 	t.Parallel()
@@ -170,6 +170,7 @@ func TestArray(t *testing.T) {
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
 	}
+
 	sum := 0
 	for _, v := range arr {
 		sum += v.(int)
@@ -182,17 +183,14 @@ func TestArray(t *testing.T) {
 }
 
 /*=====================================================================*/
-/*
-type pass int
 
-func (p pass) Transform(n flowgraph.Hub, c ...interface{}) ([]interface{}, error) {
-	return c, nil
+type pass struct{}
+
+func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	return []interface{}{source[0]}, nil
 }
 
-var p pass
-
 func TestInsertChain(t *testing.T) {
-	// now := time.Now().UTC()
 	fmt.Printf("BEGIN:  TestInsertChain\n")
 	oldRunTime := fgbase.RunTime
 	fgbase.RunTime = 0
@@ -200,26 +198,47 @@ func TestInsertChain(t *testing.T) {
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 	fg := flowgraph.New("TestInsertChain")
-	fg.InsertArray("array", arr)
-	fg.InsertAllOf("pass", p)
-	for i := 0; i < 1024; i++ {
-		fg.InsertAllOf("pass", p)
-	}
-	fg.InsertSink("sink")
 
-	// fmt.Printf("time since:  %v\n", time.Since(now))
+	array := fg.NewHub("array", "ARRAY", arr)
+	array.SetResultNames("X")
+
+	l := 1024
+	p := make([]flowgraph.Hub, l)
+
+	for i := 0; i < l; i++ {
+		p[i] = fg.NewHub(fmt.Sprintf("t%d\n", i), "TRANS", &pass{})
+		p[i].SetSourceNames("A")
+		p[i].SetResultNames("X")
+	}
+
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(array, "X", p[0], "A")
+	for i := 0; i < l-1; i++ {
+		fg.Connect(p[i], "X", p[i+1], "A")
+	}
+	fg.Connect(p[l-1], "X", sink, "A")
+
 	fg.Run()
 
-	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := sink.Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
-	if s.Cnt != len(arr) || s.Sum != 45 {
-		t.Fatalf("ERROR SinkStats %+v\n", s)
+	if s.Cnt != len(arr) {
+		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
+	}
+
+	sum := 0
+	for _, v := range arr {
+		sum += v.(int)
+	}
+	if s.Sum != sum {
+		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
 	}
 
 	fgbase.RunTime = oldRunTime
 	fmt.Printf("END:    TestInsertChain\n")
 }
-*/
 
 /*=====================================================================*/
 
