@@ -190,14 +190,14 @@ func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interf
 	return []interface{}{source[0]}, nil
 }
 
-func TestInsertChain(t *testing.T) {
-	fmt.Printf("BEGIN:  TestInsertChain\n")
+func TestChain(t *testing.T) {
+	fmt.Printf("BEGIN:  TestChain\n")
 	oldRunTime := fgbase.RunTime
 	fgbase.RunTime = 0
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
-	fg := flowgraph.New("TestInsertChain")
+	fg := flowgraph.New("TestChain")
 
 	array := fg.NewHub("array", "ARRAY", arr)
 	array.SetResultNames("X")
@@ -206,7 +206,7 @@ func TestInsertChain(t *testing.T) {
 	p := make([]flowgraph.Hub, l)
 
 	for i := 0; i < l; i++ {
-		p[i] = fg.NewHub(fmt.Sprintf("t%d\n", i), "ALLOF", &pass{})
+		p[i] = fg.NewHub(fmt.Sprintf("t%04d", i), "ALLOF", &pass{})
 		p[i].SetSourceNames("A")
 		p[i].SetResultNames("X")
 	}
@@ -237,7 +237,7 @@ func TestInsertChain(t *testing.T) {
 	}
 
 	fgbase.RunTime = oldRunTime
-	fmt.Printf("END:    TestInsertChain\n")
+	fmt.Printf("END:    TestChain\n")
 }
 
 /*=====================================================================*/

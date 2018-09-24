@@ -121,8 +121,22 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	var n fgbase.Node
 
 	switch code {
+
+	// User Supplied Hubs
+	case "ALLOF":
+		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
+
+		// Math Hubs
 	case "ADD":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+	case "SUB":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.SubFire)
+	case "MUL":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.MulFire)
+	case "DIV":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
+
+		// General Purpose Hubs
 	case "ARRAY":
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
 	case "CONST":
@@ -130,8 +144,6 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	case "SINK":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
-	case "ALLOF":
-		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
 	default:
 		log.Panicf("Unexpected Hub code:  %s\n", code)
 	}
