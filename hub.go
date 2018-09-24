@@ -153,17 +153,11 @@ func (h hub) NumResult() int {
 
 // SetSourceNames names the source ports
 func (h hub) SetSourceNames(nm ...string) {
-	if len(nm) != h.base.SrcCnt() {
-		h.base.Panicf("Number of source ports names %v does not match number of source ports (%d)\n", nm, h.base.SrcCnt())
-	}
 	h.base.SetSrcNames(nm...)
 }
 
 // SetResultNames names the result ports
 func (h hub) SetResultNames(nm ...string) {
-	if len(nm) != h.base.DstCnt() {
-		h.base.Panicf("Number of result port names %v does not match number of result ports (%d)\n", nm, h.base.DstCnt())
-	}
 	h.base.SetDstNames(nm...)
 }
 

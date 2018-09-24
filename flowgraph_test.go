@@ -44,64 +44,73 @@ func TestNewEqual(t *testing.T) {
 }
 
 /*=====================================================================*/
-/*
+
 type getter struct {
 	cnt int
 }
 
-func (g *getter) Get(hub flowgraph.Hub) (interface{}, error) {
+func (g *getter) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	i := g.cnt
 	g.cnt++
-	return i, nil
+	return []interface{}{i}, nil
 }
 
-func TestInsertIncoming(t *testing.T) {
+func TestIncoming(t *testing.T) {
 
 	t.Parallel()
 
-	fmt.Printf("BEGIN:  TestInsertIncoming\n")
+	fmt.Printf("BEGIN:  TestIncoming\n")
 
-	fg := flowgraph.New("TestInsertIncoming")
-	// n := fg.NewIncoming(&getter{})
-	// fg.InsertHub("incoming", n)
-	fg.InsertIncoming("incoming", &getter{})
-	fg.InsertSink("sink")
-	// n := fg.NewSink("sink")
-	// fg.InsertHub(n)
+	fg := flowgraph.New("TestIncoming")
+
+	incoming := fg.NewHub("incoming", "TRANS", &getter{})
+	incoming.SetResultNames("X")
+
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(incoming, "X", sink, "A")
 
 	fg.Run()
 
-	fmt.Printf("END:    TestInsertIncoming\n")
+	fmt.Printf("END:    TestIncoming\n")
 }
-*/
+
 /*=====================================================================*/
-/*
+
 type putter struct {
 	sum int
 }
 
-func (p *putter) Put(hub flowgraph.Hub, v interface{}) error {
-	p.sum += v.(int)
-	return nil
+func (p *putter) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	p.sum += source[0].(int)
+	return nil, nil
 }
 
-func TestInsertOutgoing(t *testing.T) {
+func TestOutgoing(t *testing.T) {
 
 	t.Parallel()
 
-	fmt.Printf("BEGIN:  TestInsertOutgoing\n")
+	fmt.Printf("BEGIN:  TestOutgoing\n")
 
-	fg := flowgraph.New("TestInsertOutgoing")
-	fg.InsertConst("one", 1)
-	fg.InsertOutgoing("outgoing", &putter{})
+	fg := flowgraph.New("TestOutgoing")
+
+	const1 := fg.NewHub("const1", "CONST", 1)
+	const1.SetResultNames("X")
+
+	outgoing := fg.NewHub("outgoing", "TRANS", &putter{})
+	outgoing.SetSourceNames("A")
+
+	fg.Connect(const1, "X", outgoing, "A")
 
 	fg.Run()
 
-	fmt.Printf("END:    TestInsertOutgoing\n")
+	fmt.Printf("END:    TestOutgoing\n")
+
 }
-*/
+
 /*=====================================================================*/
-/*
+
 type transformer struct {
 }
 
@@ -110,50 +119,68 @@ func (t *transformer) Transform(hub flowgraph.Hub, v ...interface{}) ([]interfac
 	return []interface{}{xv}, nil
 }
 
-func TestInsertAllOf(t *testing.T) {
+func TestAllOf(t *testing.T) {
 
 	t.Parallel()
 
-	fmt.Printf("BEGIN:  TestInsertAllOf\n")
+	fmt.Printf("BEGIN:  TestAllOf\n")
 
-	fg := flowgraph.New("TestInsertAllOf")
-	fg.InsertConst("one", 1)
-	fg.InsertAllOf("double", &transformer{})
-	fg.InsertSink("sink")
+	fg := flowgraph.New("TestAllOf")
+
+	const1 := fg.NewHub("const1", "CONST", 1)
+	const1.SetResultNames("X")
+
+	transformer := fg.NewHub("outgoing", "TRANS", &putter{})
+	transformer.SetSourceNames("A")
+	transformer.SetResultNames("X")
+
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(const1, "X", transformer, "A")
+	fg.Connect(transformer, "X", sink, "A")
 
 	fg.Run()
 
-	fmt.Printf("END:    TestInsertAllOf\n")
+	fmt.Printf("END:    TestAllOf\n")
 }
-*/
+
 /*=====================================================================*/
-/*
-func TestInsertArray(t *testing.T) {
+func TestArray(t *testing.T) {
 
 	t.Parallel()
 
-	fmt.Printf("BEGIN:  TestInsertArray\n")
+	fmt.Printf("BEGIN:  TestArray\n")
+
+	fg := flowgraph.New("TestArray")
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	array := fg.NewHub("array", "ARRAY", arr)
+	array.SetResultNames("X")
 
-	fg := flowgraph.New("TestInsertArray")
-	fg.InsertArray("array", arr)
-	fg.InsertSink("sink")
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(array, "X", sink, "A")
 
 	fg.Run()
 
-	s := fg.FindHub("sink").Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := sink.Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
 	}
-	if s.Sum != 45 {
+	sum := 0
+	for _, v := range arr {
+		sum += v.(int)
+	}
+	if s.Sum != sum {
 		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
 	}
 
-	fmt.Printf("END:    TestInsertArray\n")
+	fmt.Printf("END:  TestArray\n")
 }
-*/
+
 /*=====================================================================*/
 /*
 type pass int
@@ -201,7 +228,7 @@ func TestDotNaming(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second / 10000
+	fgbase.RunTime = time.Second / 100
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
@@ -264,7 +291,7 @@ func TestAdd(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second / 10000
+	fgbase.RunTime = time.Second / 100
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
@@ -293,4 +320,42 @@ func TestAdd(t *testing.T) {
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestAdd\n")
+}
+
+/*=====================================================================*/
+
+func TestIterator(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second / 100
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator")
+
+	const100 := fg.NewHub("const100", "CONST", 100)
+	const100.SetResultNames("X")
+
+	const1 := fg.NewHub("const1", "CONST", 1)
+	const1.SetResultNames("X")
+
+	add := fg.NewHub("add", "ADD", nil)
+	add.SetSourceNames("A", "B")
+	add.SetResultNames("X")
+
+	sink := fg.NewHub("sink", "SINK", nil)
+	sink.SetSourceNames("A")
+
+	fg.Connect(const100, "X", add, "A")
+	fg.Connect(const1, "X", add, "B")
+	fg.Connect(add, "X", sink, "A")
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator\n")
 }

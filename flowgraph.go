@@ -121,16 +121,22 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	var n fgbase.Node
 
 	switch code {
+	case "ADD":
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+	case "ARRAY":
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
 	case "CONST":
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
-		n.Aux = init
 	case "SINK":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
-	case "ADD":
-		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+	case "TRANS":
+		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
 	default:
 		log.Panicf("Unexpected Hub code:  %s\n", code)
+	}
+	if n.Aux == nil {
+		n.Aux = init
 	}
 
 	fg.hubs = append(fg.hubs, &n)
@@ -169,13 +175,19 @@ func (fg *graph) Connect(
 	switch v := upstreamPort.(type) {
 	case string:
 		usEdge, usok = upstream.Base().(*fgbase.Node).FindDst(v)
+		if !usok {
+			upstream.Base().(*fgbase.Node).Panicf("No result port \"%s\" found on Hub \"%s\"\n", v, upstream.Name())
+		}
 	case int:
 		usok = v >= 0 && v < upstream.Base().(*fgbase.Node).DstCnt()
+		if !usok {
+			upstream.Base().(*fgbase.Node).Panicf("No result port %d found on Hub \"%s\"\n", v, dnstream.Name())
+		}
 		if usok {
 			usEdge = upstream.Base().(*fgbase.Node).Dst(v)
 		}
 	default:
-		upstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on upstream hub %s\n", upstream.Name())
+		upstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
 	}
 
 	var dsEdge *fgbase.Edge
@@ -183,17 +195,19 @@ func (fg *graph) Connect(
 	switch v := dnstreamPort.(type) {
 	case string:
 		dsEdge, dsok = dnstream.Base().(*fgbase.Node).FindSrc(v)
+		if !dsok {
+			dnstream.Base().(*fgbase.Node).Panicf("No source port \"%s\" found on Hub \"%s\"\n", v, dnstream.Name())
+		}
 	case int:
 		dsok = v >= 0 && v < dnstream.Base().(*fgbase.Node).SrcCnt()
+		if !usok {
+			upstream.Base().(*fgbase.Node).Panicf("No source port %d found on Hub \"%s\"\n", v, dnstream.Name())
+		}
 		if dsok {
 			dsEdge = dnstream.Base().(*fgbase.Node).Src(v)
 		}
 	default:
-		dnstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on downstream hub %s\n", dnstream.Name())
-	}
-
-	if !usok || !dsok {
-		return stream{nil}
+		dnstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on downstream Hub \"%s\"\n", dnstream.Name())
 	}
 
 	if usEdge == nil && dsEdge == nil {
