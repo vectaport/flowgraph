@@ -54,6 +54,12 @@ type Hub interface {
 	// AddResult adds a result port for each stream
 	AddResult(s ...Stream)
 
+	// SetSourceNum sets the number of source ports
+	SetSourceNum(n int)
+
+	// SetResultNum sets the number of result ports
+	SetResultNum(n int)
+
 	// SetSourceNames names the source ports
 	SetSourceNames(nm ...string)
 
@@ -65,6 +71,12 @@ type Hub interface {
 
 	// SetResult sets a stream on a result port selected by string or int
 	SetResult(port interface{}, s Stream) error
+
+	// SourceIndex returns the index of a named source port, -1 if not found
+	SourceIndex(port string) int
+
+	// ResultIndex returns the index of a named result port, -1 if not found
+	ResultIndex(port string) int
 
 	/* IMPLEMENTATION */
 
@@ -151,6 +163,16 @@ func (h hub) NumResult() int {
 	return h.base.DstCnt()
 }
 
+// SetSourceNum sets the number of source ports
+func (h hub) SetSourceNum(n int) {
+	h.base.SetSrcNum(n)
+}
+
+// SetResultNum sets the number of result ports
+func (h hub) SetResultNum(n int) {
+	h.base.SetDstNum(n)
+}
+
 // SetSourceNames names the source ports
 func (h hub) SetSourceNames(nm ...string) {
 	h.base.SetSrcNames(nm...)
@@ -213,6 +235,24 @@ func (h hub) SetResult(port interface{}, s Stream) error {
 
 	h.base.DstSet(i, s.Base().(*fgbase.Edge))
 	return nil
+}
+
+// SourceIndex returns the index of a named source port, -1 if not found
+func (h hub) SourceIndex(port string) int {
+	i, ok := h.base.FindSrcIndex(port)
+	if !ok {
+		i = -1
+	}
+	return i
+}
+
+// ResultIndex returns the index of a named result port, -1 if not found
+func (h hub) ResultIndex(port string) int {
+	i, ok := h.base.FindDstIndex(port)
+	if !ok {
+		i = -1
+	}
+	return i
 }
 
 // Base returns the value that implements this hub

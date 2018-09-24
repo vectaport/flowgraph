@@ -187,7 +187,11 @@ func TestArray(t *testing.T) {
 type pass struct{}
 
 func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	return []interface{}{source[0]}, nil
+	v := source[n.SourceIndex("A")]
+	i := n.ResultIndex("X")
+	r := make([]interface{}, i+1)
+	r[i] = v
+	return r, nil
 }
 
 func TestChain(t *testing.T) {
