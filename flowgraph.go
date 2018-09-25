@@ -19,7 +19,7 @@ var EOF = errors.New("EOF")
 type Code int
 
 const (
-	AllOf Code = iota
+	AllOf Code = iota	// pick this doc up
 	OneOf
 	Steer
 	Select
