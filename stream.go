@@ -1,12 +1,12 @@
 package flowgraph
 
- import (
+import (
 	"github.com/vectaport/fgbase"
 )
 
 import ()
 
-// Stream interface for flowgraph streams that connect flowgraph hubs
+// Stream struct for flowgraph streams that connect flowgraph hubs
 type Stream struct {
 	base *fgbase.Edge
 }
@@ -38,11 +38,10 @@ func (s *Stream) NumDownstream() int {
 
 // Empty returns true if the underlying implementation is nil
 func (s *Stream) Empty() bool {
-	return s.base==nil
+	return s.base == nil
 }
 
 // Edge returns pointer to underlying Edge
 func (s *Stream) Edge() *fgbase.Edge {
 	return s.base
 }
-

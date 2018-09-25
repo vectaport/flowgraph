@@ -187,10 +187,10 @@ func (h *Hub) ResultIndex(port string) int {
 
 // Empty returns true if the underlying implementation is nil
 func (h *Hub) Empty() bool {
-	return h.base==nil
+	return h.base == nil
 }
 
 // Node returns pointer to underlying Node
 func (h *Hub) Node() *fgbase.Node {
-        return h.base
+	return h.base
 }

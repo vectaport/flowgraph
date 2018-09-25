@@ -42,7 +42,7 @@ type Transformer interface {
 
 /*=====================================================================*/
 
-// Flowgraph interface for flowgraphs assembled out of hubs and streams
+// Flowgraph struct for flowgraphs assembled out of hubs and streams
 type Flowgraph struct {
 	name         string
 	hubs         []*Hub
