@@ -37,89 +37,55 @@ const (
 // Transformer transforms a slice of source values into a slice
 // of result values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
-	Transform(h Hub, source []interface{}) (result []interface{}, err error)
+	Transform(h *Hub, source []interface{}) (result []interface{}, err error)
 }
 
 /*=====================================================================*/
 
 // Flowgraph interface for flowgraphs assembled out of hubs and streams
-type Flowgraph interface {
-
-	// Name returns the name of this flowgraph
-	Name() string
-
-	// Hub returns a hub by index
-	Hub(i int) Hub
-	// Stream returns a stream by index
-	Stream(i int) Stream
-
-	// NumHub returns the number of hubs
-	NumHub() int
-	// NumStream returns the number of streams
-	NumStream() int
-
-	// FindHub finds a hub by name
-	FindHub(name string) Hub
-	// FindStream finds a stream by name
-	FindStream(name string) Stream
-
-	// NewHub returns a new unconnected hub
-	NewHub(name string, code Code, init interface{}) Hub
-	// NewStream returns a new unconnected stream
-	NewStream(name string) Stream
-
-	// Connect connects two hubs via named (string) or indexed (int) ports
-	Connect(
-		upstream Hub, upstreamPort interface{},
-		dnstream Hub, dnstreamPort interface{}) Stream
-
-	// Run runs the flowgraph
-	Run()
-}
-
-// implementation of Flowgraph
-type graph struct {
+type Flowgraph struct {
 	name         string
-	hubs         []Hub
-	streams      []Stream
-	nameToHub    map[string]Hub
-	nameToStream map[string]Stream
+	hubs         []*Hub
+	streams      []*Stream
+	nameToHub    map[string]*Hub
+	nameToStream map[string]*Stream
 }
 
 // New returns a named flowgraph
-func New(name string) Flowgraph {
-	nameToHub := make(map[string]Hub)
-	nameToStream := make(map[string]Stream)
-	return &graph{name, nil, nil, nameToHub, nameToStream}
+func New(name string) *Flowgraph {
+	nameToHub := make(map[string]*Hub)
+	nameToStream := make(map[string]*Stream)
+	fg := Flowgraph{name, nil, nil, nameToHub, nameToStream}
+	return &fg
 }
 
 // Name returns the name of this flowgraph
-func (fg *graph) Name() string {
+func (fg *Flowgraph) Name() string {
 	return fg.Name()
 }
 
 // Hub returns a hub by index
-func (fg *graph) Hub(n int) Hub {
+func (fg *Flowgraph) Hub(n int) *Hub {
 	return fg.hubs[n]
 }
 
 // Stream returns a stream by index
-func (fg *graph) Stream(n int) Stream {
+func (fg *Flowgraph) Stream(n int) *Stream {
 	return fg.streams[n]
 }
 
 // NumHub returns the number of hubs
-func (fg *graph) NumHub() int {
+func (fg *Flowgraph) NumHub() int {
 	return len(fg.hubs)
 }
 
 // NumStream returns the number of hubs
-func (fg *graph) NumStream() int {
+func (fg *Flowgraph) NumStream() int {
 	return len(fg.streams)
 }
 
 // NewHub returns a new unconnected hub
-func (fg *graph) NewHub(name string, code Code, init interface{}) Hub {
+func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 
 	var n fgbase.Node
 
@@ -154,40 +120,40 @@ func (fg *graph) NewHub(name string, code Code, init interface{}) Hub {
 		n.Aux = init
 	}
 
-	h := hub{&n}
-	fg.hubs = append(fg.hubs, h)
-	fg.nameToHub[name] = h
-	return h
+	h := Hub{&n}
+	fg.hubs = append(fg.hubs, &h)
+	fg.nameToHub[name] = &h
+	return &h
 }
 
 // NewStream returns a new unconnected stream
-func (fg *graph) NewStream(name string) Stream {
+func (fg *Flowgraph) NewStream(name string) *Stream {
 	if name == "" {
 		name = fmt.Sprintf("e%d", len(fg.streams))
 	}
 	e := fgbase.MakeEdge(name, nil)
-	s := stream{&e}
-	fg.streams = append(fg.streams, s)
-	fg.nameToStream[name] = s
-	return s
+	s := Stream{&e}
+	fg.streams = append(fg.streams, &s)
+	fg.nameToStream[name] = &s
+	return &s
 }
 
 // FindHub finds a hub by name
-func (fg *graph) FindHub(name string) Hub {
+func (fg *Flowgraph) FindHub(name string) *Hub {
 	return fg.nameToHub[name]
 }
 
 // FindStream finds a Stream by name
-func (fg *graph) FindStream(name string) Stream {
+func (fg *Flowgraph) FindStream(name string) *Stream {
 	return fg.nameToStream[name]
 }
 
 // Connect connects two hubs via named (string) or indexed (int) ports
-func (fg *graph) Connect(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{}) Stream {
+func (fg *Flowgraph) Connect(
+	upstream *Hub, upstreamPort interface{},
+	dnstream *Hub, dnstreamPort interface{}) *Stream {
 
-	var us Stream
+	var us *Stream
 	var usok bool
 	switch v := upstreamPort.(type) {
 	case string:
@@ -205,7 +171,7 @@ func (fg *graph) Connect(
 		upstream.Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
 	}
 
-	var ds Stream
+	var ds *Stream
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
@@ -234,10 +200,10 @@ func (fg *graph) Connect(
 }
 
 // Run runs the flowgraph
-func (fg *graph) Run() {
+func (fg *Flowgraph) Run() {
 	var nodes = make([]*fgbase.Node, len(fg.hubs))
 	for i := range nodes {
-		nodes[i] = fg.hubs[i].Base().(*fgbase.Node)
+		nodes[i] = fg.hubs[i].base
 	}
 	fgbase.RunGraph(nodes)
 }

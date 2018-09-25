@@ -49,7 +49,7 @@ type getter struct {
 	cnt int
 }
 
-func (g *getter) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (g *getter) Transform(hub *flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	i := g.cnt
 	g.cnt++
 	return []interface{}{i}, nil
@@ -82,7 +82,7 @@ type putter struct {
 	sum int
 }
 
-func (p *putter) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (p *putter) Transform(hub *flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	p.sum += source[0].(int)
 	return nil, nil
 }
@@ -113,7 +113,7 @@ func TestOutgoing(t *testing.T) {
 
 type transformer struct{}
 
-func (t *transformer) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (t *transformer) Transform(hub *flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	xv := source[0].(int) * 2
 	return []interface{}{xv}, nil
 }
@@ -163,7 +163,7 @@ func TestArray(t *testing.T) {
 
 	fg.Run()
 
-	s := sink.Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := sink.Node().Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr) (%d)\n", s.Cnt, len(arr))
@@ -184,7 +184,7 @@ func TestArray(t *testing.T) {
 
 type pass struct{}
 
-func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (p *pass) Transform(n *flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	v := source[n.SourceIndex("A")]
 	i := n.ResultIndex("X")
 	r := make([]interface{}, i+1)
@@ -205,7 +205,7 @@ func TestChain(t *testing.T) {
 	array.SetResultNames("X")
 
 	l := 1024
-	p := make([]flowgraph.Hub, l)
+	p := make([]*flowgraph.Hub, l)
 
 	for i := 0; i < l; i++ {
 		p[i] = fg.NewHub(fmt.Sprintf("t%04d", i), flowgraph.AllOf, &pass{})
@@ -224,7 +224,7 @@ func TestChain(t *testing.T) {
 
 	fg.Run()
 
-	s := sink.Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
+	s := sink.Node().Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
@@ -286,14 +286,14 @@ func TestDotNaming(t *testing.T) {
 	if h0.Result(0) == nil {
 		t.Fatalf("ERROR Unable to find result port numbered 0\n")
 	}
-	if h0.Result(0).Base().(*fgbase.Edge) == nil {
+	if h0.Result(0).Empty() {
 		t.Fatalf("ERROR Unable to find stream at result port numbered 0 on hub %s\n", h0.Name())
 	}
 
 	if h1.Source(0) == nil {
 		t.Fatalf("ERROR Unable to find source port numbered 0\n")
 	}
-	if h1.Source(0).Base().(*fgbase.Edge) == nil {
+	if h1.Source(0).Empty() {
 		t.Fatalf("ERROR Unable to find stream at source port numbered 0\n")
 	}
 

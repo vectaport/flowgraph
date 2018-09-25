@@ -16,7 +16,7 @@ func allOfFire(n *fgbase.Node) error {
 			eofflag = true
 		}
 	}
-	x, _ := t.Transform(hub{n}, a)
+	x, _ := t.Transform(&Hub{n}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)

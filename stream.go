@@ -1,66 +1,48 @@
 package flowgraph
 
-import (
+ import (
 	"github.com/vectaport/fgbase"
 )
 
 import ()
 
 // Stream interface for flowgraph streams that connect flowgraph hubs
-type Stream interface {
-
-	// Name returns the stream name
-	Name() string
-
-	// Upstream returns upstream hub by index
-	Upstream(i int) Hub
-
-	// Downstream return downstream hub by index
-	Downstream(i int) Hub
-
-	// NumUpstream returns the number of upstream hubs
-	NumUpstream() int
-
-	// NumDownstream returns the number of downstream hubs
-	NumDownstream() int
-
-	// Base returns the value that implements this stream
-	// The type of this value identifies the implementation.
-	Base() interface{}
-}
-
-// implementation of Stream
-type stream struct {
+type Stream struct {
 	base *fgbase.Edge
 }
 
 // Name returns the stream name
-func (s stream) Name() string {
+func (s *Stream) Name() string {
 	return s.base.Name
 }
 
 // Upstream returns upstream hub by index
-func (s stream) Upstream(i int) Hub {
-	return hub{s.base.SrcNode(i)}
+func (s *Stream) Upstream(i int) *Hub {
+	return &Hub{s.base.SrcNode(i)}
 }
 
 // Downstream returns upstream hub by index
-func (s stream) Downstream(i int) Hub {
-	return hub{s.base.DstNode(i)}
+func (s *Stream) Downstream(i int) *Hub {
+	return &Hub{s.base.DstNode(i)}
 }
 
 // NumUpstream returns the number of upstream hubs
-func (s stream) NumUpstream() int {
+func (s *Stream) NumUpstream() int {
 	return s.base.SrcCnt()
 }
 
 // NumDownstream returns the number of downstream hubs
-func (s stream) NumDownstream() int {
+func (s *Stream) NumDownstream() int {
 	return s.base.DstCnt()
 }
 
-// Base returns the value that implements this stream
-// The type of this value identifies the implementation.
-func (s stream) Base() interface{} {
+// Empty returns true if the underlying implementation is nil
+func (s *Stream) Empty() bool {
+	return s.base==nil
+}
+
+// Edge returns pointer to underlying Edge
+func (s *Stream) Edge() *fgbase.Edge {
 	return s.base
 }
+

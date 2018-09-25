@@ -6,201 +6,119 @@ import (
 	"fmt"
 )
 
-// Hub interface for flowgraph hubs that are connected by flowgraph streams
-type Hub interface {
-
-	/* TRACING */
-
-	// Tracef for debug trace printing.
-	Tracef(format string, v ...interface{})
-
-	// LogError for logging of error messages.
-	LogError(format string, v ...interface{})
-
-	// Panicf for logging of panic messages.
-	Panicf(format string, v ...interface{})
-
-	/* PROBING */
-
-	// Name returns the hub name
-	Name() string
-
-	// Source returns source stream by port index
-	Source(i int) Stream
-
-	// Result returns result stream by port index
-	Result(i int) Stream
-
-	// FindSource returns source stream by port name
-	FindSource(name string) (s Stream, portok bool)
-
-	// FindResult returns result stream by port name
-	FindResult(name string) (s Stream, portok bool)
-
-	// NumSource returns the number of source ports
-	NumSource() int
-
-	// NumResult returns the number of result ports
-	NumResult() int
-
-	// SourceNames returns the names of the source ports
-	SourceNames() []string
-
-	// ResultNames returns the names of the result ports
-	ResultNames() []string
-
-	/* CONFIGURING */
-
-	// AddSource adds a source port for each stream
-	AddSource(s ...Stream)
-
-	// AddResult adds a result port for each stream
-	AddResult(s ...Stream)
-
-	// SetSourceNum sets the number of source ports
-	SetSourceNum(n int)
-
-	// SetResultNum sets the number of result ports
-	SetResultNum(n int)
-
-	// SetSourceNames names the source ports
-	SetSourceNames(nm ...string)
-
-	// SetResultNames names the result ports
-	SetResultNames(nm ...string)
-
-	// SetSource sets a stream on a source port selected by string or int
-	SetSource(port interface{}, s Stream) error
-
-	// SetResult sets a stream on a result port selected by string or int
-	SetResult(port interface{}, s Stream) error
-
-	// SourceIndex returns the index of a named source port, -1 if not found
-	SourceIndex(port string) int
-
-	// ResultIndex returns the index of a named result port, -1 if not found
-	ResultIndex(port string) int
-
-	/* IMPLEMENTATION */
-
-	// Base returns the value that implements this hub
-	// The type of this value identifies the implementation.
-	Base() interface{}
-}
-
-// implementation of Hub
-type hub struct {
+// Hub struct for flowgraph hubs that are connected by flowgraph streams
+type Hub struct {
 	base *fgbase.Node
 }
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
-func (h hub) Tracef(format string, v ...interface{}) {
+func (h *Hub) Tracef(format string, v ...interface{}) {
 	h.base.Tracef(format, v...)
 }
 
 // LogError for logging of error messages.  Uses atomic log mechanism.
-func (h hub) LogError(format string, v ...interface{}) {
+func (h *Hub) LogError(format string, v ...interface{}) {
 	h.base.LogError(format, v...)
 }
 
 // Panicf for logging of panic messages.  Uses atomic log mechanism.
-func (h hub) Panicf(format string, v ...interface{}) {
+func (h *Hub) Panicf(format string, v ...interface{}) {
 	h.base.Panicf(format, v...)
 }
 
 // Name returns the hub name
-func (h hub) Name() string {
+func (h *Hub) Name() string {
 	return h.base.Name
 }
 
 // Source returns source stream by index
-func (h hub) Source(i int) Stream {
-	return stream{h.base.Src(i)}
+func (h *Hub) Source(i int) *Stream {
+	return &Stream{h.base.Src(i)}
 }
 
 // Result returns result stream by index
-func (h hub) Result(i int) Stream {
-	return stream{h.base.Dst(i)}
+func (h *Hub) Result(i int) *Stream {
+	return &Stream{h.base.Dst(i)}
 }
 
 // FindSource returns source stream by port name
-func (h hub) FindSource(name string) (s Stream, portok bool) {
+func (h *Hub) FindSource(name string) (s *Stream, portok bool) {
 	e, ok := h.base.FindSrc(name)
 	if e == nil {
 		return nil, ok
 	} else {
-		return stream{e}, ok
+		return &Stream{e}, ok
 	}
 
 }
 
 // FindResult returns result stream by port name
-func (h hub) FindResult(name string) (s Stream, portok bool) {
+func (h *Hub) FindResult(name string) (s *Stream, portok bool) {
 	e, ok := h.base.FindDst(name)
 	if e == nil {
 		return nil, ok
 	} else {
-		return stream{e}, ok
+		return &Stream{e}, ok
 	}
 
 }
 
 // AddSource adds a source port for each stream
-func (h hub) AddSource(s ...Stream) {
+func (h *Hub) AddSource(s ...*Stream) {
 	for _, sv := range s {
-		h.base.SrcAppend(sv.Base().(*fgbase.Edge))
+		h.base.SrcAppend(sv.base)
 	}
 }
 
 // AddResult adds a result port for each stream
-func (h hub) AddResult(s ...Stream) {
+func (h *Hub) AddResult(s ...*Stream) {
 	for _, sv := range s {
-		h.base.DstAppend(sv.Base().(*fgbase.Edge))
+		h.base.DstAppend(sv.base)
 	}
 }
 
 // NumSource returns the number of source ports
-func (h hub) NumSource() int {
+func (h *Hub) NumSource() int {
 	return h.base.SrcCnt()
 }
 
 // NumResult returns the number of result ports
-func (h hub) NumResult() int {
+func (h *Hub) NumResult() int {
 	return h.base.DstCnt()
 }
 
 // SetSourceNum sets the number of source ports
-func (h hub) SetSourceNum(n int) {
+func (h *Hub) SetSourceNum(n int) {
 	h.base.SetSrcNum(n)
 }
 
 // SetResultNum sets the number of result ports
-func (h hub) SetResultNum(n int) {
+func (h *Hub) SetResultNum(n int) {
 	h.base.SetDstNum(n)
 }
 
 // SetSourceNames names the source ports
-func (h hub) SetSourceNames(nm ...string) {
+func (h *Hub) SetSourceNames(nm ...string) {
 	h.base.SetSrcNames(nm...)
 }
 
 // SetResultNames names the result ports
-func (h hub) SetResultNames(nm ...string) {
+func (h *Hub) SetResultNames(nm ...string) {
 	h.base.SetDstNames(nm...)
 }
 
 // SourceNames returns the names of the source ports
-func (h hub) SourceNames() []string {
+func (h *Hub) SourceNames() []string {
 	return h.base.SrcNames()
 }
 
 // ResultNames returns the names of the result ports
-func (h hub) ResultNames() []string {
+func (h *Hub) ResultNames() []string {
 	return h.base.DstNames()
 }
 
 // SetSource sets a stream on a source port selected by string or int
-func (h hub) SetSource(port interface{}, s Stream) error {
+func (h *Hub) SetSource(port interface{}, s *Stream) error {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -218,14 +136,14 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 		return fmt.Errorf("source port %s not found on hub %v\n", port, h.Name())
 	}
 
-	e := *s.Base().(*fgbase.Edge)
+	e := *s.base
 
 	h.base.SrcSet(i, &e)
 	return nil
 }
 
 // SetResult sets a stream on a result port selected by string or int
-func (h hub) SetResult(port interface{}, s Stream) error {
+func (h *Hub) SetResult(port interface{}, s *Stream) error {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -243,14 +161,14 @@ func (h hub) SetResult(port interface{}, s Stream) error {
 		return fmt.Errorf("result port %s not found on hub %v\n", port, h.Name())
 	}
 
-	e := *s.Base().(*fgbase.Edge)
+	e := *s.base
 
 	h.base.DstSet(i, &e)
 	return nil
 }
 
 // SourceIndex returns the index of a named source port, -1 if not found
-func (h hub) SourceIndex(port string) int {
+func (h *Hub) SourceIndex(port string) int {
 	i, ok := h.base.FindSrcIndex(port)
 	if !ok {
 		i = -1
@@ -259,7 +177,7 @@ func (h hub) SourceIndex(port string) int {
 }
 
 // ResultIndex returns the index of a named result port, -1 if not found
-func (h hub) ResultIndex(port string) int {
+func (h *Hub) ResultIndex(port string) int {
 	i, ok := h.base.FindDstIndex(port)
 	if !ok {
 		i = -1
@@ -267,8 +185,12 @@ func (h hub) ResultIndex(port string) int {
 	return i
 }
 
-// Base returns the value that implements this hub
-// The type of this value identifies the implementation.
-func (h hub) Base() interface{} {
-	return h.base
+// Empty returns true if the underlying implementation is nil
+func (h *Hub) Empty() bool {
+	return h.base==nil
+}
+
+// Node returns pointer to underlying Node
+func (h *Hub) Node() *fgbase.Node {
+        return h.base
 }
