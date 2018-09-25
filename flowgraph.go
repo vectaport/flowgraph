@@ -18,8 +18,7 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
-// Code constants for NewHub
-//                           **init**		**functionality**
+// Code constants for NewHub, followed by init type and description
 const (
 	AllOf Code = iota // Transformer 	waiting for all sources
 	OneOf             // Transformer 	waiting for one source
