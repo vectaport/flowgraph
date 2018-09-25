@@ -63,17 +63,17 @@ type Flowgraph interface {
 // implementation of Flowgraph
 type graph struct {
 	name         string
-	hubs         []*fgbase.Node
-	streams      []*fgbase.Edge
-	nameToHub    map[string]*fgbase.Node
-	nameToStream map[string]*fgbase.Edge
+	hubs         []Hub
+	streams      []Stream
+	nameToHub    map[string]Hub
+	nameToStream map[string]Stream
 }
 
-// New returns a named flowgraph implemented with the fgbase package
-func New(nm string) Flowgraph {
-	nameToHub := make(map[string]*fgbase.Node)
-	nameToStream := make(map[string]*fgbase.Edge)
-	return &graph{nm, nil, nil, nameToHub, nameToStream}
+// New returns a named flowgraph
+func New(name string) Flowgraph {
+	nameToHub := make(map[string]Hub)
+	nameToStream := make(map[string]Stream)
+	return &graph{name, nil, nil, nameToHub, nameToStream}
 }
 
 // Name returns the name of this flowgraph
@@ -83,12 +83,12 @@ func (fg *graph) Name() string {
 
 // Hub returns a hub by index
 func (fg *graph) Hub(n int) Hub {
-	return hub{fg.hubs[n]}
+	return fg.hubs[n]
 }
 
 // Stream returns a stream by index
 func (fg *graph) Stream(n int) Stream {
-	return stream{fg.streams[n]}
+	return fg.streams[n]
 }
 
 // NumHub returns the number of hubs
@@ -102,20 +102,6 @@ func (fg *graph) NumStream() int {
 }
 
 // NewHub returns a new uninitialized hub
-//
-// code is "command srcnames;dstnames"
-//
-// command is one of a set of predefined commands
-//
-// srcnames is:
-// 	    "name[...,name]" for AllOf
-// 	    "name[...|name]" for OneOf
-// 	    "(name),name[...,name]" for Select
-// 	    "<name>,name[...,name]" for Steer
-// 	    "" for no sources
-//
-// dstnames is "name[...,name]" ("" for no results)
-//
 func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 
 	var n fgbase.Node
@@ -126,7 +112,7 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	case "ALLOF":
 		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
 
-		// Math Hubs
+	// Math Hubs
 	case "ADD":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
 	case "SUB":
@@ -136,7 +122,7 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	case "DIV":
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
 
-		// General Purpose Hubs
+	// General Purpose Hubs
 	case "ARRAY":
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
 	case "CONST":
@@ -151,9 +137,10 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 		n.Aux = init
 	}
 
-	fg.hubs = append(fg.hubs, &n)
-	fg.nameToHub[name] = &n
-	return hub{&n}
+	h := hub{&n}
+	fg.hubs = append(fg.hubs, h)
+	fg.nameToHub[name] = h
+	return h
 }
 
 // NewStream returns a new uninitialized stream
@@ -162,19 +149,20 @@ func (fg *graph) NewStream(name string) Stream {
 		name = fmt.Sprintf("e%d", len(fg.streams))
 	}
 	e := fgbase.MakeEdge(name, nil)
-	fg.streams = append(fg.streams, &e)
-	fg.nameToStream[name] = &e
-	return stream{&e}
+	s := stream{&e}
+	fg.streams = append(fg.streams, s)
+	fg.nameToStream[name] = s
+	return s
 }
 
 // FindHub finds a hub by name
 func (fg *graph) FindHub(name string) Hub {
-	return hub{fg.nameToHub[name]}
+	return fg.nameToHub[name]
 }
 
 // FindStream finds a Stream by name
 func (fg *graph) FindStream(name string) Stream {
-	return stream{fg.nameToStream[name]}
+	return fg.nameToStream[name]
 }
 
 // Connect connects two hubs via named (string) or indexed (int) ports
@@ -182,59 +170,57 @@ func (fg *graph) Connect(
 	upstream Hub, upstreamPort interface{},
 	dnstream Hub, dnstreamPort interface{}) Stream {
 
-	var usEdge *fgbase.Edge
+	var us Stream
 	var usok bool
 	switch v := upstreamPort.(type) {
 	case string:
-		usEdge, usok = upstream.Base().(*fgbase.Node).FindDst(v)
+		us, usok = upstream.FindResult(v)
 		if !usok {
-			upstream.Base().(*fgbase.Node).Panicf("No result port \"%s\" found on Hub \"%s\"\n", v, upstream.Name())
+			upstream.Panicf("No result port \"%s\" found on Hub \"%s\"\n", v, upstream.Name())
 		}
 	case int:
-		usok = v >= 0 && v < upstream.Base().(*fgbase.Node).DstCnt()
+		usok = v >= 0 && v < upstream.NumResult()
 		if !usok {
-			upstream.Base().(*fgbase.Node).Panicf("No result port %d found on Hub \"%s\"\n", v, dnstream.Name())
+			upstream.Panicf("No result port %d found on Hub \"%s\"\n", v, dnstream.Name())
 		}
-		if usok {
-			usEdge = upstream.Base().(*fgbase.Node).Dst(v)
-		}
+		us = upstream.Result(v)
 	default:
-		upstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
+		upstream.Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
 	}
 
-	var dsEdge *fgbase.Edge
+	var ds Stream
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
-		dsEdge, dsok = dnstream.Base().(*fgbase.Node).FindSrc(v)
+		ds, dsok = dnstream.FindSource(v)
 		if !dsok {
-			dnstream.Base().(*fgbase.Node).Panicf("No source port \"%s\" found on Hub \"%s\"\n", v, dnstream.Name())
+			dnstream.Panicf("No source port \"%s\" found on Hub \"%s\"\n", v, dnstream.Name())
 		}
 	case int:
-		dsok = v >= 0 && v < dnstream.Base().(*fgbase.Node).SrcCnt()
-		if !usok {
-			upstream.Base().(*fgbase.Node).Panicf("No source port %d found on Hub \"%s\"\n", v, dnstream.Name())
+		dsok = v >= 0 && v < dnstream.NumSource()
+		if !dsok {
+			upstream.Panicf("No source port %d found on Hub \"%s\"\n", v, dnstream.Name())
 		}
-		if dsok {
-			dsEdge = dnstream.Base().(*fgbase.Node).Src(v)
-		}
+		ds = dnstream.Source(v)
 	default:
-		dnstream.Base().(*fgbase.Node).Panicf("Need string or int to specify port on downstream Hub \"%s\"\n", dnstream.Name())
+		dnstream.Panicf("Need string or int to specify port on downstream Hub \"%s\"\n", dnstream.Name())
 	}
 
-	if usEdge == nil && dsEdge == nil {
-		e := fgbase.MakeEdge(fmt.Sprintf("e%d", len(fg.streams)), nil)
-		fg.streams = append(fg.streams, &e)
-		eup := e
-		edn := e
-		upstream.SetResult(upstreamPort, stream{&eup})
-		dnstream.SetSource(dnstreamPort, stream{&edn})
-		return stream{&e}
+	if us == nil && ds == nil {
+		s := fg.NewStream("")
+		fg.streams = append(fg.streams, s)
+		upstream.SetResult(upstreamPort, s)
+		dnstream.SetSource(dnstreamPort, s)
+		return s
 	}
 	return nil
 }
 
 // Run runs the flowgraph
 func (fg *graph) Run() {
-	fgbase.RunGraph(fg.hubs)
+	var nodes = make([]*fgbase.Node, len(fg.hubs))
+	for i := range nodes {
+		nodes[i] = fg.hubs[i].Base().(*fgbase.Node)
+	}
+	fgbase.RunGraph(nodes)
 }

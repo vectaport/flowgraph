@@ -17,6 +17,9 @@ type Hub interface {
 	// LogError for logging of error messages.
 	LogError(format string, v ...interface{})
 
+	// Panicf for logging of panic messages.
+	Panicf(format string, v ...interface{})
+
 	/* PROBING */
 
 	// Name returns the hub name
@@ -29,10 +32,10 @@ type Hub interface {
 	Result(i int) Stream
 
 	// FindSource returns source stream by port name
-	FindSource(name string) Stream
+	FindSource(name string) (s Stream, portok bool)
 
 	// FindResult returns result stream by port name
-	FindResult(name string) Stream
+	FindResult(name string) (s Stream, portok bool)
 
 	// NumSource returns the number of source ports
 	NumSource() int
@@ -100,6 +103,11 @@ func (h hub) LogError(format string, v ...interface{}) {
 	h.base.LogError(format, v...)
 }
 
+// Panicf for logging of panic messages.  Uses atomic log mechanism.
+func (h hub) Panicf(format string, v ...interface{}) {
+	h.base.Panicf(format, v...)
+}
+
 // Name returns the hub name
 func (h hub) Name() string {
 	return h.base.Name
@@ -116,27 +124,25 @@ func (h hub) Result(i int) Stream {
 }
 
 // FindSource returns source stream by port name
-func (h hub) FindSource(name string) Stream {
+func (h hub) FindSource(name string) (s Stream, portok bool) {
 	e, ok := h.base.FindSrc(name)
-	if !ok {
-		return nil
-	}
 	if e == nil {
-		return stream{nil}
+		return nil, ok
+	} else {
+		return stream{e}, ok
 	}
-	return stream{e}
+
 }
 
 // FindResult returns result stream by port name
-func (h hub) FindResult(name string) Stream {
+func (h hub) FindResult(name string) (s Stream, portok bool) {
 	e, ok := h.base.FindDst(name)
-	if !ok {
-		return nil
-	}
 	if e == nil {
-		return stream{nil}
+		return nil, ok
+	} else {
+		return stream{e}, ok
 	}
-	return stream{e}
+
 }
 
 // AddSource adds a source port for each stream
@@ -199,19 +205,22 @@ func (h hub) SetSource(port interface{}, s Stream) error {
 	var ok bool
 	switch v := port.(type) {
 	case string:
-		i, ok = h.base.FindSrcIndex(v)
+		i = h.SourceIndex(v)
+		ok = i >= 0
 	case int:
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Base().(*fgbase.Node).Panicf("Need string or int to select port on hub %s\n", h.Name())
+		h.Panicf("Need string or int to select port on hub %s\n", h.Name())
 	}
 
 	if !ok {
 		return fmt.Errorf("source port %s not found on hub %v\n", port, h.Name())
 	}
 
-	h.base.SrcSet(i, s.Base().(*fgbase.Edge))
+	e := *s.Base().(*fgbase.Edge)
+
+	h.base.SrcSet(i, &e)
 	return nil
 }
 
@@ -221,19 +230,22 @@ func (h hub) SetResult(port interface{}, s Stream) error {
 	var ok bool
 	switch v := port.(type) {
 	case string:
-		i, ok = h.base.FindDstIndex(v)
+		i = h.ResultIndex(v)
+		ok = i >= 0
 	case int:
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Base().(*fgbase.Node).Panicf("Need string or int to select result port on hub %s\n", h.Name())
+		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
 	}
 
 	if !ok {
 		return fmt.Errorf("result port %s not found on hub %v\n", port, h.Name())
 	}
 
-	h.base.DstSet(i, s.Base().(*fgbase.Edge))
+	e := *s.Base().(*fgbase.Edge)
+
+	h.base.DstSet(i, &e)
 	return nil
 }
 

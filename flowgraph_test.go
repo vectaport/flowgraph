@@ -265,22 +265,22 @@ func TestDotNaming(t *testing.T) {
 	h1 := fg.NewHub("name1", "SINK", nil)
 	h1.SetSourceNames("ABC")
 
-	s0 := h0.FindResult("XYZ")
-	if s0 == nil {
+	s0, s0ok := h0.FindResult("XYZ")
+	if !s0ok {
 		t.Fatalf("ERROR Unable to find result port named XYZ\n")
 	}
 
-	if s0.Base() == nil {
+	if s0 == nil {
 		t.Fatalf("ERROR Unable to find stream at result port named XYZ\n")
 	}
 
-	s1 := h1.FindSource("ABC")
-	if s1 == nil {
+	s1, s1ok := h1.FindSource("ABC")
+	if !s1ok {
 		t.Fatalf("ERROR Unable to find source port named ABC\n")
 	}
 
-	if s1.Base() == nil {
-		t.Fatalf("ERROR Unable to find stream at source port named ABC\n")
+	if s1 == nil {
+		t.Fatalf("ERROR Unable to find stream at source port named ABC on hub %s\n", h1)
 	}
 
 	fg.Connect(h0, "XYZ", h1, "ABC")
@@ -289,7 +289,7 @@ func TestDotNaming(t *testing.T) {
 		t.Fatalf("ERROR Unable to find result port numbered 0\n")
 	}
 	if h0.Result(0).Base().(*fgbase.Edge) == nil {
-		t.Fatalf("ERROR Unable to find stream at result port numbered 0\n")
+		t.Fatalf("ERROR Unable to find stream at result port numbered 0 on hub %s\n", h0.Name())
 	}
 
 	if h1.Source(0) == nil {
