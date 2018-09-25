@@ -15,6 +15,23 @@ import (
 // End of flow
 var EOF = errors.New("EOF")
 
+// Hub Code
+type Code int
+
+const (
+	AllOf Code = iota
+	OneOf
+	Steer
+	Select
+	Add
+	Sub
+	Mul
+	Div
+	Const
+	Array
+	Sink
+)
+
 /*=====================================================================*/
 
 // Transformer transforms a slice of source values into a slice
@@ -47,7 +64,7 @@ type Flowgraph interface {
 	FindStream(name string) Stream
 
 	// NewHub returns a new unconnected hub
-	NewHub(name, code string, init interface{}) Hub
+	NewHub(name string, code Code, init interface{}) Hub
 	// NewStream returns a new unconnected stream
 	NewStream(name string) Stream
 
@@ -101,33 +118,33 @@ func (fg *graph) NumStream() int {
 	return len(fg.streams)
 }
 
-// NewHub returns a new uninitialized hub
-func (fg *graph) NewHub(name, code string, init interface{}) Hub {
+// NewHub returns a new unconnected hub
+func (fg *graph) NewHub(name string, code Code, init interface{}) Hub {
 
 	var n fgbase.Node
 
 	switch code {
 
 	// User Supplied Hubs
-	case "ALLOF":
+	case AllOf:
 		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
 
 	// Math Hubs
-	case "ADD":
+	case Add:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
-	case "SUB":
+	case Sub:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.SubFire)
-	case "MUL":
+	case Mul:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.MulFire)
-	case "DIV":
+	case Div:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
 
 	// General Purpose Hubs
-	case "ARRAY":
+	case Array:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
-	case "CONST":
+	case Const:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
-	case "SINK":
+	case Sink:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
 	default:
@@ -143,7 +160,7 @@ func (fg *graph) NewHub(name, code string, init interface{}) Hub {
 	return h
 }
 
-// NewStream returns a new uninitialized stream
+// NewStream returns a new unconnected stream
 func (fg *graph) NewStream(name string) Stream {
 	if name == "" {
 		name = fmt.Sprintf("e%d", len(fg.streams))

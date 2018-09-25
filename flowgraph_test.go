@@ -63,10 +63,10 @@ func TestIncoming(t *testing.T) {
 
 	fg := flowgraph.New("TestIncoming")
 
-	incoming := fg.NewHub("incoming", "ALLOF", &getter{})
+	incoming := fg.NewHub("incoming", flowgraph.AllOf, &getter{})
 	incoming.SetResultNames("X")
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(incoming, "X", sink, "A")
@@ -95,10 +95,10 @@ func TestOutgoing(t *testing.T) {
 
 	fg := flowgraph.New("TestOutgoing")
 
-	const1 := fg.NewHub("const1", "CONST", 1)
+	const1 := fg.NewHub("const1", flowgraph.Const, 1)
 	const1.SetResultNames("X")
 
-	outgoing := fg.NewHub("outgoing", "ALLOF", &putter{})
+	outgoing := fg.NewHub("outgoing", flowgraph.AllOf, &putter{})
 	outgoing.SetSourceNames("A")
 
 	fg.Connect(const1, "X", outgoing, "A")
@@ -126,14 +126,14 @@ func TestAllOf(t *testing.T) {
 
 	fg := flowgraph.New("TestAllOf")
 
-	const1 := fg.NewHub("const1", "CONST", 1)
+	const1 := fg.NewHub("const1", flowgraph.Const, 1)
 	const1.SetResultNames("X")
 
-	transformer := fg.NewHub("outgoing", "ALLOF", &transformer{})
+	transformer := fg.NewHub("outgoing", flowgraph.AllOf, &transformer{})
 	transformer.SetSourceNames("A")
 	transformer.SetResultNames("X")
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(const1, "X", transformer, "A")
@@ -148,17 +148,15 @@ func TestAllOf(t *testing.T) {
 
 func TestArray(t *testing.T) {
 
-	t.Parallel()
-
 	fmt.Printf("BEGIN:  TestArray\n")
 
 	fg := flowgraph.New("TestArray")
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	array := fg.NewHub("array", "ARRAY", arr)
+	array := fg.NewHub("array", flowgraph.Array, arr)
 	array.SetResultNames("X")
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(array, "X", sink, "A")
@@ -168,7 +166,7 @@ func TestArray(t *testing.T) {
 	s := sink.Base().(*fgbase.Node).Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
-		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
+		t.Fatalf("SinkStats.Cnt %d != len(arr) (%d)\n", s.Cnt, len(arr))
 	}
 
 	sum := 0
@@ -203,19 +201,19 @@ func TestChain(t *testing.T) {
 
 	fg := flowgraph.New("TestChain")
 
-	array := fg.NewHub("array", "ARRAY", arr)
+	array := fg.NewHub("array", flowgraph.Array, arr)
 	array.SetResultNames("X")
 
 	l := 1024
 	p := make([]flowgraph.Hub, l)
 
 	for i := 0; i < l; i++ {
-		p[i] = fg.NewHub(fmt.Sprintf("t%04d", i), "ALLOF", &pass{})
+		p[i] = fg.NewHub(fmt.Sprintf("t%04d", i), flowgraph.AllOf, &pass{})
 		p[i].SetSourceNames("A")
 		p[i].SetResultNames("X")
 	}
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(array, "X", p[0], "A")
@@ -259,10 +257,10 @@ func TestDotNaming(t *testing.T) {
 
 	fg := flowgraph.New("TestDotNaming")
 
-	h0 := fg.NewHub("name0", "CONST", 100)
+	h0 := fg.NewHub("name0", flowgraph.Const, 100)
 	h0.SetResultNames("XYZ")
 
-	h1 := fg.NewHub("name1", "SINK", nil)
+	h1 := fg.NewHub("name1", flowgraph.Sink, nil)
 	h1.SetSourceNames("ABC")
 
 	s0, s0ok := h0.FindResult("XYZ")
@@ -320,17 +318,17 @@ func TestAdd(t *testing.T) {
 
 	fg := flowgraph.New("TestAdd")
 
-	const100 := fg.NewHub("const100", "CONST", 100)
+	const100 := fg.NewHub("const100", flowgraph.Const, 100)
 	const100.SetResultNames("X")
 
-	const1 := fg.NewHub("const1", "CONST", 1)
+	const1 := fg.NewHub("const1", flowgraph.Const, 1)
 	const1.SetResultNames("X")
 
-	add := fg.NewHub("add", "ADD", nil)
+	add := fg.NewHub("add", flowgraph.Add, nil)
 	add.SetSourceNames("A", "B")
 	add.SetResultNames("X")
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(const100, "X", add, "A")
@@ -358,17 +356,17 @@ func TestIterator(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator")
 
-	const100 := fg.NewHub("const100", "CONST", 100)
+	const100 := fg.NewHub("const100", flowgraph.Const, 100)
 	const100.SetResultNames("X")
 
-	const1 := fg.NewHub("const1", "CONST", 1)
+	const1 := fg.NewHub("const1", flowgraph.Const, 1)
 	const1.SetResultNames("X")
 
-	add := fg.NewHub("add", "ADD", nil)
+	add := fg.NewHub("add", flowgraph.Add, nil)
 	add.SetSourceNames("A", "B")
 	add.SetResultNames("X")
 
-	sink := fg.NewHub("sink", "SINK", nil)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
 	fg.Connect(const100, "X", add, "A")
