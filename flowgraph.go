@@ -18,18 +18,19 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
+// Code constants for NewHub
+//                           **init**		**functionality**
 const (
-	AllOf Code = iota	// pick this doc up
-	OneOf
-	Steer
-	Select
-	Add
-	Sub
-	Mul
-	Div
-	Const
-	Array
-	Sink
+	AllOf Code = iota // Transformer 	waiting for all sources
+	OneOf             // Transformer 	waiting for one source
+	Steer             // nil         	steer rest by first
+	Add               // nil 	       	add numbers, concat strings, or use Add()
+	Sub               // nil         	subtract numbers or use Sub()
+	Mul               // nil	       	multiply numbers or use Mul()
+	Div               // nil 	       	divide numbers or use Div()
+	Const             // interface{}     	produce constant values forever
+	Array             // [[]interface{}  	produce array of values then EOF
+	Sink              // fgbase.SinkStats	consume values forever
 )
 
 /*=====================================================================*/
