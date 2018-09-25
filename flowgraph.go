@@ -15,7 +15,7 @@ import (
 // End of flow
 var EOF = errors.New("EOF")
 
-// Hub Code
+// Hub code
 type Code int
 
 const (
