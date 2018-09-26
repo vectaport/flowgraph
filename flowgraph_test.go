@@ -345,22 +345,33 @@ func TestAdd(t *testing.T) {
 
 /*=====================================================================*/
 
-func TestIterator(t *testing.T) {
-	fmt.Printf("BEGIN:  TestIterator\n")
+func TestLineEq(t *testing.T) {
+	fmt.Printf("BEGIN:  TestLineEq\n")
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second / 100
+	fgbase.RunTime = time.Second
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
-	fg := flowgraph.New("TestIterator")
+	fg := flowgraph.New("TestLineEq")
 
-	const100 := fg.NewHub("const100", flowgraph.Const, 100)
-	const100.SetResultNames("X")
+	marr := []interface{}{-100,-10,-1,0,1,10,100}
+	xarr := []interface{}{0, 10, 20, 30, -10, -20, -30}
+	barr := []interface{}{40, 20, 10, 0, -10, -20, -40}
 
-	const1 := fg.NewHub("const1", flowgraph.Const, 1)
-	const1.SetResultNames("X")
+	m := fg.NewHub("m", flowgraph.Array, marr)
+	m.SetResultNames("X")
+
+	x := fg.NewHub("x", flowgraph.Array, xarr)
+	x.SetResultNames("X")
+
+	b := fg.NewHub("b", flowgraph.Array, barr)
+	b.SetResultNames("X")
+
+	mul := fg.NewHub("mul", flowgraph.Mul, nil)
+	mul.SetSourceNames("A", "B")
+	mul.SetResultNames("X")
 
 	add := fg.NewHub("add", flowgraph.Add, nil)
 	add.SetSourceNames("A", "B")
@@ -369,8 +380,10 @@ func TestIterator(t *testing.T) {
 	sink := fg.NewHub("sink", flowgraph.Sink, nil)
 	sink.SetSourceNames("A")
 
-	fg.Connect(const100, "X", add, "A")
-	fg.Connect(const1, "X", add, "B")
+	fg.Connect(m, "X", mul, "A")
+	fg.Connect(x, "X", mul, "B")
+	fg.Connect(mul, "X", add, "A")
+	fg.Connect(b, "X", add, "B")
 	fg.Connect(add, "X", sink, "A")
 
 	fg.Run()
@@ -378,5 +391,5 @@ func TestIterator(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
-	fmt.Printf("END:    TestIterator\n")
+	fmt.Printf("END:    TestLineEq\n")
 }
