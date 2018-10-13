@@ -435,7 +435,7 @@ func TestIterator(t *testing.T) {
 	sub.SetResultNames("X")
 
 	steer := fg.NewHub("steer", flowgraph.Steer, nil)
-	steer.SetSourceNames("A")
+	steer.SetSourceNames("A")  // steer condition
 	steer.SetResultNames("X", "Y")
 
 	fg.Connect(tbi, "X", rdy, "A")
