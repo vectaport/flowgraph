@@ -41,6 +41,11 @@ func (s *Stream) Empty() bool {
 	return s.base == nil
 }
 
+// Init sets an initial value for flow
+func (s *Stream) Init(v interface{}) {
+	s.Edge().Val = v
+}
+
 // Edge returns pointer to underlying Edge
 func (s *Stream) Edge() *fgbase.Edge {
 	return s.base

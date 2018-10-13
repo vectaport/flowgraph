@@ -263,22 +263,14 @@ func TestDotNaming(t *testing.T) {
 	h1 := fg.NewHub("name1", flowgraph.Sink, nil)
 	h1.SetSourceNames("ABC")
 
-	s0, s0ok := h0.FindResult("XYZ")
+	_, s0ok := h0.FindResult("XYZ")
 	if !s0ok {
 		t.Fatalf("ERROR Unable to find result port named XYZ\n")
 	}
 
-	if s0 == nil {
-		t.Fatalf("ERROR Unable to find stream at result port named XYZ\n")
-	}
-
-	s1, s1ok := h1.FindSource("ABC")
+	_, s1ok := h1.FindSource("ABC")
 	if !s1ok {
 		t.Fatalf("ERROR Unable to find source port named ABC\n")
-	}
-
-	if s1 == nil {
-		t.Fatalf("ERROR Unable to find stream at source port named ABC on hub %s\n", h1)
 	}
 
 	fg.Connect(h0, "XYZ", h1, "ABC")
@@ -356,7 +348,7 @@ func TestLineEq(t *testing.T) {
 
 	fg := flowgraph.New("TestLineEq")
 
-	marr := []interface{}{-100,-10,-1,0,1,10,100}
+	marr := []interface{}{-100, -10, -1, 0, 1, 10, 100}
 	xarr := []interface{}{0, 10, 20, 30, -10, -20, -30}
 	barr := []interface{}{40, 20, 10, 0, -10, -20, -40}
 
@@ -392,4 +384,72 @@ func TestLineEq(t *testing.T) {
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestLineEq\n")
+}
+
+/*=====================================================================*/
+
+type tbi struct{}
+
+func (t *tbi) Retrieve(n *flowgraph.Hub) (result interface{}, err error) {
+	return 10, nil
+}
+
+type either struct{}
+
+func (e *either) Transform(n *flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	for _, v := range source {
+		if v != nil {
+			return []interface{}{v}, nil
+		}
+	}
+	return nil, fmt.Errorf("Neither input found for either")
+}
+
+func TestIterator(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator")
+
+	tbi := fg.NewHub("tbi", flowgraph.Retrieve, &tbi{})
+	tbi.SetResultNames("X")
+
+	rdy := fg.NewHub("rdy", flowgraph.Rdy, true)
+	rdy.SetSourceNames("A", "B")
+	rdy.SetResultNames("X")
+
+	either := fg.NewHub("either", flowgraph.OneOf, &either{})
+	either.SetSourceNames("A", "B")
+	either.SetResultNames("X")
+
+	one := fg.NewHub("one", flowgraph.Const, 1)
+	one.SetResultNames("X")
+
+	sub := fg.NewHub("sub", flowgraph.Sub, nil)
+	sub.SetSourceNames("A", "B")
+	sub.SetResultNames("X")
+
+	steer := fg.NewHub("steer", flowgraph.Steer, nil)
+	steer.SetSourceNames("A")
+	steer.SetResultNames("X", "Y")
+
+	fg.Connect(tbi, "X", rdy, "A")
+	fg.Connect(rdy, "X", either, "A")
+	fg.Connect(either, "X", sub, "A")
+	fg.Connect(one, "X", sub, "B")
+	fg.Connect(sub, "X", steer, "A")
+	fg.ConnectInit(steer, "X", rdy, "B", true)
+	fg.Connect(steer, "Y", either, "B")
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator\n")
 }

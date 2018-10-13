@@ -20,16 +20,21 @@ type Code int
 
 // Code constants for NewHub, followed by init type and description
 const (
-	AllOf Code = iota // Transformer	waiting for all sources
-	OneOf             // Transformer	waiting for one source
-	Steer             // nil		steer rest by first
-	Add               // nil		add numbers, concat strings, or use Add()
-	Sub               // nil		subtract numbers or use Sub()
-	Mul               // nil		multiply numbers or use Mul()
-	Div               // nil		divide numbers or use Div()
-	Const             // interface{}	produce constant values forever
-	Array             // [[]interface{}	produce array of values then EOF
-	Sink              // fgbase.SinkStats	consume values forever
+	AllOf    Code = iota // Transformer	waiting for all sources
+	OneOf                // Transformer	waiting for one source
+	Retrieve             // Retriever		retrieve one value
+	Transmit             // Transmitter	transmit one value
+	Rdy                  // nil		wait for first to pass rest
+	Pass                 // nil		pass all values
+	Steer                // nil		steer rest by first
+	Select               // nil		select rest by first
+	Add                  // nil		add numbers, concat strings, or use Add()
+	Sub                  // nil		subtract numbers or use Sub()
+	Mul                  // nil		multiply numbers or use Mul()
+	Div                  // nil		divide numbers or use Div()
+	Const                // interface{}	produce constant values forever
+	Array                // [[]interface{}	produce array of values then EOF
+	Sink                 // fgbase.SinkStats	consume values forever
 )
 
 /*=====================================================================*/
@@ -38,6 +43,16 @@ const (
 // of result values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
 	Transform(h *Hub, source []interface{}) (result []interface{}, err error)
+}
+
+// Retriever retrieves one value using the Retrieve method. Use Hub.Tracef for tracing.
+type Retriever interface {
+	Retrieve(h *Hub) (result interface{}, err error)
+}
+
+// Transmitter transmits one value using a Transmit method. Use Hub.Tracef for tracing.
+type Transmitter interface {
+	Transmit(h *Hub, source interface{}) (err error)
 }
 
 /*=====================================================================*/
@@ -93,7 +108,25 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 
 	// User Supplied Hubs
 	case AllOf:
+		if _, ok := init.(Transformer); !ok {
+			panic(fmt.Sprintf("Hub with AllOf code not given Transformer for init %T(%+v)", init, init))
+		}
 		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
+	case OneOf:
+		if _, ok := init.(Transformer); !ok {
+			panic(fmt.Sprintf("Hub with OneOf code not given Transformer for init %T(%+v)", init, init))
+		}
+		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
+	case Retrieve:
+		if _, ok := init.(Retriever); !ok {
+			panic(fmt.Sprintf("Hub with Retrieve code not given Retriever for init %T(%+v)", init, init))
+		}
+		n = fgbase.MakeNode(name, nil, nil, nil, retrieveFire)
+	case Transmit:
+		if _, ok := init.(Transmitter); !ok {
+			panic(fmt.Sprintf("Hub with Transmit code not given Transmitter for init %T(%+v)", init, init))
+		}
+		n = fgbase.MakeNode(name, nil, nil, nil, transmitFire)
 
 	// Math Hubs
 	case Add:
@@ -106,6 +139,8 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
 
 	// General Purpose Hubs
+	case Rdy:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.RdyFire)
 	case Array:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
 	case Const:
@@ -113,6 +148,8 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 	case Sink:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 		n.Aux = fgbase.SinkStats{0, 0}
+	case Steer:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, fgbase.SteervRdy, fgbase.SteervFire)
 	default:
 		log.Panicf("Unexpected Hub code:  %s\n", code)
 	}
@@ -128,9 +165,6 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 
 // NewStream returns a new unconnected stream
 func (fg *Flowgraph) NewStream(name string) *Stream {
-	if name == "" {
-		name = fmt.Sprintf("e%d", len(fg.streams))
-	}
 	e := fgbase.MakeEdge(name, nil)
 	s := Stream{&e}
 	fg.streams = append(fg.streams, &s)
@@ -152,6 +186,23 @@ func (fg *Flowgraph) FindStream(name string) *Stream {
 func (fg *Flowgraph) Connect(
 	upstream *Hub, upstreamPort interface{},
 	dnstream *Hub, dnstreamPort interface{}) *Stream {
+	return fg.connect(upstream, upstreamPort, dnstream, dnstreamPort, nil)
+}
+
+// ConnectInit connects two hubs via named (string) or indexed (int) ports
+// and sets an initial value for flow
+func (fg *Flowgraph) ConnectInit(
+	upstream *Hub, upstreamPort interface{},
+	dnstream *Hub, dnstreamPort interface{},
+	init interface{}) *Stream {
+	return fg.connect(upstream, upstreamPort, dnstream, dnstreamPort, init)
+}
+
+// connect connects two hubs via named (string) or indexed (int) ports
+func (fg *Flowgraph) connect(
+	upstream *Hub, upstreamPort interface{},
+	dnstream *Hub, dnstreamPort interface{},
+	init interface{}) *Stream {
 
 	var us *Stream
 	var usok bool
@@ -189,11 +240,13 @@ func (fg *Flowgraph) Connect(
 		dnstream.Panicf("Need string or int to specify port on downstream Hub \"%s\"\n", dnstream.Name())
 	}
 
-	if us == nil && ds == nil {
+	if us.base == nil && ds.base == nil {
 		s := fg.NewStream("")
+		s.Init(init)
 		fg.streams = append(fg.streams, s)
 		upstream.SetResult(upstreamPort, s)
 		dnstream.SetSource(dnstreamPort, s)
+		dnstream.FindSource(dnstreamPort)
 		return s
 	}
 	return nil
@@ -206,4 +259,85 @@ func (fg *Flowgraph) Run() {
 		nodes[i] = fg.hubs[i].base
 	}
 	fgbase.RunGraph(nodes)
+}
+
+func allOfFire(n *fgbase.Node) error {
+	var a []interface{}
+	a = make([]interface{}, len(n.Srcs))
+	t := n.Aux.(Transformer)
+	eofflag := false
+	for i, _ := range a {
+		a[i] = n.Srcs[i].SrcGet()
+		if v, ok := a[i].(error); ok && v.Error() == "EOF" {
+			n.Srcs[i].Flow = false
+			eofflag = true
+		}
+	}
+	x, _ := t.Transform(&Hub{n}, a)
+	for i, _ := range x {
+		if eofflag {
+			n.Dsts[i].DstPut(EOF)
+		} else {
+			n.Dsts[i].DstPut(x[i])
+		}
+	}
+	if eofflag {
+		return EOF
+	} else {
+		return nil
+	}
+
+}
+
+func oneOfRdy(n *fgbase.Node) bool {
+	for _, v := range n.Srcs {
+		if v.SrcRdy(n) {
+			return true
+		}
+	}
+	return false
+}
+
+func oneOfFire(n *fgbase.Node) error {
+	var a []interface{}
+	a = make([]interface{}, len(n.Srcs))
+	t := n.Aux.(Transformer)
+	eofflag := false
+	for i, _ := range a {
+		if n.Srcs[i].SrcRdy(n) {
+			a[i] = n.Srcs[i].SrcGet()
+			if v, ok := a[i].(error); ok && v.Error() == "EOF" {
+				n.Srcs[i].Flow = false
+				eofflag = true
+			}
+			break
+		}
+	}
+	x, _ := t.Transform(&Hub{n}, a)
+	for i, _ := range x {
+		if eofflag {
+			n.Dsts[i].DstPut(EOF)
+		} else {
+			n.Dsts[i].DstPut(x[i])
+		}
+	}
+	if eofflag {
+		return EOF
+	} else {
+		return nil
+	}
+
+}
+
+func retrieveFire(n *fgbase.Node) error {
+	retriever := n.Aux.(Retriever)
+	v, err := retriever.Retrieve(&Hub{n})
+	n.Dsts[0].DstPut(v)
+	return err
+}
+
+func transmitFire(n *fgbase.Node) error {
+	transmitter := n.Aux.(Transmitter)
+	err := transmitter.Transmit(&Hub{n}, n.Srcs[0].SrcGet())
+	return err
 }

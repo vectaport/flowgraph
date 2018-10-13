@@ -42,25 +42,39 @@ func (h *Hub) Result(i int) *Stream {
 }
 
 // FindSource returns source stream by port name
-func (h *Hub) FindSource(name string) (s *Stream, portok bool) {
-	e, ok := h.base.FindSrc(name)
-	if e == nil {
-		return nil, ok
-	} else {
-		return &Stream{e}, ok
+func (h *Hub) FindSource(port interface{}) (s *Stream, portok bool) {
+	var e *fgbase.Edge
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		e, ok = h.base.FindSrc(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		if ok {
+			e = h.base.Src(v)
+		}
+	default:
+		h.Panicf("Need string or int to select source port on hub %s\n", h.Name())
 	}
-
+	return &Stream{e}, ok
 }
 
 // FindResult returns result stream by port name
-func (h *Hub) FindResult(name string) (s *Stream, portok bool) {
-	e, ok := h.base.FindDst(name)
-	if e == nil {
-		return nil, ok
-	} else {
-		return &Stream{e}, ok
+func (h *Hub) FindResult(port interface{}) (s *Stream, portok bool) {
+	var e *fgbase.Edge
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		e, ok = h.base.FindDst(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		if ok {
+			e = h.base.Dsts[v]
+		}
+	default:
+		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
 	}
-
+	return &Stream{e}, ok
 }
 
 // AddSource adds a source port for each stream
@@ -162,7 +176,6 @@ func (h *Hub) SetResult(port interface{}, s *Stream) error {
 	}
 
 	e := *s.base
-
 	h.base.DstSet(i, &e)
 	return nil
 }
