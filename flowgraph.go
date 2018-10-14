@@ -245,7 +245,7 @@ func (fg *Flowgraph) connectInit(
 		s := fg.NewStream("")
 		s.Init(init)
 		fg.streams = append(fg.streams, s)
-		upstream.SetResult(upstreamPort, s)  
+		upstream.SetResult(upstreamPort, s)
 		dnstream.SetSource(dnstreamPort, s)
 		return s
 	}
