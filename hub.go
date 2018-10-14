@@ -165,7 +165,7 @@ func (h *Hub) SetResult(port interface{}, s *Stream) error {
 		i = h.ResultIndex(v)
 		ok = i >= 0
 	case int:
-		ok = v >= 0 && v < h.NumSource()
+		ok = v >= 0 && v < h.NumResult()
 		i = v
 	default:
 		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
@@ -176,6 +176,7 @@ func (h *Hub) SetResult(port interface{}, s *Stream) error {
 	}
 
 	e := *s.base
+
 	h.base.DstSet(i, &e)
 	return nil
 }

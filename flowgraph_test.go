@@ -423,10 +423,6 @@ func TestIterator(t *testing.T) {
 	rdy.SetSourceNames("A", "B")
 	rdy.SetResultNames("X")
 
-	either := fg.NewHub("either", flowgraph.OneOf, &either{})
-	either.SetSourceNames("A", "B")
-	either.SetResultNames("X")
-
 	one := fg.NewHub("one", flowgraph.Const, 1)
 	one.SetResultNames("X")
 
@@ -435,16 +431,17 @@ func TestIterator(t *testing.T) {
 	sub.SetResultNames("X")
 
 	steer := fg.NewHub("steer", flowgraph.Steer, nil)
-	steer.SetSourceNames("A")  // steer condition
+	steer.SetSourceNames("A") // steer condition
 	steer.SetResultNames("X", "Y")
 
 	fg.Connect(tbi, "X", rdy, "A")
-	fg.Connect(rdy, "X", either, "A")
-	fg.Connect(either, "X", sub, "A")
-	fg.Connect(one, "X", sub, "B")
-	fg.Connect(sub, "X", steer, "A")
 	fg.ConnectInit(steer, "X", rdy, "B", true)
-	fg.Connect(steer, "Y", either, "B")
+
+	fg.Connect(rdy, "X", sub, "A")
+	fg.Connect(steer, "Y", sub, "A")
+	fg.Connect(one, "X", sub, "B")
+
+	fg.Connect(sub, "X", steer, "A")
 
 	fg.Run()
 

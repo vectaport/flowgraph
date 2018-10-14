@@ -22,12 +22,12 @@ type Code int
 const (
 	AllOf    Code = iota // Transformer	waiting for all sources
 	OneOf                // Transformer	waiting for one source
-	Retrieve             // Retriever		retrieve one value
+	Retrieve             // Retriever	retrieve one value
 	Transmit             // Transmitter	transmit one value
-	Rdy                  // nil		wait for first to pass rest
+	Rdy                  // nil		wait for zeroth to pass rest
 	Pass                 // nil		pass all values
-	Steer                // nil		steer rest by first
-	Select               // nil		select rest by first
+	Steer                // nil		steer rest by zeroth
+	Select               // nil		select rest by zeroth
 	Add                  // nil		add numbers, concat strings, or use Add()
 	Sub                  // nil		subtract numbers or use Sub()
 	Mul                  // nil		multiply numbers or use Mul()
@@ -186,7 +186,7 @@ func (fg *Flowgraph) FindStream(name string) *Stream {
 func (fg *Flowgraph) Connect(
 	upstream *Hub, upstreamPort interface{},
 	dnstream *Hub, dnstreamPort interface{}) *Stream {
-	return fg.connect(upstream, upstreamPort, dnstream, dnstreamPort, nil)
+	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, nil)
 }
 
 // ConnectInit connects two hubs via named (string) or indexed (int) ports
@@ -195,11 +195,12 @@ func (fg *Flowgraph) ConnectInit(
 	upstream *Hub, upstreamPort interface{},
 	dnstream *Hub, dnstreamPort interface{},
 	init interface{}) *Stream {
-	return fg.connect(upstream, upstreamPort, dnstream, dnstreamPort, init)
+	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, init)
 }
 
-// connect connects two hubs via named (string) or indexed (int) ports
-func (fg *Flowgraph) connect(
+// connectInit connects two hubs via named (string) or indexed (int) ports
+// and sets an initial value for flow
+func (fg *Flowgraph) connectInit(
 	upstream *Hub, upstreamPort interface{},
 	dnstream *Hub, dnstreamPort interface{},
 	init interface{}) *Stream {
@@ -244,10 +245,16 @@ func (fg *Flowgraph) connect(
 		s := fg.NewStream("")
 		s.Init(init)
 		fg.streams = append(fg.streams, s)
-		upstream.SetResult(upstreamPort, s)
+		upstream.SetResult(upstreamPort, s)  
 		dnstream.SetSource(dnstreamPort, s)
-		dnstream.FindSource(dnstreamPort)
 		return s
+	}
+	if us.base == nil {
+		upstream.SetResult(upstreamPort, ds)
+	} else if ds.base == nil {
+		dnstream.SetSource(dnstreamPort, us)
+	} else {
+		panic("Unexpected two ends to connect but they both are already connected")
 	}
 	return nil
 }
