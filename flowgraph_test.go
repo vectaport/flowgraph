@@ -156,14 +156,14 @@ func TestArray(t *testing.T) {
 	array := fg.NewHub("array", flowgraph.Array, arr)
 	array.SetResultNames("X")
 
-	sink := fg.NewHub("sink", flowgraph.Sink, nil)
+	s := &fgbase.SinkStats{}
+	sink := fg.NewHub("sink", flowgraph.Sink, s)
 	sink.SetSourceNames("A")
 
 	fg.Connect(array, "X", sink, "A")
 
 	fg.Run()
 
-	s := sink.Node().Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr) (%d)\n", s.Cnt, len(arr))
@@ -213,7 +213,8 @@ func TestChain(t *testing.T) {
 		p[i].SetResultNames("X")
 	}
 
-	sink := fg.NewHub("sink", flowgraph.Sink, nil)
+	s := &fgbase.SinkStats{}
+	sink := fg.NewHub("sink", flowgraph.Sink, s)
 	sink.SetSourceNames("A")
 
 	fg.Connect(array, "X", p[0], "A")
@@ -224,7 +225,6 @@ func TestChain(t *testing.T) {
 
 	fg.Run()
 
-	s := sink.Node().Aux.(fgbase.SinkStats)
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
@@ -410,7 +410,7 @@ func TestIterator(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second
+	fgbase.RunTime = time.Second / 10
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
@@ -435,7 +435,7 @@ func TestIterator(t *testing.T) {
 	steer.SetResultNames("X", "Y")
 
 	fg.Connect(tbi, "X", rdy, "A")
-	fg.ConnectInit(steer, "X", rdy, "B", true)
+	fg.ConnectInit(steer, "X", rdy, "B", 0)
 
 	fg.Connect(rdy, "X", sub, "A")
 	fg.Connect(steer, "Y", sub, "A")

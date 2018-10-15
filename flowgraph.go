@@ -34,7 +34,7 @@ const (
 	Div                  // nil		divide numbers or use Div()
 	Const                // interface{}	produce constant values forever
 	Array                // [[]interface{}	produce array of values then EOF
-	Sink                 // fgbase.SinkStats	consume values forever
+	Sink                 // Sinker	        consume values forever
 )
 
 /*=====================================================================*/
@@ -53,6 +53,11 @@ type Retriever interface {
 // Transmitter transmits one value using a Transmit method. Use Hub.Tracef for tracing.
 type Transmitter interface {
 	Transmit(h *Hub, source interface{}) (err error)
+}
+
+// Sinker consumes wavefronts of values one at a time forever
+type Sinker interface {
+	Sink(source []interface{})
 }
 
 /*=====================================================================*/
@@ -146,8 +151,12 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 	case Const:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
 	case Sink:
+		if init != nil {
+			if _, ok := init.(Sinker); !ok {
+				panic(fmt.Sprintf("Hub with Sink code not given Sinker for init %T(%+v)", init, init))
+			}
+		}
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
-		n.Aux = fgbase.SinkStats{0, 0}
 	case Steer:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, fgbase.SteervRdy, fgbase.SteervFire)
 	default:
