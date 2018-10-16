@@ -164,7 +164,6 @@ func TestArray(t *testing.T) {
 
 	fg.Run()
 
-
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr) (%d)\n", s.Cnt, len(arr))
 	}
@@ -224,7 +223,6 @@ func TestChain(t *testing.T) {
 	fg.Connect(p[l-1], "X", sink, "A")
 
 	fg.Run()
-
 
 	if s.Cnt != len(arr) {
 		t.Fatalf("SinkStats.Cnt %d != len(arr)\n", s.Cnt)
