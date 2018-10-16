@@ -24,7 +24,7 @@ const (
 	Transmit             // Transmitter	transmit one value with Transmitter
 	AllOf                // Transformer	waiting for all sources
 	OneOf                // Transformer	waiting for one source
-	Array                // [[]interface{}	produce array of values then EOF
+	Array                // []interface{}	produce array of values then EOF
 	Const                // interface{}	produce constant values forever
 	Sink                 // [Sinker]	consume values forever
 	Rdy                  // nil		wait for zeroth source to pass rest
