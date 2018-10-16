@@ -22,29 +22,24 @@ type Code int
 const (
 	Retrieve Code = iota // Retriever	retrieve one value with Retriever
 	Transmit             // Transmitter	transmit one value with Transmitter
-
-	AllOf // Transformer	waiting for all sources
-	OneOf // Transformer	waiting for one source
-
-	Array // [[]interface{}	produce array of values then EOF
-	Const // interface{}	produce constant values forever
-	Sink  // [Sinker]	consume values forever
-
-	Rdy    // nil		wait for zeroth source to pass rest
-	Pass   // nil		pass all values
-	Steer  // nil		steer rest by zeroth source
-	Select // nil		select rest by zeroth source
-
-	Add // nil		add numbers, concat strings, or use Add(interface{})
-	Sub // nil		subtract numbers or use Sub(interface{})
-	Mul // nil		multiply numbers or use Mul(interface{})
-	Div // nil		divide numbers or use Div(interface{})
-	Mod // nil		modulato numbers or use Mod(interface{})
-
-	And   // nil		and bool, bit-wise and integers, or use And(interface{})
-	Or    // nil		or bool, bit-wise or integers, or use Or(interface{})
-	Not   // nil		negate bool, invert integers, or use Not(interface{})
-	Shift // ShiftCode	shift integers - LeftShift, RightShift, LeftBarrel, RightBarrel, RightSigned
+	AllOf                // Transformer	waiting for all sources
+	OneOf                // Transformer	waiting for one source
+	Array                // [[]interface{}	produce array of values then EOF
+	Const                // interface{}	produce constant values forever
+	Sink                 // [Sinker]	consume values forever
+	Rdy                  // nil		wait for zeroth source to pass rest
+	Pass                 // nil		pass all values
+	Steer                // nil		steer rest by zeroth source
+	Select               // nil		select rest by zeroth source
+	Add                  // nil		add numbers, concat strings, or use Add(interface{})
+	Sub                  // nil		subtract numbers or use Sub(interface{})
+	Mul                  // nil		multiply numbers or use Mul(interface{})
+	Div                  // nil		divide numbers or use Div(interface{})
+	Mod                  // nil		modulato numbers or use Mod(interface{})
+	And                  // nil		and bool, bit-wise and integers, or use And(interface{})
+	Or                   // nil		or bool, bit-wise or integers, or use Or(interface{})
+	Not                  // nil		negate bool, invert integers, or use Not(interface{})
+	Shift                // ShiftCode	shift integers - LeftShift, RightShift, LeftBarrel, RightBarrel, RightSigned
 )
 
 // Shift Code
