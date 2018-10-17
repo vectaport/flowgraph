@@ -2,8 +2,6 @@ package flowgraph
 
 import (
 	"github.com/vectaport/fgbase"
-
-	"fmt"
 )
 
 // Hub struct for flowgraph hubs that are connected by flowgraph streams
@@ -132,7 +130,7 @@ func (h *Hub) ResultNames() []string {
 }
 
 // SetSource sets a stream on a source port selected by string or int
-func (h *Hub) SetSource(port interface{}, s *Stream) error {
+func (h *Hub) SetSource(port interface{}, s *Stream) {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -143,21 +141,21 @@ func (h *Hub) SetSource(port interface{}, s *Stream) error {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Panicf("Need string or int to select port on hub %s\n", h.Name())
+		h.Panicf("Need string or int to select port on Hub %s\n", h.Name())
 	}
 
 	if !ok {
-		return fmt.Errorf("source port %s not found on hub %v\n", port, h.Name())
+		h.Panicf("Source port %v not found on Hub %v\n", port, h.Name())
 	}
 
 	e := *s.base
 
 	h.base.SrcSet(i, &e)
-	return nil
+	return
 }
 
 // SetResult sets a stream on a result port selected by string or int
-func (h *Hub) SetResult(port interface{}, s *Stream) error {
+func (h *Hub) SetResult(port interface{}, s *Stream) {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -172,13 +170,13 @@ func (h *Hub) SetResult(port interface{}, s *Stream) error {
 	}
 
 	if !ok {
-		return fmt.Errorf("result port %s not found on hub %v\n", port, h.Name())
+		h.Panicf("Result port %v not found on Hub %v\n", port, h.Name())
 	}
 
 	e := *s.base
 
 	h.base.DstSet(i, &e)
-	return nil
+	return
 }
 
 // SourceIndex returns the index of a named source port, -1 if not found
@@ -207,4 +205,22 @@ func (h *Hub) Empty() bool {
 // Node returns pointer to underlying Node
 func (h *Hub) Node() *fgbase.Node {
 	return h.base
+}
+
+// ConnectSources connects a list of source Streams to this Hub
+func (h *Hub) ConnectSources(source ...*Stream) {
+	h.SetSourceNum(len(source))
+	for i, v := range source {
+		h.SetSource(i, v)
+	}
+	return
+}
+
+// ConnectResults connects a list of result Streams to this Hub
+func (h *Hub) ConnectResults(result ...*Stream) {
+	h.SetResultNum(len(result))
+	for i, v := range result {
+		h.SetResult(i, v)
+	}
+	return
 }

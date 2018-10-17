@@ -18,40 +18,77 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
-// Code constants for NewHub, followed by init type and description
+// Code constants for NewHub, followed by init argument for Connect, number of sources, number of results, and description
 const (
-	Retrieve Code = iota // Retriever	retrieve one value with Retriever
-	Transmit             // Transmitter	transmit one value with Transmitter
-	AllOf                // Transformer	waiting for all sources
-	OneOf                // Transformer	waiting for one source
- 	Array                // []interface{}	produce array of values then EOF
-	Const                // interface{}	produce constant values forever
-	Sink                 // [Sinker]	consume values forever
-	Rdy                  // nil		wait for zeroth source to pass rest
-	Pass                 // nil		pass all values
-	Steer                // nil		steer rest by zeroth source
-	Select               // nil		select rest by zeroth source
-	Add                  // nil		add numbers, concat strings, or use Add(interface{})
-	Sub                  // nil		subtract numbers or use Sub(interface{})
-	Mul                  // nil		multiply numbers or use Mul(interface{})
-	Div                  // nil		divide numbers or use Div(interface{})
-	Mod                  // nil		modulato numbers or use Mod(interface{})
-	And                  // nil		and bool, bit-wise and integers, or use And(interface{})
-	Or                   // nil		or bool, bit-wise or integers, or use Or(interface{})
-	Not                  // nil		negate bool, invert integers, or use Not(interface{})
-	Shift                // ShiftCode	shift integers - LeftShift, RightShift, LeftBarrel, RightBarrel, RightSigned
+	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
+	Transmit             // Transmitter	1,0	transmit one value with Transmitter
+	AllOf                // Transformer	n,m	waiting for all sources
+	OneOf                // Transformer	n,m	waiting for one source
+	Array                // []interface{}	0,1	produce array of values then EOF
+	Constant             // interface{}	0,1	produce constant values forever
+	Sink                 // [Sinker]	1,0	consume values forever
+	Split                // nil		1,n	split into separate values
+	Join                 // nil		n,1	join into one value
+	Wait                 // nil		2,1   	wait for second source to pass first
+	Pass                 // nil		n,n	pass all values at once
+	Steer                // nil		n+1,m	steer rest by first source (?)
+	Select               // nil		n+1,1   select rest by first source
+	Add                  // nil		2,1	add numbers, concat strings, or use Adder
+	Subtract             // nil		2,1	subtract numbers or use Subtracter
+	Multiply             // nil		2,1	multiply numbers or use Multiplier
+	Divide               // nil		2,1	divide numbers or use Divider
+	Modulo               // nil		2,1	modulato numbers or use Moduloer
+	And                  // nil		2,1	and bool, bit-wise and integers, or use Ander
+	Or                   // nil		2,1	or bool, bit-wise or integers, or use Orer
+	Not                  // nil		1,1	negate bool, invert integers, or use Notter
+	Shift                // ShiftCode	2,1	shift first by second, Arith,Barrel,Signed or use Shifter
 )
 
 // Shift Code
 type ShiftCode int
 
 const (
-	LeftShift ShiftCode = iota
-	RightShift
-	LeftBarrel
-	RightBarrel
-	RightSigned
+	Arith ShiftCode = iota
+	Barrel
+	Signed
 )
+
+// interfaces used by specific codes
+type Adder interface {
+	Add(interface{}) interface{}
+}
+
+type Subtracter interface {
+	Subtract(interface{}) interface{}
+}
+
+type Multiplier interface {
+	Multiply(interface{}) interface{}
+}
+
+type Divider interface {
+	Divide(interface{}) interface{}
+}
+
+type Moduloer interface {
+	Modulo(interface{}) interface{}
+}
+
+type Ander interface {
+	And(interface{}) interface{}
+}
+
+type Orer interface {
+	Or(interface{}) interface{}
+}
+
+type Notter interface {
+	Not() interface{}
+}
+
+type Shifter interface {
+	Shift(interface{}) interface{}
+}
 
 /*=====================================================================*/
 
@@ -152,19 +189,19 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 	// Math Hubs
 	case Add:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
-	case Sub:
+	case Subtract:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.SubFire)
-	case Mul:
+	case Multiply:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.MulFire)
-	case Div:
+	case Divide:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
 
 	// General Purpose Hubs
-	case Rdy:
+	case Wait:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.RdyFire)
 	case Array:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
-	case Const:
+	case Constant:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
 	case Sink:
 		if init != nil {

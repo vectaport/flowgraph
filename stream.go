@@ -42,8 +42,9 @@ func (s *Stream) Empty() bool {
 }
 
 // Init sets an initial value for flow
-func (s *Stream) Init(v interface{}) {
+func (s *Stream) Init(v interface{}) *Stream {
 	s.Edge().Val = v
+	return s
 }
 
 // Edge returns pointer to underlying Edge
