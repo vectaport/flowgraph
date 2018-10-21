@@ -27,12 +27,12 @@ const (
 	Array                // []interface{}	0,1	produce array of values then EOF
 	Constant             // interface{}	0,1	produce constant values forever
 	Sink                 // [Sinker]	1,0	consume values forever
-	Split                // nil		1,n	split into separate values
-	Join                 // nil		n,1	join into one value
-	Wait                 // nil		2,1   	wait for second source to pass first
-	Pass                 // nil		n,n	pass all values at once
-	Steer                // nil		n+1,m	steer rest by first source (?)
-	Select               // nil		n+1,1   select rest by first source
+	Split                // n		1,n	split into separate values
+	Join                 // n		n,1	join into one value
+	Wait                 // n		n+1,1 	wait for last source to pass rest
+	Pass                 // n		n,n	pass all values at once
+	Steer                // n,m		1+n,n*m	steer rest by m ways from first source
+	Select               // n		1+n,1   select from rest by first source
 	Add                  // nil		2,1	add numbers, concat strings, or use Adder
 	Subtract             // nil		2,1	subtract numbers or use Subtracter
 	Multiply             // nil		2,1	multiply numbers or use Multiplier
@@ -42,6 +42,16 @@ const (
 	Or                   // nil		2,1	or bool, bit-wise or integers, or use Orer
 	Not                  // nil		1,1	negate bool, invert integers, or use Notter
 	Shift                // ShiftCode	2,1	shift first by second, Arith,Barrel,Signed or use Shifter
+)
+
+// Graphhub code
+type GraphCode int
+
+// GraphCode constants for NewGraphHub
+const (
+	While  GraphCode = iota // nil		n,n	hub with internal wait-body-steer loop
+	During                  // nil		n,n	hub with internal wait-body-steer loop and continuous results
+	Graph                   // nil          n,m     hub with general purpose internals
 )
 
 // Shift Code
@@ -95,17 +105,17 @@ type Shifter interface {
 // Transformer transforms a slice of source values into a slice
 // of result values with the Transform method. Use Hub.Tracef for tracing.
 type Transformer interface {
-	Transform(h *Hub, source []interface{}) (result []interface{}, err error)
+	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
 
 // Retriever retrieves one value using the Retrieve method. Use Hub.Tracef for tracing.
 type Retriever interface {
-	Retrieve(h *Hub) (result interface{}, err error)
+	Retrieve(h Hub) (result interface{}, err error)
 }
 
 // Transmitter transmits one value using a Transmit method. Use Hub.Tracef for tracing.
 type Transmitter interface {
-	Transmit(h *Hub, source interface{}) (err error)
+	Transmit(h Hub, source interface{}) (err error)
 }
 
 // Sinker consumes wavefronts of values one at a time forever
@@ -115,66 +125,104 @@ type Sinker interface {
 
 /*=====================================================================*/
 
-// Flowgraph struct for flowgraphs assembled out of hubs and streams
-type Flowgraph struct {
-	name         string
-	hubs         []*Hub
-	streams      []*Stream
-	nameToHub    map[string]*Hub
-	nameToStream map[string]*Stream
+// Flowgraph interface for flowgraphs assembled out of hubs and streams
+type Flowgraph interface {
+
+	// Title returns the title of this flowgraph
+	Title() string
+
+	// Hub returns a hub by index
+	Hub(n int) Hub
+
+	// Stream returns a stream by index
+	Stream(n int) Stream
+
+	// NumHub returns the number of hubs
+	NumHub() int
+
+	// NumStream returns the number of hubs
+	NumStream() int
+
+	// NewHub returns a new unconnected hub
+	NewHub(name string, code Code, init interface{}) Hub
+
+	// NewStream returns a new unconnected stream
+	NewStream(name string) Stream
+
+	// NewGraphHub returns a hub with a flowgraph inside
+	NewGraphHub(name string, graphCode GraphCode) GraphHub
+
+	// FindHub finds a hub by name
+	FindHub(name string) Hub
+
+	// FindStream finds a Stream by name
+	FindStream(name string) Stream
+
+	// Connect connects two hubs via named (string) or indexed (int) ports
+	Connect(
+		upstream Hub, upstreamPort interface{},
+		dnstream Hub, dnstreamPort interface{}) Stream
+
+	// ConnectInit connects two hubs via named (string) or indexed (int) ports
+	// and sets an initial value for flow
+	ConnectInit(
+		upstream Hub, upstreamPort interface{},
+		dnstream Hub, dnstreamPort interface{},
+		init interface{}) Stream
+
+	// Run runs the flowgraph
+	Run()
 }
 
-// New returns a named flowgraph
-func New(name string) *Flowgraph {
-	nameToHub := make(map[string]*Hub)
-	nameToStream := make(map[string]*Stream)
-	fg := Flowgraph{name, nil, nil, nameToHub, nameToStream}
+type flowgraph struct {
+	title        string
+	hubs         []Hub
+	streams      []Stream
+	nameToHub    map[string]Hub
+	nameToStream map[string]Stream
+}
+
+// New returns a titled flowgraph
+func New(title string) Flowgraph {
+	nameToHub := make(map[string]Hub)
+	nameToStream := make(map[string]Stream)
+	fg := flowgraph{title, nil, nil, nameToHub, nameToStream}
 	return &fg
 }
 
-// Name returns the name of this flowgraph
-func (fg *Flowgraph) Name() string {
-	return fg.Name()
+// Title returns the titleof this flowgraph
+func (fg *flowgraph) Title() string {
+	return fg.title
 }
 
 // Hub returns a hub by index
-func (fg *Flowgraph) Hub(n int) *Hub {
+func (fg *flowgraph) Hub(n int) Hub {
 	return fg.hubs[n]
 }
 
 // Stream returns a stream by index
-func (fg *Flowgraph) Stream(n int) *Stream {
+func (fg *flowgraph) Stream(n int) Stream {
 	return fg.streams[n]
 }
 
 // NumHub returns the number of hubs
-func (fg *Flowgraph) NumHub() int {
+func (fg *flowgraph) NumHub() int {
 	return len(fg.hubs)
 }
 
 // NumStream returns the number of hubs
-func (fg *Flowgraph) NumStream() int {
+func (fg *flowgraph) NumStream() int {
 	return len(fg.streams)
 }
 
 // NewHub returns a new unconnected hub
-func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
+func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 
 	var n fgbase.Node
 
 	switch code {
 
 	// User Supplied Hubs
-	case AllOf:
-		if _, ok := init.(Transformer); !ok {
-			panic(fmt.Sprintf("Hub with AllOf code not given Transformer for init %T(%+v)", init, init))
-		}
-		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
-	case OneOf:
-		if _, ok := init.(Transformer); !ok {
-			panic(fmt.Sprintf("Hub with OneOf code not given Transformer for init %T(%+v)", init, init))
-		}
-		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
 	case Retrieve:
 		if _, ok := init.(Retriever); !ok {
 			panic(fmt.Sprintf("Hub with Retrieve code not given Retriever for init %T(%+v)", init, init))
@@ -185,6 +233,17 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 			panic(fmt.Sprintf("Hub with Transmit code not given Transmitter for init %T(%+v)", init, init))
 		}
 		n = fgbase.MakeNode(name, nil, nil, nil, transmitFire)
+	case AllOf:
+		if _, ok := init.(Transformer); !ok {
+			panic(fmt.Sprintf("Hub with AllOf code not given Transformer for init %T(%+v)", init, init))
+		}
+		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
+
+	case OneOf:
+		if _, ok := init.(Transformer); !ok {
+			panic(fmt.Sprintf("Hub with OneOf code not given Transformer for init %T(%+v)", init, init))
+		}
+		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
 
 	// Math Hubs
 	case Add:
@@ -211,63 +270,88 @@ func (fg *Flowgraph) NewHub(name string, code Code, init interface{}) *Hub {
 		}
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 	case Steer:
-		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, fgbase.SteervRdy, fgbase.SteervFire)
+		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
+
 	default:
-		log.Panicf("Unexpected Hub code:  %s\n", code)
+		log.Panicf("Unexpected Hub code:  %v\n", code)
 	}
 	if n.Aux == nil {
 		n.Aux = init
 	}
 
-	h := Hub{&n}
-	fg.hubs = append(fg.hubs, &h)
-	fg.nameToHub[name] = &h
-	return &h
+	h := &hub{&n}
+	fg.hubs = append(fg.hubs, h)
+	fg.nameToHub[name] = h
+	return h
 }
 
 // NewStream returns a new unconnected stream
-func (fg *Flowgraph) NewStream(name string) *Stream {
+func (fg *flowgraph) NewStream(name string) Stream {
 	e := fgbase.MakeEdge(name, nil)
-	s := Stream{&e}
-	fg.streams = append(fg.streams, &s)
-	fg.nameToStream[name] = &s
-	return &s
+	s := &stream{&e}
+	fg.streams = append(fg.streams, s)
+	fg.nameToStream[name] = s
+	return s
+}
+
+// NewGraphHub returns a hub with a sub-graph
+func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
+	newfg := New(name)
+
+	var n fgbase.Node
+
+	switch graphCode {
+
+	case While:
+		n = fgbase.MakeNode(name, nil, nil, nil, whileFire)
+	case During:
+		n = fgbase.MakeNode(name, nil, nil, nil, duringFire)
+	case Graph:
+		n = fgbase.MakeNode(name, nil, nil, nil, graphFire)
+	default:
+		log.Panicf("Unexpected GraphHub code:  %v\n", graphCode)
+	}
+	gh := &graphhub{&hub{&n}, newfg}
+
+	fg.hubs = append(fg.hubs, gh)
+	fg.nameToHub[name] = gh
+	return gh
 }
 
 // FindHub finds a hub by name
-func (fg *Flowgraph) FindHub(name string) *Hub {
+func (fg *flowgraph) FindHub(name string) Hub {
 	return fg.nameToHub[name]
 }
 
 // FindStream finds a Stream by name
-func (fg *Flowgraph) FindStream(name string) *Stream {
+func (fg *flowgraph) FindStream(name string) Stream {
 	return fg.nameToStream[name]
 }
 
 // Connect connects two hubs via named (string) or indexed (int) ports
-func (fg *Flowgraph) Connect(
-	upstream *Hub, upstreamPort interface{},
-	dnstream *Hub, dnstreamPort interface{}) *Stream {
+func (fg *flowgraph) Connect(
+	upstream Hub, upstreamPort interface{},
+	dnstream Hub, dnstreamPort interface{}) Stream {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, nil)
 }
 
 // ConnectInit connects two hubs via named (string) or indexed (int) ports
 // and sets an initial value for flow
-func (fg *Flowgraph) ConnectInit(
-	upstream *Hub, upstreamPort interface{},
-	dnstream *Hub, dnstreamPort interface{},
-	init interface{}) *Stream {
+func (fg *flowgraph) ConnectInit(
+	upstream Hub, upstreamPort interface{},
+	dnstream Hub, dnstreamPort interface{},
+	init interface{}) Stream {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, init)
 }
 
 // connectInit connects two hubs via named (string) or indexed (int) ports
 // and sets an initial value for flow
-func (fg *Flowgraph) connectInit(
-	upstream *Hub, upstreamPort interface{},
-	dnstream *Hub, dnstreamPort interface{},
-	init interface{}) *Stream {
+func (fg *flowgraph) connectInit(
+	upstream Hub, upstreamPort interface{},
+	dnstream Hub, dnstreamPort interface{},
+	init interface{}) Stream {
 
-	var us *Stream
+	var us Stream
 	var usok bool
 	switch v := upstreamPort.(type) {
 	case string:
@@ -285,7 +369,7 @@ func (fg *Flowgraph) connectInit(
 		upstream.Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
 	}
 
-	var ds *Stream
+	var ds Stream
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
@@ -303,7 +387,7 @@ func (fg *Flowgraph) connectInit(
 		dnstream.Panicf("Need string or int to specify port on downstream Hub \"%s\"\n", dnstream.Name())
 	}
 
-	if us.base == nil && ds.base == nil {
+	if us.Empty() && ds.Empty() {
 		s := fg.NewStream("")
 		s.Init(init)
 		fg.streams = append(fg.streams, s)
@@ -311,9 +395,9 @@ func (fg *Flowgraph) connectInit(
 		dnstream.SetSource(dnstreamPort, s)
 		return s
 	}
-	if us.base == nil {
+	if us.Empty() {
 		upstream.SetResult(upstreamPort, ds)
-	} else if ds.base == nil {
+	} else if ds.Empty() {
 		dnstream.SetSource(dnstreamPort, us)
 	} else {
 		panic("Unexpected two ends to connect but they both are already connected")
@@ -322,10 +406,10 @@ func (fg *Flowgraph) connectInit(
 }
 
 // Run runs the flowgraph
-func (fg *Flowgraph) Run() {
+func (fg *flowgraph) Run() {
 	var nodes = make([]*fgbase.Node, len(fg.hubs))
 	for i := range nodes {
-		nodes[i] = fg.hubs[i].base
+		nodes[i] = fg.hubs[i].Base().(*fgbase.Node)
 	}
 	fgbase.RunGraph(nodes)
 }
@@ -342,7 +426,7 @@ func allOfFire(n *fgbase.Node) error {
 			eofflag = true
 		}
 	}
-	x, _ := t.Transform(&Hub{n}, a)
+	x, _ := t.Transform(&hub{n}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -382,7 +466,7 @@ func oneOfFire(n *fgbase.Node) error {
 			break
 		}
 	}
-	x, _ := t.Transform(&Hub{n}, a)
+	x, _ := t.Transform(&hub{n}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -400,13 +484,28 @@ func oneOfFire(n *fgbase.Node) error {
 
 func retrieveFire(n *fgbase.Node) error {
 	retriever := n.Aux.(Retriever)
-	v, err := retriever.Retrieve(&Hub{n})
+	v, err := retriever.Retrieve(&hub{n})
 	n.Dsts[0].DstPut(v)
 	return err
 }
 
 func transmitFire(n *fgbase.Node) error {
 	transmitter := n.Aux.(Transmitter)
-	err := transmitter.Transmit(&Hub{n}, n.Srcs[0].SrcGet())
+	err := transmitter.Transmit(&hub{n}, n.Srcs[0].SrcGet())
 	return err
+}
+
+func whileFire(n *fgbase.Node) error {
+	n.Panicf("while loop still needs flattening.")
+	return nil
+}
+
+func duringFire(n *fgbase.Node) error {
+	n.Panicf("during loop still needs flattening.")
+	return nil
+}
+
+func graphFire(n *fgbase.Node) error {
+	n.Panicf("graph still needs expanding.")
+	return nil
 }
