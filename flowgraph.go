@@ -18,8 +18,11 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
-// Code constants for NewHub, followed by init argument for Connect, number of sources, number of results, and description
-const (
+// next two tables show init argument for Connect, number of sources, number of results, and
+// a description of functionality.
+
+// Code constants for NewHub
+const ( // Code                 init            ns,nr   description
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
 	AllOf                // Transformer	n,m	waiting for all sources
@@ -48,10 +51,10 @@ const (
 type GraphCode int
 
 // GraphCode constants for NewGraphHub
-const (
-	While  GraphCode = iota // nil		n,n	hub with internal wait-body-steer loop
-	During                  // nil		n,n	hub with internal wait-body-steer loop and continuous results
-	Graph                   // nil          n,m     hub with general purpose internals
+const ( // Code                    ns,nr   description
+	While  GraphCode = iota // n,n	hub with internal wait-body-steer loop
+	During                  // n,n	hub with internal wait-body-steer loop and continuous results
+	Graph                   // n,m     hub with general purpose internals
 )
 
 // Shift Code
@@ -215,6 +218,21 @@ func (fg *flowgraph) NumStream() int {
 	return len(fg.streams)
 }
 
+type fgTransformer struct {
+	fg *flowgraph
+	t  Transformer
+}
+
+type fgRetriever struct {
+	fg *flowgraph
+	r  Retriever
+}
+
+type fgTransmitter struct {
+	fg *flowgraph
+	t  Transmitter
+}
+
 // NewHub returns a new unconnected hub
 func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 
@@ -228,16 +246,19 @@ func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 			panic(fmt.Sprintf("Hub with Retrieve code not given Retriever for init %T(%+v)", init, init))
 		}
 		n = fgbase.MakeNode(name, nil, nil, nil, retrieveFire)
+		init = &fgRetriever{fg, init.(Retriever)}
 	case Transmit:
 		if _, ok := init.(Transmitter); !ok {
 			panic(fmt.Sprintf("Hub with Transmit code not given Transmitter for init %T(%+v)", init, init))
 		}
 		n = fgbase.MakeNode(name, nil, nil, nil, transmitFire)
+		init = &fgTransmitter{fg, init.(Transmitter)}
 	case AllOf:
 		if _, ok := init.(Transformer); !ok {
 			panic(fmt.Sprintf("Hub with AllOf code not given Transformer for init %T(%+v)", init, init))
 		}
 		n = fgbase.MakeNode(name, nil, nil, nil, allOfFire)
+		init = &fgTransformer{fg, init.(Transformer)}
 
 	case OneOf:
 		if _, ok := init.(Transformer); !ok {
@@ -279,7 +300,7 @@ func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 		n.Aux = init
 	}
 
-	h := &hub{&n}
+	h := &hub{&n, fg}
 	fg.hubs = append(fg.hubs, h)
 	fg.nameToHub[name] = h
 	return h
@@ -288,7 +309,7 @@ func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 // NewStream returns a new unconnected stream
 func (fg *flowgraph) NewStream(name string) Stream {
 	e := fgbase.MakeEdge(name, nil)
-	s := &stream{&e}
+	s := &stream{&e, fg}
 	fg.streams = append(fg.streams, s)
 	fg.nameToStream[name] = s
 	return s
@@ -311,7 +332,7 @@ func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
 	default:
 		log.Panicf("Unexpected GraphHub code:  %v\n", graphCode)
 	}
-	gh := &graphhub{&hub{&n}, newfg}
+	gh := &graphhub{&hub{&n, fg}, newfg}
 
 	fg.hubs = append(fg.hubs, gh)
 	fg.nameToHub[name] = gh
@@ -350,6 +371,9 @@ func (fg *flowgraph) connectInit(
 	upstream Hub, upstreamPort interface{},
 	dnstream Hub, dnstreamPort interface{},
 	init interface{}) Stream {
+
+	checkfg("Hub", upstream.Flowgraph(), fg)
+	checkfg("Hub", dnstream.Flowgraph(), fg)
 
 	var us Stream
 	var usok bool
@@ -407,6 +431,40 @@ func (fg *flowgraph) connectInit(
 
 // Run runs the flowgraph
 func (fg *flowgraph) Run() {
+	fg.flatten()
+	fg.run()
+}
+
+// checkfg checks that flowgraphs match when checking input flowgraph structurs
+func checkfg(kind string, fgtest, fgknown Flowgraph) {
+        if fgtest == fgknown { return }
+	panic(fmt.Sprintf("%s created by flowgraph \"%s(%+v)\" (expected flowgraph \"%s\"(%p))",
+		kind, fgtest.Title(), fgtest, fgknown.Title(), fgknown))
+}
+
+// checkfgHub checks that the flowgraph associated with a Hub matches
+func checkfgHub(fg Flowgraph, h Hub) {
+	checkfg("Hub", h.Flowgraph(), fg)
+}
+
+// checkfgStream checks that the flowgraph associated with a Stream matches
+func checkfgStream(fg Flowgraph, s Stream) {
+        if s==nil { return }
+	checkfg("Stream", s.Flowgraph(), fg)
+}
+
+// flatten connects GraphHub external ports to internal dangling streams
+func (fg *flowgraph) flatten() {
+	for _, v := range fg.hubs {
+		if gv, ok := v.(GraphHub); ok {
+			gv.(*graphhub).flatten()
+		}
+	}
+}
+
+// run runs the flowgraph
+func (fg *flowgraph) run() {
+
 	var nodes = make([]*fgbase.Node, len(fg.hubs))
 	for i := range nodes {
 		nodes[i] = fg.hubs[i].Base().(*fgbase.Node)
@@ -417,7 +475,8 @@ func (fg *flowgraph) Run() {
 func allOfFire(n *fgbase.Node) error {
 	var a []interface{}
 	a = make([]interface{}, len(n.Srcs))
-	t := n.Aux.(Transformer)
+	t := n.Aux.(*fgTransformer).t
+	fg := n.Aux.(*fgTransformer).fg
 	eofflag := false
 	for i, _ := range a {
 		a[i] = n.Srcs[i].SrcGet()
@@ -426,7 +485,7 @@ func allOfFire(n *fgbase.Node) error {
 			eofflag = true
 		}
 	}
-	x, _ := t.Transform(&hub{n}, a)
+	x, _ := t.Transform(&hub{n, fg}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -454,7 +513,8 @@ func oneOfRdy(n *fgbase.Node) bool {
 func oneOfFire(n *fgbase.Node) error {
 	var a []interface{}
 	a = make([]interface{}, len(n.Srcs))
-	t := n.Aux.(Transformer)
+	t := n.Aux.(*fgTransformer).t
+	fg := n.Aux.(*fgTransformer).fg
 	eofflag := false
 	for i, _ := range a {
 		if n.Srcs[i].SrcRdy(n) {
@@ -466,7 +526,7 @@ func oneOfFire(n *fgbase.Node) error {
 			break
 		}
 	}
-	x, _ := t.Transform(&hub{n}, a)
+	x, _ := t.Transform(&hub{n, fg}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -483,15 +543,17 @@ func oneOfFire(n *fgbase.Node) error {
 }
 
 func retrieveFire(n *fgbase.Node) error {
-	retriever := n.Aux.(Retriever)
-	v, err := retriever.Retrieve(&hub{n})
+	retriever := n.Aux.(*fgRetriever).r
+	fg := n.Aux.(*fgRetriever).fg
+	v, err := retriever.Retrieve(&hub{n, fg})
 	n.Dsts[0].DstPut(v)
 	return err
 }
 
 func transmitFire(n *fgbase.Node) error {
-	transmitter := n.Aux.(Transmitter)
-	err := transmitter.Transmit(&hub{n}, n.Srcs[0].SrcGet())
+	transmitter := n.Aux.(*fgTransmitter).t
+	fg := n.Aux.(*fgTransmitter).fg
+	err := transmitter.Transmit(&hub{n, fg}, n.Srcs[0].SrcGet())
 	return err
 }
 

@@ -25,6 +25,12 @@ type Hub interface {
 	// Result returns result stream by index
 	Result(i int) Stream
 
+	// SetSource sets a stream on a source port selected by string or int
+	SetSource(port interface{}, s Stream) Hub
+
+	// SetResult sets a stream on a result port selected by string or int
+	SetResult(port interface{}, s Stream) Hub
+
 	// FindSource returns source stream by port name
 	FindSource(port interface{}) (s Stream, portok bool)
 
@@ -43,17 +49,11 @@ type Hub interface {
 	// NumResult returns the number of result ports
 	NumResult() int
 
-	// SetSourceNum sets the number of source ports
-	SetSourceNum(n int) Hub
+	// SetNumSource sets the number of source ports
+	SetNumSource(n int) Hub
 
-	// SetResultNum sets the number of result ports
-	SetResultNum(n int) Hub
-
-	// SetSourceNames names the source ports
-	SetSourceNames(nm ...string) Hub
-
-	// SetResultNames names the result ports
-	SetResultNames(nm ...string) Hub
+	// SetNumResult sets the number of result ports
+	SetNumResult(n int) Hub
 
 	// SourceNames returns the names of the source ports
 	SourceNames() []string
@@ -61,11 +61,11 @@ type Hub interface {
 	// ResultNames returns the names of the result ports
 	ResultNames() []string
 
-	// SetSource sets a stream on a source port selected by string or int
-	SetSource(port interface{}, s Stream) Hub
+	// SetSourceNames names the source ports
+	SetSourceNames(nm ...string) Hub
 
-	// SetResult sets a stream on a result port selected by string or int
-	SetResult(port interface{}, s Stream) Hub
+	// SetResultNames names the result ports
+	SetResultNames(nm ...string) Hub
 
 	// SourceIndex returns the index of a named source port, -1 if not found
 	SourceIndex(port string) int
@@ -73,14 +73,17 @@ type Hub interface {
 	// ResultIndex returns the index of a named result port, -1 if not found
 	ResultIndex(port string) int
 
-	// Empty returns true if the underlying implementation is nil
-	Empty() bool
-
 	// ConnectSources connects a list of source Streams to this Hub
 	ConnectSources(source ...Stream) Hub
 
 	// ConnectResults connects a list of result Streams to this Hub
 	ConnectResults(result ...Stream) Hub
+
+	// Flowgraph returns associated flowgraph
+	Flowgraph() Flowgraph
+
+	// Empty returns true if the underlying implementation is nil
+	Empty() bool
 
 	// Base returns value of underlying implementation
 	Base() interface{}
@@ -89,6 +92,7 @@ type Hub interface {
 // Hub implementation
 type hub struct {
 	base *fgbase.Node
+	fg   *flowgraph
 }
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
@@ -113,112 +117,18 @@ func (h *hub) Name() string {
 
 // Source returns source stream by index
 func (h *hub) Source(i int) Stream {
-	return &stream{h.base.Src(i)}
+	return &stream{h.base.Src(i), h.fg}
 }
 
 // Result returns result stream by index
 func (h *hub) Result(i int) Stream {
-	return &stream{h.base.Dst(i)}
-}
-
-// FindSource returns source stream by port name
-func (h *hub) FindSource(port interface{}) (s Stream, portok bool) {
-	var e *fgbase.Edge
-	var ok bool
-	switch v := port.(type) {
-	case string:
-		e, ok = h.base.FindSrc(v)
-	case int:
-		ok = v >= 0 && v < h.NumSource()
-		if ok {
-			e = h.base.Src(v)
-		}
-	default:
-		h.Panicf("Need string or int to select source port on hub %s\n", h.Name())
-	}
-	return &stream{e}, ok
-}
-
-// FindResult returns result stream by port name
-func (h *hub) FindResult(port interface{}) (s Stream, portok bool) {
-	var e *fgbase.Edge
-	var ok bool
-	switch v := port.(type) {
-	case string:
-		e, ok = h.base.FindDst(v)
-	case int:
-		ok = v >= 0 && v < h.NumSource()
-		if ok {
-			e = h.base.Dsts[v]
-		}
-	default:
-		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
-	}
-	return &stream{e}, ok
-}
-
-// AddSources adds a source port for each stream
-func (h *hub) AddSources(s ...Stream) Hub {
-	for _, sv := range s {
-		h.Base().(*fgbase.Node).SrcAppend(sv.Base().(*fgbase.Edge))
-	}
-	return h
-}
-
-// AddResults adds a result port for each stream
-func (h *hub) AddResults(s ...Stream) Hub {
-	for _, sv := range s {
-		h.Base().(*fgbase.Node).DstAppend(sv.Base().(*fgbase.Edge))
-	}
-	return h
-}
-
-// NumSource returns the number of source ports
-func (h *hub) NumSource() int {
-	return h.base.SrcCnt()
-}
-
-// NumResult returns the number of result ports
-func (h *hub) NumResult() int {
-	return h.base.DstCnt()
-}
-
-// SetSourceNum sets the number of source ports
-func (h *hub) SetSourceNum(n int) Hub {
-	h.base.SetSrcNum(n)
-	return h
-}
-
-// SetResultNum sets the number of result ports
-func (h *hub) SetResultNum(n int) Hub {
-	h.base.SetDstNum(n)
-	return h
-}
-
-// SetSourceNames names the source ports
-func (h *hub) SetSourceNames(nm ...string) Hub {
-	h.base.SetSrcNames(nm...)
-	return h
-}
-
-// SetResultNames names the result ports
-func (h *hub) SetResultNames(nm ...string) Hub {
-	h.base.SetDstNames(nm...)
-	return h
-}
-
-// SourceNames returns the names of the source ports
-func (h *hub) SourceNames() []string {
-	return h.base.SrcNames()
-}
-
-// ResultNames returns the names of the result ports
-func (h *hub) ResultNames() []string {
-	return h.base.DstNames()
+	return &stream{h.base.Dst(i), h.fg}
 }
 
 // SetSource sets a stream on a source port selected by string or int
 func (h *hub) SetSource(port interface{}, s Stream) Hub {
+	checkfgStream(h.Flowgraph(), s)
+	
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -246,6 +156,8 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 
 // SetResult sets a stream on a result port selected by string or int
 func (h *hub) SetResult(port interface{}, s Stream) Hub {
+	checkfgStream(h.Flowgraph(), s)
+	
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -269,6 +181,105 @@ func (h *hub) SetResult(port interface{}, s Stream) Hub {
 	return h
 }
 
+// FindSource returns source stream by port name
+func (h *hub) FindSource(port interface{}) (s Stream, portok bool) {
+	var e *fgbase.Edge
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		e, ok = h.base.FindSrc(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		if ok {
+			e = h.base.Src(v)
+		}
+	default:
+		h.Panicf("Need string or int to select source port on hub %s\n", h.Name())
+	}
+	return &stream{e, h.fg}, ok
+}
+
+// FindResult returns result stream by port name
+func (h *hub) FindResult(port interface{}) (s Stream, portok bool) {
+	var e *fgbase.Edge
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		e, ok = h.base.FindDst(v)
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		if ok {
+			e = h.base.Dsts[v]
+		}
+	default:
+		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
+	}
+	return &stream{e, h.fg}, ok
+}
+
+// AddSources adds a source port for each stream
+func (h *hub) AddSources(s ...Stream) Hub {
+	for _, sv := range s {
+		checkfgStream(h.Flowgraph(), sv)
+		h.Base().(*fgbase.Node).SrcAppend(sv.Base().(*fgbase.Edge))
+	}
+	return h
+}
+
+// AddResults adds a result port for each stream
+func (h *hub) AddResults(s ...Stream) Hub {
+	for _, sv := range s {
+		checkfgStream(h.Flowgraph(), sv)
+		h.Base().(*fgbase.Node).DstAppend(sv.Base().(*fgbase.Edge))
+	}
+	return h
+}
+
+// NumSource returns the number of source ports
+func (h *hub) NumSource() int {
+	return h.base.SrcCnt()
+}
+
+// NumResult returns the number of result ports
+func (h *hub) NumResult() int {
+	return h.base.DstCnt()
+}
+
+// SetNumSource sets the number of source ports
+func (h *hub) SetNumSource(n int) Hub {
+	h.base.SetSrcNum(n)
+	return h
+}
+
+// SourceNames returns the names of the source ports
+func (h *hub) SourceNames() []string {
+	return h.base.SrcNames()
+}
+
+// ResultNames returns the names of the result ports
+func (h *hub) ResultNames() []string {
+	return h.base.DstNames()
+}
+
+
+// SetNumResult sets the number of result ports
+func (h *hub) SetNumResult(n int) Hub {
+	h.base.SetDstNum(n)
+	return h
+}
+
+// SetSourceNames names the source ports
+func (h *hub) SetSourceNames(nm ...string) Hub {
+	h.base.SetSrcNames(nm...)
+	return h
+}
+
+// SetResultNames names the result ports
+func (h *hub) SetResultNames(nm ...string) Hub {
+	h.base.SetDstNames(nm...)
+	return h
+}
+
 // SourceIndex returns the index of a named source port, -1 if not found
 func (h *hub) SourceIndex(port string) int {
 	i, ok := h.base.FindSrcIndex(port)
@@ -287,19 +298,9 @@ func (h *hub) ResultIndex(port string) int {
 	return i
 }
 
-// Empty returns true if the underlying implementation is nil
-func (h *hub) Empty() bool {
-	return h.base == nil
-}
-
-// Node returns pointer to underlying Node
-func (h *hub) Node() *fgbase.Node {
-	return h.base
-}
-
 // ConnectSources connects a list of source Streams to this Hub
 func (h *hub) ConnectSources(source ...Stream) Hub {
-	h.SetSourceNum(len(source))
+	h.SetNumSource(len(source))
 	for i, v := range source {
 		h.SetSource(i, v)
 	}
@@ -308,11 +309,21 @@ func (h *hub) ConnectSources(source ...Stream) Hub {
 
 // ConnectResults connects a list of result Streams to this Hub
 func (h *hub) ConnectResults(result ...Stream) Hub {
-	h.SetResultNum(len(result))
+	h.SetNumResult(len(result))
 	for i, v := range result {
 		h.SetResult(i, v)
 	}
 	return h
+}
+
+// Flowgraph returns associate flowgraph interface
+func (h *hub) Flowgraph() Flowgraph {
+	return h.fg
+}
+
+// Empty returns true if the underlying implementation is nil
+func (h *hub) Empty() bool {
+	return h.base == nil
 }
 
 // Base returns value of underlying implementation

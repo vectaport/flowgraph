@@ -63,11 +63,11 @@ func TestIncoming(t *testing.T) {
 
 	fg := flowgraph.New("TestIncoming")
 
-	incoming := fg.NewHub("incoming", flowgraph.Retrieve, &getter{})
-	incoming.SetResultNames("X")
+	incoming := fg.NewHub("incoming", flowgraph.Retrieve, &getter{}).
+		 SetResultNames("X")
 
-	sink := fg.NewHub("sink", flowgraph.Sink, nil)
-	sink.SetSourceNames("A")
+	sink := fg.NewHub("sink", flowgraph.Sink, nil).
+	     SetSourceNames("A")
 
 	fg.Connect(incoming, "X", sink, "A")
 
@@ -95,11 +95,11 @@ func TestOutgoing(t *testing.T) {
 
 	fg := flowgraph.New("TestOutgoing")
 
-	const1 := fg.NewHub("const1", flowgraph.Constant, 1)
-	const1.SetResultNames("X")
+	const1 := fg.NewHub("const1", flowgraph.Constant, 1).
+	       SetResultNames("X")
 
-	outgoing := fg.NewHub("outgoing", flowgraph.Transmit, &putter{})
-	outgoing.SetSourceNames("A")
+	outgoing := fg.NewHub("outgoing", flowgraph.Transmit, &putter{}).
+		 SetSourceNames("A")
 
 	fg.Connect(const1, "X", outgoing, "A")
 
@@ -126,15 +126,15 @@ func TestAllOf(t *testing.T) {
 
 	fg := flowgraph.New("TestAllOf")
 
-	const1 := fg.NewHub("const1", flowgraph.Constant, 1)
-	const1.SetResultNames("X")
+	const1 := fg.NewHub("const1", flowgraph.Constant, 1).
+	       SetResultNames("X")
 
-	transformer := fg.NewHub("outgoing", flowgraph.AllOf, &transformer{})
-	transformer.SetSourceNames("A")
-	transformer.SetResultNames("X")
+	transformer := fg.NewHub("outgoing", flowgraph.AllOf, &transformer{}).
+		    SetSourceNames("A").
+		    SetResultNames("X")
 
-	sink := fg.NewHub("sink", flowgraph.Sink, nil)
-	sink.SetSourceNames("A")
+	sink := fg.NewHub("sink", flowgraph.Sink, nil).
+	     	    SetSourceNames("A")
 
 	fg.Connect(const1, "X", transformer, "A")
 	fg.Connect(transformer, "X", sink, "A")

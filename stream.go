@@ -42,6 +42,9 @@ type Stream interface {
 	// IsSink returns true if stream is a sink
 	IsSink() bool
 
+	// Flowgraph returns associated flowgraph
+	Flowgraph() Flowgraph
+
 	// Base returns value of underlying implementation
 	Base() interface{}
 }
@@ -49,6 +52,7 @@ type Stream interface {
 // Stream implementation
 type stream struct {
 	base *fgbase.Edge
+	fg   *flowgraph
 }
 
 // Name returns the stream name
@@ -58,12 +62,12 @@ func (s *stream) Name() string {
 
 // Upstream returns upstream hub by index
 func (s *stream) Upstream(i int) Hub {
-	return &hub{s.base.SrcNode(i)}
+	return &hub{s.base.SrcNode(i), s.fg}
 }
 
 // Downstream returns upstream hub by index
 func (s *stream) Downstream(i int) Hub {
-	return &hub{s.base.DstNode(i)}
+	return &hub{s.base.DstNode(i), s.fg}
 }
 
 // NumUpstream returns the number of upstream hubs
@@ -107,6 +111,11 @@ func (s *stream) IsConst() bool {
 // IsSink returns true if stream is a sink
 func (s *stream) IsSink() bool {
 	return s.Base().(*fgbase.Edge).IsSink()
+}
+
+// Flowgraph returns associate flowgraph interface
+func (s *stream) Flowgraph() Flowgraph {
+	return s.fg
 }
 
 // Base returns value of underlying implementation

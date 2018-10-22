@@ -1,18 +1,17 @@
 package flowgraph
 
-import (
-)
+import ()
 
 // GraphHub struct for flowgraph hub made out of a graph of hubs
 type GraphHub interface {
 	Hub
 	Flowgraph
-	Loop(h Hub) GraphHub
+	Loop(h Hub)
 }
 
 // GraphHub implementation
 type graphhub struct {
-	hb Hub
+	hub Hub
 	fg Flowgraph
 }
 
@@ -23,7 +22,7 @@ func (gh *graphhub) Title() string {
 
 // Name returns the name of this hub
 func (gh *graphhub) Name() string {
-	return gh.hb.Name()
+	return gh.hub.Name()
 }
 
 // Hub returns a hub by index
@@ -94,137 +93,147 @@ func (gh *graphhub) Run() {
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
 func (gh *graphhub) Tracef(format string, v ...interface{}) {
-	gh.hb.Tracef(format, v...)
+	gh.hub.Tracef(format, v...)
 }
 
 // LogError for logging of error messages.  Uses atomic log mechanism.
 func (gh *graphhub) LogError(format string, v ...interface{}) {
-	gh.hb.LogError(format, v...)
+	gh.hub.LogError(format, v...)
 }
 
 // Panicf for logging of panic messages.  Uses atomic log mechanism.
 func (gh *graphhub) Panicf(format string, v ...interface{}) {
-	gh.hb.Panicf(format, v...)
+	gh.hub.Panicf(format, v...)
 }
 
 // Source returns source stream by index
 func (gh *graphhub) Source(i int) Stream {
-	return gh.hb.Source(i)
+	return gh.hub.Source(i)
 }
 
 // Result returns result stream by index
 func (gh *graphhub) Result(i int) Stream {
-	return gh.hb.Result(i)
-}
-
-// FindSource returns source stream by port name
-func (gh *graphhub) FindSource(port interface{}) (s Stream, portok bool) {
-	return gh.hb.FindSource(port)
-}
-
-// FindResult returns result stream by port name
-func (gh *graphhub) FindResult(port interface{}) (s Stream, portok bool) {
-	return gh.hb.FindResult(port)
-}
-
-// AddSources adds a source port for each stream
-func (gh *graphhub) AddSources(s ...Stream) Hub {
-	return gh.hb.AddSources(s...)
-}
-
-// AddResults adds a result port for each stream
-func (gh *graphhub) AddResults(s ...Stream) Hub {
-	return gh.hb.AddResults(s...)
-}
-
-// NumSource returns the number of source ports
-func (gh *graphhub) NumSource() int {
-	return gh.hb.NumSource()
-}
-
-// NumResult returns the number of result ports
-func (gh *graphhub) NumResult() int {
-	return gh.hb.NumResult()
-}
-
-// SetSourceNum sets the number of source ports
-func (gh *graphhub) SetSourceNum(n int) Hub {
-	return gh.hb.SetSourceNum(n)
-}
-
-// SetResultNum sets the number of result ports
-func (gh *graphhub) SetResultNum(n int) Hub {
-	return gh.hb.SetResultNum(n)
-}
-
-// SetSourceNames names the source ports
-func (gh *graphhub) SetSourceNames(nm ...string) Hub {
-	return gh.hb.SetSourceNames(nm...)
-}
-
-// SetResultNames names the result ports
-func (gh *graphhub) SetResultNames(nm ...string) Hub {
-	return gh.hb.SetResultNames(nm...)
-}
-
-// SourceNames returns the names of the source ports
-func (gh *graphhub) SourceNames() []string {
-	return gh.hb.SourceNames()
-}
-
-// ResultNames returns the names of the result ports
-func (gh *graphhub) ResultNames() []string {
-	return gh.hb.ResultNames()
+	return gh.hub.Result(i)
 }
 
 // SetSource sets a stream on a source port selected by string or int
 func (gh *graphhub) SetSource(port interface{}, s Stream) Hub {
-	return gh.hb.SetSource(port, s)
+	return gh.hub.SetSource(port, s)
 }
 
 // SetResult sets a stream on a result port selected by string or int
 func (gh *graphhub) SetResult(port interface{}, s Stream) Hub {
-	return gh.hb.SetResult(port, s)
+	return gh.hub.SetResult(port, s)
+}
+
+// FindSource returns source stream by port name
+func (gh *graphhub) FindSource(port interface{}) (s Stream, portok bool) {
+	return gh.hub.FindSource(port)
+}
+
+// FindResult returns result stream by port name
+func (gh *graphhub) FindResult(port interface{}) (s Stream, portok bool) {
+	return gh.hub.FindResult(port)
+}
+
+// AddSources adds a source port for each stream
+func (gh *graphhub) AddSources(s ...Stream) Hub {
+	return gh.hub.AddSources(s...)
+}
+
+// AddResults adds a result port for each stream
+func (gh *graphhub) AddResults(s ...Stream) Hub {
+	return gh.hub.AddResults(s...)
+}
+
+// NumSource returns the number of source ports
+func (gh *graphhub) NumSource() int {
+	return gh.hub.NumSource()
+}
+
+// NumResult returns the number of result ports
+func (gh *graphhub) NumResult() int {
+	return gh.hub.NumResult()
+}
+
+// SetNumSource sets the number of source ports
+func (gh *graphhub) SetNumSource(n int) Hub {
+	return gh.hub.SetNumSource(n)
+}
+
+// SetNumResult sets the number of result ports
+func (gh *graphhub) SetNumResult(n int) Hub {
+	return gh.hub.SetNumResult(n)
+}
+
+// SourceNames returns the names of the source ports
+func (gh *graphhub) SourceNames() []string {
+	return gh.hub.SourceNames()
+}
+
+// ResultNames returns the names of the result ports
+func (gh *graphhub) ResultNames() []string {
+	return gh.hub.ResultNames()
+}
+
+// SetSourceNames names the source ports
+func (gh *graphhub) SetSourceNames(nm ...string) Hub {
+	return gh.hub.SetSourceNames(nm...)
+}
+
+// SetResultNames names the result ports
+func (gh *graphhub) SetResultNames(nm ...string) Hub {
+	return gh.hub.SetResultNames(nm...)
 }
 
 // SourceIndex returns the index of a named source port, -1 if not found
 func (gh *graphhub) SourceIndex(port string) int {
-	return gh.hb.SourceIndex(port)
+	return gh.hub.SourceIndex(port)
 }
 
 // ResultIndex returns the index of a named result port, -1 if not found
 func (gh *graphhub) ResultIndex(port string) int {
-	return gh.hb.ResultIndex(port)
-}
-
-// Empty returns true if the underlying implementation is nil
-func (gh *graphhub) Empty() bool {
-	return gh.fg == nil && gh.hb == nil
+	return gh.hub.ResultIndex(port)
 }
 
 // ConnectSources connects a list of source Streams to this Hub
 func (gh *graphhub) ConnectSources(source ...Stream) Hub {
-	return gh.hb.ConnectSources(source...)
+	return gh.hub.ConnectSources(source...)
 }
 
 // ConnectResults connects a list of result Streams to this Hub
 func (gh *graphhub) ConnectResults(result ...Stream) Hub {
-	return gh.hb.ConnectResults(result...)
+	return gh.hub.ConnectResults(result...)
 
+}
+
+// Flowgraph returns associate flowgraph interface
+func (gh *graphhub) Flowgraph() Flowgraph {
+	return gh.hub.Flowgraph()
+}
+
+// Empty returns true if the underlying implementation is nil
+func (gh *graphhub) Empty() bool {
+	return gh.fg == nil && gh.hub == nil
 }
 
 // Base returns value of underlying implementation
 func (gh *graphhub) Base() interface{} {
-	return gh.hb.Base()
+	return gh.hub.Base()
 }
 
-func (gh *graphhub) Loop(h Hub) GraphHub {
+// Loop builds a conditional iterator for a while or during loop
+func (gh *graphhub) Loop(h Hub) {
+
+        checkfgHub(gh.fg, h)
 
 	ns := h.NumSource()
 	nsmax := ns
 	for i := 0; i < nsmax; i++ {
 		s := h.Source(i)
-		if s.Empty() { continue }
+		if s.Empty() {
+			continue
+		}
 		if s.IsConst() {
 			ns--
 		}
@@ -235,19 +244,53 @@ func (gh *graphhub) Loop(h Hub) GraphHub {
 		panic("handle ns != nr\n")
 	}
 
-	subfg := New(h.Name() + "_fg")
-	wait := subfg.NewHub(h.Name()+"_wait", Wait, nil).
-		SetSourceNum(ns).
-		SetResultNum(nr)
+	wait := gh.NewHub(h.Name()+"_wait", Wait, nil).
+		SetNumSource(ns + 1).
+		SetNumResult(ns)
 
-	steer := subfg.NewHub(h.Name()+"_steer", Steer, nil).
-		SetSourceNum(ns).
-		SetResultNum(nr)
+	steer := gh.NewHub(h.Name()+"_steer", Steer, nil).
+		SetNumSource(ns).
+		SetNumResult(ns * 2)
 
 	for i := 0; i < ns; i++ {
-		subfg.Connect(wait, i, h, i)
-		subfg.Connect(h, i, steer, i)
+		gh.Connect(wait, i, h, i)
+		gh.Connect(h, i, steer, i)
 	}
+}
 
-	return gh
+// flatten connects GraphHub external ports to internal dangling streams
+func (gh *graphhub) flatten() {
+	gh.Tracef("FLATTEN %T(%+v) nhub, nstream %d,%d %s\n", gh, gh, gh.NumHub(), gh.NumStream(), gh.Name())
+	var sources []Stream
+	var results []Stream
+	for _, v := range gh.fg.(*flowgraph).hubs {
+		if gv, ok := v.(GraphHub); ok {
+			gv.(*graphhub).flatten()
+		}
+		gh.Tracef("FLATTEN ns,nr %d,%d on %s %T(%+v) %s\n", v.NumSource(), v.NumResult(), v.Name(), v, v, v.Name())
+		for i:=0; i<v.NumSource(); i++ {
+		    s := v.Source(i)
+		    if s.Empty() {
+		       s = gh.NewStream("")
+		       v.SetSource(i, s)
+		       sources = append(sources, s)
+		    }
+		}
+		for i:=0; i<v.NumResult(); i++ {
+		    r := v.Result(i)
+		    if r.Empty() {
+		       r = gh.NewStream("")
+		       v.SetResult(i, r)
+		       results = append(results, r)
+		    }
+		}
+	}
+	for i,v := range sources {
+	    gh.Tracef("sources[%d] = %+v, nu,nd %d,%d\n", i, v, v.NumUpstream(), v.NumDownstream())
+	    gh.Tracef("v.Downstream(0) is %+v\n", v.Downstream(0))
+        }
+	for i,v := range results {
+	    gh.Tracef("results[%d] = %+v  nu,nd %d,%d\n", i, v, v.NumUpstream(), v.NumDownstream())
+	    gh.Tracef("v.Upstream(0) is %+v\n", v.Upstream(0))
+        }
 }
