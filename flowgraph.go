@@ -22,7 +22,7 @@ type Code int
 // a description of functionality.
 
 // Code constants for NewHub
-const ( // Code                 init            ns,nr   description
+const ( //                      init            ns,nr   description
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
 	AllOf                // Transformer	n,m	waiting for all sources
@@ -47,14 +47,14 @@ const ( // Code                 init            ns,nr   description
 	Shift                // ShiftCode	2,1	shift first by second, Arith,Barrel,Signed or use Shifter
 )
 
-// Graphhub code
+// GraphCode code for type of graph
 type GraphCode int
 
 // GraphCode constants for NewGraphHub
-const ( // Code                    ns,nr   description
-	While  GraphCode = iota // n,n	hub with internal wait-body-steer loop
+const ( //                         ns,nr   description
+	Graph  GraphCode = iota // n,m     hub with general purpose internals
+	While                   // n,n	hub with internal wait-body-steer loop
 	During                  // n,n	hub with internal wait-body-steer loop and continuous results
-	Graph                   // n,m     hub with general purpose internals
 )
 
 // Shift Code
@@ -315,14 +315,13 @@ func (fg *flowgraph) NewStream(name string) Stream {
 	return s
 }
 
-// NewGraphHub returns a hub with a sub-graph
+// NewGraphHub returns a hub with an internal flowgraph
 func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
-	newfg := New(name)
+	newfg := New(name + "_fg")
 
 	var n fgbase.Node
 
 	switch graphCode {
-
 	case While:
 		n = fgbase.MakeNode(name, nil, nil, nil, whileFire)
 	case During:
@@ -330,10 +329,9 @@ func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
 	case Graph:
 		n = fgbase.MakeNode(name, nil, nil, nil, graphFire)
 	default:
-		log.Panicf("Unexpected GraphHub code:  %v\n", graphCode)
+		log.Panicf("Unexpected GraphCode:  %v\n", graphCode)
 	}
-	gh := &graphhub{&hub{&n, fg}, newfg}
-
+	gh := &graphhub{&hub{&n, fg}, newfg, nil, nil}
 	fg.hubs = append(fg.hubs, gh)
 	fg.nameToHub[name] = gh
 	return gh
@@ -372,8 +370,8 @@ func (fg *flowgraph) connectInit(
 	dnstream Hub, dnstreamPort interface{},
 	init interface{}) Stream {
 
-	checkfg("Hub", upstream.Flowgraph(), fg)
-	checkfg("Hub", dnstream.Flowgraph(), fg)
+	checkfgHub(fg, upstream)
+	checkfgHub(fg, dnstream)
 
 	var us Stream
 	var usok bool
@@ -386,7 +384,7 @@ func (fg *flowgraph) connectInit(
 	case int:
 		usok = v >= 0 && v < upstream.NumResult()
 		if !usok {
-			upstream.Panicf("No result port %d found on Hub \"%s\"\n", v, dnstream.Name())
+			upstream.Panicf("No result port %d found on Hub \"%s\"\n", v, upstream.Name())
 		}
 		us = upstream.Result(v)
 	default:
@@ -424,21 +422,22 @@ func (fg *flowgraph) connectInit(
 	} else if ds.Empty() {
 		dnstream.SetSource(dnstreamPort, us)
 	} else {
-		panic("Unexpected two ends to connect but they both are already connected")
+		panic("Unexpected with two ports to connect that they both are already connected to another stream as well")
 	}
 	return nil
 }
 
 // Run runs the flowgraph
 func (fg *flowgraph) Run() {
-	fg.flatten()
 	fg.run()
 }
 
 // checkfg checks that flowgraphs match when checking input flowgraph structurs
 func checkfg(kind string, fgtest, fgknown Flowgraph) {
-        if fgtest == fgknown { return }
-	panic(fmt.Sprintf("%s created by flowgraph \"%s(%+v)\" (expected flowgraph \"%s\"(%p))",
+	if fgtest == fgknown {
+		return
+	}
+	panic(fmt.Sprintf("%s created by flowgraph \"%s(%+v)\" (expected flowgraph \"%s\"(%+v))",
 		kind, fgtest.Title(), fgtest, fgknown.Title(), fgknown))
 }
 
@@ -449,26 +448,29 @@ func checkfgHub(fg Flowgraph, h Hub) {
 
 // checkfgStream checks that the flowgraph associated with a Stream matches
 func checkfgStream(fg Flowgraph, s Stream) {
-        if s==nil { return }
+	if s == nil {
+		return
+	}
 	checkfg("Stream", s.Flowgraph(), fg)
 }
 
 // flatten connects GraphHub external ports to internal dangling streams
-func (fg *flowgraph) flatten() {
+func (fg *flowgraph) flatten() []*fgbase.Node {
+	nodes := make([]*fgbase.Node, 0)
 	for _, v := range fg.hubs {
 		if gv, ok := v.(GraphHub); ok {
-			gv.(*graphhub).flatten()
+			nodes = gv.(*graphhub).flatten(nodes)
+		} else {
+			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
 	}
+	return nodes
 }
 
 // run runs the flowgraph
 func (fg *flowgraph) run() {
 
-	var nodes = make([]*fgbase.Node, len(fg.hubs))
-	for i := range nodes {
-		nodes[i] = fg.hubs[i].Base().(*fgbase.Node)
-	}
+	nodes := fg.flatten()
 	fgbase.RunGraph(nodes)
 }
 

@@ -67,11 +67,11 @@ type Hub interface {
 	// SetResultNames names the result ports
 	SetResultNames(nm ...string) Hub
 
-	// SourceIndex returns the index of a named source port, -1 if not found
-	SourceIndex(port string) int
+	// SourceIndex returns the index of a source port matched by name or Stream
+	SourceIndex(port interface{}) int
 
-	// ResultIndex returns the index of a named result port, -1 if not found
-	ResultIndex(port string) int
+	// ResultIndex returns the index of a result port matched by name or Stream
+	ResultIndex(port interface{}) int
 
 	// ConnectSources connects a list of source Streams to this Hub
 	ConnectSources(source ...Stream) Hub
@@ -128,7 +128,7 @@ func (h *hub) Result(i int) Stream {
 // SetSource sets a stream on a source port selected by string or int
 func (h *hub) SetSource(port interface{}, s Stream) Hub {
 	checkfgStream(h.Flowgraph(), s)
-	
+
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -139,7 +139,7 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Panicf("Need string or int to select port on Hub %s\n", h.Name())
+		h.Panicf("Need string or int to select port on Hub %s to set source stream\n", h.Name())
 	}
 
 	if !ok {
@@ -157,7 +157,7 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 // SetResult sets a stream on a result port selected by string or int
 func (h *hub) SetResult(port interface{}, s Stream) Hub {
 	checkfgStream(h.Flowgraph(), s)
-	
+
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -168,7 +168,7 @@ func (h *hub) SetResult(port interface{}, s Stream) Hub {
 		ok = v >= 0 && v < h.NumResult()
 		i = v
 	default:
-		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
+		h.Panicf("Need string or int to select result port on hub %s to set result stream\n", h.Name())
 	}
 
 	if !ok {
@@ -206,11 +206,13 @@ func (h *hub) FindResult(port interface{}) (s Stream, portok bool) {
 	switch v := port.(type) {
 	case string:
 		e, ok = h.base.FindDst(v)
+		h.Tracef("FindResult port %T(%v) e,ok %v,%v\n", v, v, e, ok)
 	case int:
 		ok = v >= 0 && v < h.NumSource()
 		if ok {
 			e = h.base.Dsts[v]
 		}
+		h.Tracef("FindResult port %T(%v) e,ok %v,%v\n", v, v, e, ok)
 	default:
 		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
 	}
@@ -261,7 +263,6 @@ func (h *hub) ResultNames() []string {
 	return h.base.DstNames()
 }
 
-
 // SetNumResult sets the number of result ports
 func (h *hub) SetNumResult(n int) Hub {
 	h.base.SetDstNum(n)
@@ -280,20 +281,62 @@ func (h *hub) SetResultNames(nm ...string) Hub {
 	return h
 }
 
-// SourceIndex returns the index of a named source port, -1 if not found
-func (h *hub) SourceIndex(port string) int {
-	i, ok := h.base.FindSrcIndex(port)
+// SourceIndex returns the index of a source port matched by name or Stream
+func (h *hub) SourceIndex(port interface{}) int {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i, ok = h.base.FindSrcIndex(v)
+	case int:
+		i, ok = v, true
+	case Stream:
+		for j := 0; j < h.NumSource(); j++ {
+			if v.Same(h.Source(j)) {
+				i, ok = j, true
+				break
+			}
+		}
+		if !ok {
+			h.Panicf("Source port for Stream %s not found on Hub %s\n", v.Name(), h.Name())
+		}
+
+	default:
+		h.Panicf("Need string, int or Stream to select port on Hub %s\n", h.Name())
+	}
+
 	if !ok {
-		i = -1
+		h.Panicf("Source port %T(%+v) not found on Hub %s\n", port, port, h.Name())
 	}
 	return i
 }
 
-// ResultIndex returns the index of a named result port, -1 if not found
-func (h *hub) ResultIndex(port string) int {
-	i, ok := h.base.FindDstIndex(port)
+// ResultIndex returns the index of a result port matched by name or Stream
+func (h *hub) ResultIndex(port interface{}) int {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i, ok = h.base.FindDstIndex(v)
+	case int:
+		i, ok = v, true
+	case Stream:
+		for j := 0; j < h.NumResult(); j++ {
+			if v.Same(h.Result(j)) {
+				i, ok = j, true
+				break
+			}
+		}
+		if !ok {
+			h.Panicf("Result port for Stream %s not found on Hub %s\n", v.Name(), h.Name())
+		}
+
+	default:
+		h.Panicf("Need string, int or Stream to select port on Hub %s\n", h.Name())
+	}
+
 	if !ok {
-		i = -1
+		h.Panicf("Result port %T(%+v) not found on Hub %s\n", port, port, h.Name())
 	}
 	return i
 }

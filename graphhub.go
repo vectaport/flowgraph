@@ -1,8 +1,10 @@
 package flowgraph
 
-import ()
+import (
+	"github.com/vectaport/fgbase"
+)
 
-// GraphHub struct for flowgraph hub made out of a graph of hubs
+// GraphHub interface for flowgraph hub made out of a graph of hubs
 type GraphHub interface {
 	Hub
 	Flowgraph
@@ -11,8 +13,10 @@ type GraphHub interface {
 
 // GraphHub implementation
 type graphhub struct {
-	hub Hub
-	fg Flowgraph
+	hub      Hub
+	fg       Flowgraph
+	isources []Stream
+	iresults []Stream
 }
 
 // Title returns the title of this flowgraph
@@ -186,13 +190,13 @@ func (gh *graphhub) SetResultNames(nm ...string) Hub {
 	return gh.hub.SetResultNames(nm...)
 }
 
-// SourceIndex returns the index of a named source port, -1 if not found
-func (gh *graphhub) SourceIndex(port string) int {
+// SourceIndex returns the index of a source port matched by name or Stream
+func (gh *graphhub) SourceIndex(port interface{}) int {
 	return gh.hub.SourceIndex(port)
 }
 
-// ResultIndex returns the index of a named result port, -1 if not found
-func (gh *graphhub) ResultIndex(port string) int {
+// ResultIndex returns the index of a source port matched by name or Stream
+func (gh *graphhub) ResultIndex(port interface{}) int {
 	return gh.hub.ResultIndex(port)
 }
 
@@ -209,7 +213,7 @@ func (gh *graphhub) ConnectResults(result ...Stream) Hub {
 
 // Flowgraph returns associate flowgraph interface
 func (gh *graphhub) Flowgraph() Flowgraph {
-	return gh.hub.Flowgraph()
+	return gh.fg
 }
 
 // Empty returns true if the underlying implementation is nil
@@ -225,7 +229,7 @@ func (gh *graphhub) Base() interface{} {
 // Loop builds a conditional iterator for a while or during loop
 func (gh *graphhub) Loop(h Hub) {
 
-        checkfgHub(gh.fg, h)
+	checkfgHub(gh.fg, h)
 
 	ns := h.NumSource()
 	nsmax := ns
@@ -252,45 +256,77 @@ func (gh *graphhub) Loop(h Hub) {
 		SetNumSource(ns).
 		SetNumResult(ns * 2)
 
+	if ns != 1 {
+		panic("need to support more than ns==1\n")
+	}
+
 	for i := 0; i < ns; i++ {
 		gh.Connect(wait, i, h, i)
 		gh.Connect(h, i, steer, i)
+		gh.Connect(steer, i+1, h, i)
 	}
+	termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+	gh.iresults = append(gh.iresults, termc)
+
 }
 
 // flatten connects GraphHub external ports to internal dangling streams
-func (gh *graphhub) flatten() {
-	gh.Tracef("FLATTEN %T(%+v) nhub, nstream %d,%d %s\n", gh, gh, gh.NumHub(), gh.NumStream(), gh.Name())
-	var sources []Stream
-	var results []Stream
+func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
+	ns, nr := 0, 0
 	for _, v := range gh.fg.(*flowgraph).hubs {
 		if gv, ok := v.(GraphHub); ok {
-			gv.(*graphhub).flatten()
+			nodes = gv.(*graphhub).flatten(nodes)
+		} else {
+			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
-		gh.Tracef("FLATTEN ns,nr %d,%d on %s %T(%+v) %s\n", v.NumSource(), v.NumResult(), v.Name(), v, v, v.Name())
-		for i:=0; i<v.NumSource(); i++ {
-		    s := v.Source(i)
-		    if s.Empty() {
-		       s = gh.NewStream("")
-		       v.SetSource(i, s)
-		       sources = append(sources, s)
-		    }
+		for i := 0; i < v.NumSource(); i++ {
+			s := v.Source(i)
+			if s.Empty() {
+				s = gh.NewStream("")
+				v.SetSource(i, s)
+				// gh.Tracef("Making stub source stream %q with *Edge %p\n", s.Name(), s.Base().(*fgbase.Edge))
+				gh.isources = append(gh.isources, v.Source(i))
+				ns++
+			}
 		}
-		for i:=0; i<v.NumResult(); i++ {
-		    r := v.Result(i)
-		    if r.Empty() {
-		       r = gh.NewStream("")
-		       v.SetResult(i, r)
-		       results = append(results, r)
-		    }
+		for i := 0; i < v.NumResult(); i++ {
+			r := v.Result(i)
+			if r.Empty() {
+				r = gh.NewStream("")
+				v.SetResult(i, r)
+				gh.Tracef("Making stub result stream %q with *Edge %p\n", r.Name(), r.Base().(*fgbase.Edge))
+				gh.iresults = append(gh.iresults, v.Result(i))
+				nr++
+			}
 		}
 	}
-	for i,v := range sources {
-	    gh.Tracef("sources[%d] = %+v, nu,nd %d,%d\n", i, v, v.NumUpstream(), v.NumDownstream())
-	    gh.Tracef("v.Downstream(0) is %+v\n", v.Downstream(0))
-        }
-	for i,v := range results {
-	    gh.Tracef("results[%d] = %+v  nu,nd %d,%d\n", i, v, v.NumUpstream(), v.NumDownstream())
-	    gh.Tracef("v.Upstream(0) is %+v\n", v.Upstream(0))
-        }
+	if len(gh.isources) != gh.NumSource() {
+		gh.Panicf("# of GraphHub sources (%d) does not match # of dangling internal inputs (%d)\n", gh.NumSource(), len(gh.isources))
+	}
+	if len(gh.iresults) != gh.NumResult() {
+		gh.Panicf("# of GraphHub results (%d) does not match # of dangling internal outputs (%d)\n", gh.NumResult(), len(gh.iresults))
+	}
+
+	// dangling inputs
+	for i, s := range gh.isources {
+		gh.Tracef("Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
+		for j := 0; j < s.NumDownstream(); j++ {
+			gh.Tracef("\tlinked by source stream %q (*fbase.Edge=%p) that ends at hub %q port %v\n", s.Name(), s.Base().(*fgbase.Edge), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
+		}
+		for j := 0; j < s.NumDownstream(); j++ {
+			s.Link(gh.Source(i))
+		}
+
+	}
+
+	// dangling or designated outputs
+	for i, r := range gh.iresults {
+		gh.Tracef("Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
+		gh.Tracef("\tlinked by result stream %q (*fgbase.Edge=%p) on outer hub %q\n", gh.Result(i).Name(), gh.Result(i).Base().(*fgbase.Edge), gh.Name())
+		for j := 0; j < r.NumUpstream(); j++ {
+
+			gh.Result(i).Link(r)
+		}
+	}
+	return nodes
 }

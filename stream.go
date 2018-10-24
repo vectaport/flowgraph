@@ -42,6 +42,12 @@ type Stream interface {
 	// IsSink returns true if stream is a sink
 	IsSink() bool
 
+	// Link links this stream to another stream
+	Link(s2 Stream)
+
+	// Same returns true if two streams are the same underneath
+	Same(Stream) bool
+
 	// Flowgraph returns associated flowgraph
 	Flowgraph() Flowgraph
 
@@ -111,6 +117,18 @@ func (s *stream) IsConst() bool {
 // IsSink returns true if stream is a sink
 func (s *stream) IsSink() bool {
 	return s.Base().(*fgbase.Edge).IsSink()
+}
+
+// Same returns true if two streams are the same underneath
+func (s *stream) Same(s2 Stream) bool {
+	return s.Base().(*fgbase.Edge).Same(s2.Base().(*fgbase.Edge))
+}
+
+// Link links this stream to another stream
+func (s *stream) Link(s2 Stream) {
+	e := s.Base().(*fgbase.Edge)
+	e2 := s2.Base().(*fgbase.Edge)
+	e.Link(e2)
 }
 
 // Flowgraph returns associate flowgraph interface
