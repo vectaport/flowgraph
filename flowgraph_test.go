@@ -489,7 +489,7 @@ func TestIterator3(t *testing.T) {
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second
 	fgbase.TracePorts = true
-	fgbase.TraceLevel = fgbase.V
+	fgbase.TraceLevel = fgbase.VVVV
 
 	fg := flowgraph.New("TestIterator3")
 

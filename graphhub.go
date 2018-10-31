@@ -8,7 +8,12 @@ import (
 type GraphHub interface {
 	Hub
 	Flowgraph
+
+	// Loop builds a conditional iterator for a while or during loop
 	Loop(h Hub)
+
+	// Link links an internal stream to an external stream
+	Link(in, ex Stream)
 }
 
 // GraphHub implementation
@@ -229,7 +234,7 @@ func (gh *graphhub) Base() interface{} {
 // Loop builds a conditional iterator for a while or during loop
 func (gh *graphhub) Loop(h Hub) {
 
-	checkfgHub(gh.fg, h)
+	checkInternalHub(gh.fg, h)
 
 	ns := h.NumSource()
 	nsmax := ns
@@ -266,6 +271,7 @@ func (gh *graphhub) Loop(h Hub) {
 		gh.Connect(steer, i+1, h, i)
 	}
 	termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+	termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
 	gh.iresults = append(gh.iresults, termc)
 
 }
@@ -276,6 +282,10 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 	for _, v := range gh.fg.(*flowgraph).hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
+			if fgbase.DotOutput {
+				nodes = append(nodes, v.Base().(*fgbase.Node))
+			}
+
 		} else {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
@@ -294,7 +304,7 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			if r.Empty() {
 				r = gh.NewStream("")
 				v.SetResult(i, r)
-				gh.Tracef("Making stub result stream %q with *Edge %p\n", r.Name(), r.Base().(*fgbase.Edge))
+				// gh.Tracef("Making stub result stream %q with *Edge %p\n", r.Name(), r.Base().(*fgbase.Edge))
 				gh.iresults = append(gh.iresults, v.Result(i))
 				nr++
 			}
@@ -313,8 +323,9 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 		for j := 0; j < s.NumDownstream(); j++ {
 			gh.Tracef("\tlinked by source stream %q (*fbase.Edge=%p) that ends at hub %q port %v\n", s.Name(), s.Base().(*fgbase.Edge), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
 		}
-		for j := 0; j < s.NumDownstream(); j++ {
-			s.Link(gh.Source(i))
+		jmax := s.NumDownstream()
+		for j := 0; j < jmax; j++ {
+			gh.Link(s, gh.Source(i))
 		}
 
 	}
@@ -323,10 +334,21 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 	for i, r := range gh.iresults {
 		gh.Tracef("Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
 		gh.Tracef("\tlinked by result stream %q (*fgbase.Edge=%p) on outer hub %q\n", gh.Result(i).Name(), gh.Result(i).Base().(*fgbase.Edge), gh.Name())
-		for j := 0; j < r.NumUpstream(); j++ {
-
-			gh.Result(i).Link(r)
+		jmax := r.NumUpstream()
+		for j := 0; j < jmax; j++ {
+			gh.Link(r, gh.Result(i))
 		}
 	}
 	return nodes
+}
+
+// Link links an internal stream to an external stream
+func (gh *graphhub) Link(in, ex Stream) {
+
+	checkInternalStream(gh.fg, in)
+	checkExternalStream(gh.fg, ex)
+
+	ein := in.Base().(*fgbase.Edge)
+	eex := ex.Base().(*fgbase.Edge)
+	gh.Base().(*fgbase.Node).Link(ein, eex)
 }

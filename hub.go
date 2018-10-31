@@ -127,7 +127,7 @@ func (h *hub) Result(i int) Stream {
 
 // SetSource sets a stream on a source port selected by string or int
 func (h *hub) SetSource(port interface{}, s Stream) Hub {
-	checkfgStream(h.Flowgraph(), s)
+	checkInternalStream(h.Flowgraph(), s)
 
 	var i int
 	var ok bool
@@ -156,7 +156,7 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 
 // SetResult sets a stream on a result port selected by string or int
 func (h *hub) SetResult(port interface{}, s Stream) Hub {
-	checkfgStream(h.Flowgraph(), s)
+	checkInternalStream(h.Flowgraph(), s)
 
 	var i int
 	var ok bool
@@ -222,7 +222,7 @@ func (h *hub) FindResult(port interface{}) (s Stream, portok bool) {
 // AddSources adds a source port for each stream
 func (h *hub) AddSources(s ...Stream) Hub {
 	for _, sv := range s {
-		checkfgStream(h.Flowgraph(), sv)
+		checkInternalStream(h.Flowgraph(), sv)
 		h.Base().(*fgbase.Node).SrcAppend(sv.Base().(*fgbase.Edge))
 	}
 	return h
@@ -231,7 +231,7 @@ func (h *hub) AddSources(s ...Stream) Hub {
 // AddResults adds a result port for each stream
 func (h *hub) AddResults(s ...Stream) Hub {
 	for _, sv := range s {
-		checkfgStream(h.Flowgraph(), sv)
+		checkInternalStream(h.Flowgraph(), sv)
 		h.Base().(*fgbase.Node).DstAppend(sv.Base().(*fgbase.Edge))
 	}
 	return h

@@ -370,8 +370,8 @@ func (fg *flowgraph) connectInit(
 	dnstream Hub, dnstreamPort interface{},
 	init interface{}) Stream {
 
-	checkfgHub(fg, upstream)
-	checkfgHub(fg, dnstream)
+	checkInternalHub(fg, upstream)
+	checkInternalHub(fg, dnstream)
 
 	var us Stream
 	var usok bool
@@ -432,26 +432,56 @@ func (fg *flowgraph) Run() {
 	fg.run()
 }
 
-// checkfg checks that flowgraphs match when checking input flowgraph structurs
-func checkfg(kind string, fgtest, fgknown Flowgraph) {
-	if fgtest == fgknown {
+// checkInternalHub checks that the flowgraph associated with a Hub matches
+func checkInternalHub(fg Flowgraph, h Hub) {
+	if h == nil {
 		return
 	}
-	panic(fmt.Sprintf("%s created by flowgraph \"%s(%+v)\" (expected flowgraph \"%s\"(%+v))",
-		kind, fgtest.Title(), fgtest, fgknown.Title(), fgknown))
+	fgknown := fg
+	fgtest := h.Flowgraph()
+	if fgknown != fgtest {
+		panic(fmt.Sprintf("Hub %q created by flowgraph %q (expected flowgraph %q)",
+			h.Name(), fgtest.Title(), fgknown.Title()))
+	}
 }
 
-// checkfgHub checks that the flowgraph associated with a Hub matches
-func checkfgHub(fg Flowgraph, h Hub) {
-	checkfg("Hub", h.Flowgraph(), fg)
+// checkExternalHub checks that the flowgraph associated with a Hub doesn't match
+func checkExternalHub(fg Flowgraph, h Hub) {
+	if h == nil {
+		return
+	}
+	fgknown := fg
+	fgtest := h.Flowgraph()
+	if fgknown == fgtest {
+		panic(fmt.Sprintf("External Hub %q created by same flowgraph %q",
+			h.Name(), fgtest.Title()))
+	}
 }
 
-// checkfgStream checks that the flowgraph associated with a Stream matches
-func checkfgStream(fg Flowgraph, s Stream) {
+// checkInternalStream checks that the flowgraph associated with a Stream matches
+func checkInternalStream(fg Flowgraph, s Stream) {
 	if s == nil {
 		return
 	}
-	checkfg("Stream", s.Flowgraph(), fg)
+	fgknown := fg
+	fgtest := s.Flowgraph()
+	if fgknown != fgtest {
+		panic(fmt.Sprintf("Stream %q created by flowgraph %q (expected flowgraph %q)",
+			s.Name(), fgtest.Title(), fgknown.Title()))
+	}
+}
+
+// checkExternalStream checks that the flowgraph associated with a Stream doesn't match
+func checkExternalStream(fg Flowgraph, s Stream) {
+	if s == nil {
+		return
+	}
+	fgknown := fg
+	fgtest := s.Flowgraph()
+	if fgknown == fgtest {
+		panic(fmt.Sprintf("External Stream %q created by same flowgraph %q",
+			s.Name(), fgtest.Title()))
+	}
 }
 
 // flatten connects GraphHub external ports to internal dangling streams
@@ -460,6 +490,9 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 	for _, v := range fg.hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
+			if fgbase.DotOutput {
+				nodes = append(nodes, v.Base().(*fgbase.Node))
+			}
 		} else {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
