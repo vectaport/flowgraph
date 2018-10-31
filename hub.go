@@ -79,6 +79,9 @@ type Hub interface {
 	// ConnectResults connects a list of result Streams to this Hub
 	ConnectResults(result ...Stream) Hub
 
+	// Code returns code associated with Hub.
+	Code() Code
+
 	// Flowgraph returns associated flowgraph
 	Flowgraph() Flowgraph
 
@@ -93,6 +96,7 @@ type Hub interface {
 type hub struct {
 	base *fgbase.Node
 	fg   *flowgraph
+	code Code
 }
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
@@ -357,6 +361,11 @@ func (h *hub) ConnectResults(result ...Stream) Hub {
 		h.SetResult(i, v)
 	}
 	return h
+}
+
+// Code returns code associated with a Hub
+func (h *hub) Code() Code {
+	return h.code
 }
 
 // Flowgraph returns associate flowgraph interface

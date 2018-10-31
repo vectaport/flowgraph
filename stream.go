@@ -65,12 +65,12 @@ func (s *stream) Name() string {
 
 // Upstream returns upstream hub by index
 func (s *stream) Upstream(i int) Hub {
-	return &hub{s.base.SrcNode(i), s.fg}
+	return s.base.SrcNode(i).Owner.(Hub)
 }
 
 // Downstream returns upstream hub by index
 func (s *stream) Downstream(i int) Hub {
-	return &hub{s.base.DstNode(i), s.fg}
+	return s.base.DstNode(i).Owner.(Hub)
 }
 
 // NumUpstream returns the number of upstream hubs

@@ -36,25 +36,18 @@ const ( //                      init            ns,nr   description
 	Pass                 // n		n,n	pass all values at once
 	Steer                // n,m		1+n,n*m	steer rest by m ways from first source
 	Select               // n		1+n,1   select from rest by first source
-	Add                  // nil		2,1	add numbers, concat strings, or use Adder
-	Subtract             // nil		2,1	subtract numbers or use Subtracter
-	Multiply             // nil		2,1	multiply numbers or use Multiplier
-	Divide               // nil		2,1	divide numbers or use Divider
-	Modulo               // nil		2,1	modulato numbers or use Moduloer
-	And                  // nil		2,1	and bool, bit-wise and integers, or use Ander
-	Or                   // nil		2,1	or bool, bit-wise or integers, or use Orer
-	Not                  // nil		1,1	negate bool, invert integers, or use Notter
-	Shift                // ShiftCode	2,1	shift first by second, Arith,Barrel,Signed or use Shifter
-)
-
-// GraphCode code for type of graph
-type GraphCode int
-
-// GraphCode constants for NewGraphHub
-const ( //                         ns,nr   description
-	Graph  GraphCode = iota // n,m     hub with general purpose internals
-	While                   // n,n	hub with internal wait-body-steer loop
-	During                  // n,n	hub with internal wait-body-steer loop and continuous results
+	Add                  // [Transformer]	2,1	add numbers, concat strings
+	Subtract             // [Transformer]	2,1	subtract numbers
+	Multiply             // [Transformer]	2,1	multiply numbers
+	Divide               // [Transformer]	2,1	divide numbers
+	Modulo               // [Transformer]	2,1	modulato numbers
+	And                  // [Transformer]	2,1	AND bool or bit-wise AND integers
+	Or                   // [Transformer]	2,1	OR bool or bit-wise OR integers
+	Not                  // [Transformer]	1,1	negate bool, invert integers, or use Notter
+	Shift                // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
+	Graph                // nil		n,m     hub with general purpose internals
+	While                // nil		n,n	hub with internal wait-body-steer loop
+	During               // nil		n,n	hub with internal wait-body-steer loop and continuous r)
 )
 
 // Shift Code
@@ -65,43 +58,6 @@ const (
 	Barrel
 	Signed
 )
-
-// interfaces used by specific codes
-type Adder interface {
-	Add(interface{}) interface{}
-}
-
-type Subtracter interface {
-	Subtract(interface{}) interface{}
-}
-
-type Multiplier interface {
-	Multiply(interface{}) interface{}
-}
-
-type Divider interface {
-	Divide(interface{}) interface{}
-}
-
-type Moduloer interface {
-	Modulo(interface{}) interface{}
-}
-
-type Ander interface {
-	And(interface{}) interface{}
-}
-
-type Orer interface {
-	Or(interface{}) interface{}
-}
-
-type Notter interface {
-	Not() interface{}
-}
-
-type Shifter interface {
-	Shift(interface{}) interface{}
-}
 
 /*=====================================================================*/
 
@@ -153,7 +109,7 @@ type Flowgraph interface {
 	NewStream(name string) Stream
 
 	// NewGraphHub returns a hub with a flowgraph inside
-	NewGraphHub(name string, graphCode GraphCode) GraphHub
+	NewGraphHub(name string, Code Code) GraphHub
 
 	// FindHub finds a hub by name
 	FindHub(name string) Hub
@@ -300,7 +256,8 @@ func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 		n.Aux = init
 	}
 
-	h := &hub{&n, fg}
+	h := &hub{&n, fg, code}
+	n.Owner = h
 	fg.hubs = append(fg.hubs, h)
 	fg.nameToHub[name] = h
 	return h
@@ -316,12 +273,12 @@ func (fg *flowgraph) NewStream(name string) Stream {
 }
 
 // NewGraphHub returns a hub with an internal flowgraph
-func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
+func (fg *flowgraph) NewGraphHub(name string, code Code) GraphHub {
 	newfg := New(name + "_fg")
 
 	var n fgbase.Node
 
-	switch graphCode {
+	switch code {
 	case While:
 		n = fgbase.MakeNode(name, nil, nil, nil, whileFire)
 	case During:
@@ -329,9 +286,10 @@ func (fg *flowgraph) NewGraphHub(name string, graphCode GraphCode) GraphHub {
 	case Graph:
 		n = fgbase.MakeNode(name, nil, nil, nil, graphFire)
 	default:
-		log.Panicf("Unexpected GraphCode:  %v\n", graphCode)
+		log.Panicf("Unexpected Code for graph:  %v\n", code)
 	}
-	gh := &graphhub{&hub{&n, fg}, newfg, nil, nil}
+	gh := &graphhub{&hub{&n, fg, code}, newfg, nil, nil}
+	n.Owner = gh
 	fg.hubs = append(fg.hubs, gh)
 	fg.nameToHub[name] = gh
 	return gh
@@ -520,7 +478,7 @@ func allOfFire(n *fgbase.Node) error {
 			eofflag = true
 		}
 	}
-	x, _ := t.Transform(&hub{n, fg}, a)
+	x, _ := t.Transform(&hub{n, fg, AllOf}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -561,7 +519,7 @@ func oneOfFire(n *fgbase.Node) error {
 			break
 		}
 	}
-	x, _ := t.Transform(&hub{n, fg}, a)
+	x, _ := t.Transform(&hub{n, fg, OneOf}, a)
 	for i, _ := range x {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
@@ -580,7 +538,7 @@ func oneOfFire(n *fgbase.Node) error {
 func retrieveFire(n *fgbase.Node) error {
 	retriever := n.Aux.(*fgRetriever).r
 	fg := n.Aux.(*fgRetriever).fg
-	v, err := retriever.Retrieve(&hub{n, fg})
+	v, err := retriever.Retrieve(&hub{n, fg, Retrieve})
 	n.Dsts[0].DstPut(v)
 	return err
 }
@@ -588,7 +546,7 @@ func retrieveFire(n *fgbase.Node) error {
 func transmitFire(n *fgbase.Node) error {
 	transmitter := n.Aux.(*fgTransmitter).t
 	fg := n.Aux.(*fgTransmitter).fg
-	err := transmitter.Transmit(&hub{n, fg}, n.Srcs[0].SrcGet())
+	err := transmitter.Transmit(&hub{n, fg, Transmit}, n.Srcs[0].SrcGet())
 	return err
 }
 

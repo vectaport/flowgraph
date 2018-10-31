@@ -65,8 +65,8 @@ func (gh *graphhub) NewStream(name string) Stream {
 }
 
 // NewGraphHub returns a hub with a sub-graph
-func (gh *graphhub) NewGraphHub(name string, graphCode GraphCode) GraphHub {
-	return gh.fg.NewGraphHub(name, graphCode)
+func (gh *graphhub) NewGraphHub(name string, code Code) GraphHub {
+	return gh.fg.NewGraphHub(name, code)
 }
 
 // FindHub finds a hub by name
@@ -214,6 +214,11 @@ func (gh *graphhub) ConnectSources(source ...Stream) Hub {
 func (gh *graphhub) ConnectResults(result ...Stream) Hub {
 	return gh.hub.ConnectResults(result...)
 
+}
+
+// Code returns code associated with a Hub
+func (gh *graphhub) Code() Code {
+	return gh.hub.Code()
 }
 
 // Flowgraph returns associate flowgraph interface
