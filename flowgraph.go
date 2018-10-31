@@ -19,7 +19,7 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
-// Code constants for flowgraph.NewHub() code arg.
+// Code constants for NewHub() code arg.
 // Comment fields are init arg for NewHub, number of source and number of results
 // (if n or m given thru init arg), and description.
 const (
