@@ -41,7 +41,7 @@ const (
 
 	Graph                // nil		n,m     hub with general purpose internals
 	While                // nil		n,n	hub with internal wait-body-steer loop
-	During               // nil		n,n	hub with internal wait-body-steer loop and continuous r)
+	During               // nil		n,n	hub with while loop with continue results
 
 	Add                  // [Transformer]	2,1	add numbers, concat strings
 	Subtract             // [Transformer]	2,1	subtract numbers
@@ -51,8 +51,7 @@ const (
 	And                  // [Transformer]	2,1	AND bool or bit-wise AND integers
 	Or                   // [Transformer]	2,1	OR bool or bit-wise OR integers
 	Not                  // [Transformer]	1,1	negate bool, invert integers, or use Notter
-	
-	Shift                // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
+	Shift          // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
 
 // Shift Code
