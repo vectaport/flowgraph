@@ -36,7 +36,7 @@ type Stream interface {
 	// Sink sets a stream to be a sink
 	Sink() Stream
 
-	// IsConst returns rtue if stream is a constant
+	// IsConst returns true if stream is a constant
 	IsConst() bool
 
 	// IsSink returns true if stream is a sink
