@@ -50,7 +50,7 @@ const (
 	Modulo               // [Transformer]	2,1	modulato numbers
 	And                  // [Transformer]	2,1	AND bool or bit-wise AND integers
 	Or                   // [Transformer]	2,1	OR bool or bit-wise OR integers
-	Not                  // [Transformer]	1,1	negate bool, invert integers, or use Notter
+	Not                  // [Transformer]	1,1	negate bool, invert integers
 	Shift          // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
 
