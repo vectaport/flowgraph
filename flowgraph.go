@@ -22,11 +22,13 @@ type Code int
 // a description of functionality.
 
 // Code constants for NewHub
-const ( /*                      init            ns,nr   description                        */
+// comment fields are initial value, number source, number results, and description
+const (
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
 	AllOf                // Transformer	n,m	waiting for all sources
 	OneOf                // Transformer	n,m	waiting for one source
+
 	Array                // []interface{}	0,1	produce array of values then EOF
 	Constant             // interface{}	0,1	produce constant values forever
 	Sink                 // [Sinker]	1,0	consume values forever
@@ -36,6 +38,11 @@ const ( /*                      init            ns,nr   description             
 	Pass                 // n		n,n	pass all values at once
 	Steer                // n,m		1+n,n*m	steer rest by m ways from first source
 	Select               // n		1+n,1   select from rest by first source
+
+	Graph                // nil		n,m     hub with general purpose internals
+	While                // nil		n,n	hub with internal wait-body-steer loop
+	During               // nil		n,n	hub with internal wait-body-steer loop and continuous r)
+
 	Add                  // [Transformer]	2,1	add numbers, concat strings
 	Subtract             // [Transformer]	2,1	subtract numbers
 	Multiply             // [Transformer]	2,1	multiply numbers
@@ -44,10 +51,8 @@ const ( /*                      init            ns,nr   description             
 	And                  // [Transformer]	2,1	AND bool or bit-wise AND integers
 	Or                   // [Transformer]	2,1	OR bool or bit-wise OR integers
 	Not                  // [Transformer]	1,1	negate bool, invert integers, or use Notter
+	
 	Shift                // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
-	Graph                // nil		n,m     hub with general purpose internals
-	While                // nil		n,n	hub with internal wait-body-steer loop
-	During               // nil		n,n	hub with internal wait-body-steer loop and continuous r)
 )
 
 // Shift Code
