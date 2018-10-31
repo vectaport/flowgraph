@@ -22,7 +22,7 @@ type Code int
 // a description of functionality.
 
 // Code constants for NewHub
-const ( //                      init            ns,nr   description
+const ( /*                      init            ns,nr   description                        */
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
 	AllOf                // Transformer	n,m	waiting for all sources
