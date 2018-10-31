@@ -1,5 +1,5 @@
-// Package flowgraph for scalable asyncrhonous development
-// Build systems out of hubs interconnected by streams of data
+// Package flowgraph for scalable asyncrhonous development.
+// Build systems out of hubs interconnected by streams of data.
 // https://github.com/vectaport/flowgraph/wiki
 package flowgraph
 
