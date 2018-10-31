@@ -29,29 +29,29 @@ const (
 	AllOf                // Transformer	n,m	waiting for all sources
 	OneOf                // Transformer	n,m	waiting for one source
 
-	Array                // []interface{}	0,1	produce array of values then EOF
-	Constant             // interface{}	0,1	produce constant values forever
-	Sink                 // [Sinker]	1,0	consume values forever
-	Split                // n		1,n	split into separate values
-	Join                 // n		n,1	join into one value
-	Wait                 // n		n+1,1 	wait for last source to pass rest
-	Pass                 // n		n,n	pass all values at once
-	Steer                // n,m		1+n,n*m	steer rest by m ways from first source
-	Select               // n		1+n,1   select from rest by first source
+	Array    // []interface{}	0,1	produce array of values then EOF
+	Constant // interface{}	0,1	produce constant values forever
+	Sink     // [Sinker]	1,0	consume values forever
+	Split    // n		1,n	split into separate values
+	Join     // n		n,1	join into one value
+	Wait     // n		n+1,1 	wait for last source to pass rest
+	Pass     // n		n,n	pass all values at once
+	Steer    // n,m		1+n,n*m	steer rest by m ways from first source
+	Select   // n		1+n,1   select from rest by first source
 
-	Graph                // nil		n,m     hub with general purpose internals
-	While                // nil		n,n	hub with internal wait-body-steer loop
-	During               // nil		n,n	hub with while loop with continue results
+	Graph  // nil		n,m     hub with general purpose internals
+	While  // nil		n,n	hub with internal wait-body-steer loop
+	During // nil		n,n	hub with while loop with continue results
 
-	Add                  // [Transformer]	2,1	add numbers, concat strings
-	Subtract             // [Transformer]	2,1	subtract numbers
-	Multiply             // [Transformer]	2,1	multiply numbers
-	Divide               // [Transformer]	2,1	divide numbers
-	Modulo               // [Transformer]	2,1	modulato numbers
-	And                  // [Transformer]	2,1	AND bool or bit-wise AND integers
-	Or                   // [Transformer]	2,1	OR bool or bit-wise OR integers
-	Not                  // [Transformer]	1,1	negate bool, invert integers
-	Shift          // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
+	Add      // [Transformer]	2,1	add numbers, concat strings
+	Subtract // [Transformer]	2,1	subtract numbers
+	Multiply // [Transformer]	2,1	multiply numbers
+	Divide   // [Transformer]	2,1	divide numbers
+	Modulo   // [Transformer]	2,1	modulato numbers
+	And      // [Transformer]	2,1	AND bool or bit-wise AND integers
+	Or       // [Transformer]	2,1	OR bool or bit-wise OR integers
+	Not      // [Transformer]	1,1	negate bool, invert integers
+	Shift    // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
 
 // Shift Code
