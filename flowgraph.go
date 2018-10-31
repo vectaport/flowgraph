@@ -68,21 +68,25 @@ const (
 
 // Transformer transforms a slice of source values into a slice
 // of result values with the Transform method. Use Hub.Tracef for tracing.
+// Used by Hub with AllOf or OneOf Code.  Use Hub.Tracef for tracing.
 type Transformer interface {
 	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
 
-// Retriever retrieves one value using the Retrieve method. Use Hub.Tracef for tracing.
+// Retriever retrieves one value using the Retrieve method.
+// Used by Hub with Retrieve Code.  Use Hub.Tracef for tracing.
 type Retriever interface {
 	Retrieve(h Hub) (result interface{}, err error)
 }
 
-// Transmitter transmits one value using a Transmit method. Use Hub.Tracef for tracing.
+// Transmitter transmits one value using a Transmit method.
+//  Used by Hub with Transmit Code to transmit values. Use Hub.Tracef for tracing.
 type Transmitter interface {
 	Transmit(h Hub, source interface{}) (err error)
 }
 
 // Sinker consumes wavefronts of values one at a time forever
+// Optionally used by Hub with Sink Code.
 type Sinker interface {
 	Sink(source []interface{})
 }
