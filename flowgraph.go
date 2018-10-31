@@ -18,12 +18,9 @@ var EOF = errors.New("EOF")
 // Hub code
 type Code int
 
-// next two tables show init argument for Connect, number of sources, number of results, and
-// a description of functionality.
-
-// Code constant for NewHub.
-// Comment fields are init arg for NewHub, number source, number results 
-// (if n or m given as init arg), and description.
+// Code constants for flowgraph.NewHub() code arg.
+// Comment fields are init arg for NewHub, number of source and number of results
+// (if n or m given thru init arg), and description.
 const (
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
