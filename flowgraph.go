@@ -21,8 +21,9 @@ type Code int
 // next two tables show init argument for Connect, number of sources, number of results, and
 // a description of functionality.
 
-// Code constants for NewHub.
-// Comment fields are initial value, number source, number results, and description
+// Code constant for NewHub.
+// Comment fields are init arg for NewHub, number source, number results 
+// (if n or m given as init arg), and description.
 const (
 	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit             // Transmitter	1,0	transmit one value with Transmitter
