@@ -77,7 +77,7 @@ type Retriever interface {
 }
 
 // Transmitter transmits one value using a Transmit method.
-//  Used by Hub with Transmit Code to transmit values. Use Hub.Tracef for tracing.
+// Used by Hub with Transmit Code to transmit values. Use Hub.Tracef for tracing.
 type Transmitter interface {
 	Transmit(h Hub, source interface{}) (err error)
 }
