@@ -76,11 +76,11 @@ type Hub interface {
 	// Code returns code associated with Hub.
 	Code() Code
 
-	// Flowgraph returns associated flowgraph
-	Flowgraph() Flowgraph
-
 	// Empty returns true if the underlying implementation is nil
 	Empty() bool
+
+	// Flowgraph returns associated flowgraph
+	Flowgraph() Flowgraph
 
 	// Base returns value of underlying implementation
 	Base() interface{}

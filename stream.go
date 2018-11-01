@@ -24,9 +24,6 @@ type Stream interface {
 	// NumDownstream returns the number of downstream hubs
 	NumDownstream() int
 
-	// Empty returns true if the underlying implementation is nil
-	Empty() bool
-
 	// Init sets an initial value for flow
 	Init(v interface{}) Stream
 
@@ -44,6 +41,9 @@ type Stream interface {
 
 	// Same returns true if two streams are the same underneath
 	Same(Stream) bool
+
+	// Empty returns true if the underlying implementation is nil
+	Empty() bool
 
 	// Flowgraph returns associated flowgraph
 	Flowgraph() Flowgraph
@@ -83,11 +83,6 @@ func (s *stream) NumDownstream() int {
 	return s.base.DstCnt()
 }
 
-// Empty returns true if the underlying implementation is nil
-func (s *stream) Empty() bool {
-	return s.base == nil
-}
-
 // Init sets an initial value for flow
 func (s *stream) Init(v interface{}) Stream {
 	s.Base().(*fgbase.Edge).Val = v
@@ -119,6 +114,11 @@ func (s *stream) IsSink() bool {
 // Same returns true if two streams are the same underneath
 func (s *stream) Same(s2 Stream) bool {
 	return s.Base().(*fgbase.Edge).Same(s2.Base().(*fgbase.Edge))
+}
+
+// Empty returns true if the underlying implementation is nil
+func (s *stream) Empty() bool {
+	return s.base == nil
 }
 
 // Flowgraph returns associate flowgraph interface
