@@ -116,13 +116,13 @@ func (gh *graphhub) Panicf(format string, v ...interface{}) {
 }
 
 // Source returns source stream by index
-func (gh *graphhub) Source(i int) Stream {
-	return gh.hub.Source(i)
+func (gh *graphhub) Source(port interface{}) Stream {
+	return gh.hub.Source(port)
 }
 
 // Result returns result stream by index
-func (gh *graphhub) Result(i int) Stream {
-	return gh.hub.Result(i)
+func (gh *graphhub) Result(port interface{}) Stream {
+	return gh.hub.Result(port)
 }
 
 // SetSource sets a stream on a source port selected by string or int
@@ -133,16 +133,6 @@ func (gh *graphhub) SetSource(port interface{}, s Stream) Hub {
 // SetResult sets a stream on a result port selected by string or int
 func (gh *graphhub) SetResult(port interface{}, s Stream) Hub {
 	return gh.hub.SetResult(port, s)
-}
-
-// FindSource returns source stream by port name
-func (gh *graphhub) FindSource(port interface{}) (s Stream, portok bool) {
-	return gh.hub.FindSource(port)
-}
-
-// FindResult returns result stream by port name
-func (gh *graphhub) FindResult(port interface{}) (s Stream, portok bool) {
-	return gh.hub.FindResult(port)
 }
 
 // AddSources adds a source port for each stream

@@ -20,22 +20,16 @@ type Hub interface {
 	Panicf(format string, v ...interface{})
 
 	// Source returns source stream by index
-	Source(i int) Stream
+	Source(port interface{}) Stream
 
 	// Result returns result stream by index
-	Result(i int) Stream
+	Result(port interface{}) Stream
 
 	// SetSource sets a stream on a source port selected by string or int
 	SetSource(port interface{}, s Stream) Hub
 
 	// SetResult sets a stream on a result port selected by string or int
 	SetResult(port interface{}, s Stream) Hub
-
-	// FindSource returns source stream by port name
-	FindSource(port interface{}) (s Stream, portok bool)
-
-	// FindResult returns result stream by port name
-	FindResult(port interface{}) (s Stream, portok bool)
 
 	// AddSources adds a source port for each stream
 	AddSources(s ...Stream) Hub
@@ -120,12 +114,46 @@ func (h *hub) Name() string {
 }
 
 // Source returns source stream by index
-func (h *hub) Source(i int) Stream {
+func (h *hub) Source(port interface{}) Stream {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i = h.SourceIndex(v)
+		ok = i >= 0
+	case int:
+		ok = v >= 0 && v < h.NumSource()
+		i = v
+	default:
+		h.Panicf("Need string or int to select port on Hub %s to get source stream\n", h.Name())
+	}
+
+	if !ok {
+		h.Panicf("Source port %v not found on Hub %v\n", port, h.Name())
+	}
+
 	return &stream{h.base.Src(i), h.fg}
 }
 
 // Result returns result stream by index
-func (h *hub) Result(i int) Stream {
+func (h *hub) Result(port interface{}) Stream {
+	var i int
+	var ok bool
+	switch v := port.(type) {
+	case string:
+		i = h.ResultIndex(v)
+		ok = i >= 0
+	case int:
+		ok = v >= 0 && v < h.NumResult()
+		i = v
+	default:
+		h.Panicf("Need string or int to select port on Hub %s to get result stream\n", h.Name())
+	}
+
+	if !ok {
+		h.Panicf("Result port %v not found on Hub %v\n", port, h.Name())
+	}
+
 	return &stream{h.base.Dst(i), h.fg}
 }
 
@@ -183,44 +211,6 @@ func (h *hub) SetResult(port interface{}, s Stream) Hub {
 
 	h.base.DstSet(i, &e)
 	return h
-}
-
-// FindSource returns source stream by port name
-func (h *hub) FindSource(port interface{}) (s Stream, portok bool) {
-	var e *fgbase.Edge
-	var ok bool
-	switch v := port.(type) {
-	case string:
-		e, ok = h.base.FindSrc(v)
-	case int:
-		ok = v >= 0 && v < h.NumSource()
-		if ok {
-			e = h.base.Src(v)
-		}
-	default:
-		h.Panicf("Need string or int to select source port on hub %s\n", h.Name())
-	}
-	return &stream{e, h.fg}, ok
-}
-
-// FindResult returns result stream by port name
-func (h *hub) FindResult(port interface{}) (s Stream, portok bool) {
-	var e *fgbase.Edge
-	var ok bool
-	switch v := port.(type) {
-	case string:
-		e, ok = h.base.FindDst(v)
-		h.Tracef("FindResult port %T(%v) e,ok %v,%v\n", v, v, e, ok)
-	case int:
-		ok = v >= 0 && v < h.NumSource()
-		if ok {
-			e = h.base.Dsts[v]
-		}
-		h.Tracef("FindResult port %T(%v) e,ok %v,%v\n", v, v, e, ok)
-	default:
-		h.Panicf("Need string or int to select result port on hub %s\n", h.Name())
-	}
-	return &stream{e, h.fg}, ok
 }
 
 // AddSources adds a source port for each stream

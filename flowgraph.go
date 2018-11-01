@@ -342,7 +342,7 @@ func (fg *flowgraph) connectInit(
 	var usok bool
 	switch v := upstreamPort.(type) {
 	case string:
-		us, usok = upstream.FindResult(v)
+		us,usok = upstream.Result(v),!upstream.Empty()
 		if !usok {
 			upstream.Panicf("No result port \"%s\" found on Hub \"%s\"\n", v, upstream.Name())
 		}
@@ -360,7 +360,7 @@ func (fg *flowgraph) connectInit(
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
-		ds, dsok = dnstream.FindSource(v)
+		ds,dsok = dnstream.Source(v),!dnstream.Empty()
 		if !dsok {
 			dnstream.Panicf("No source port \"%s\" found on Hub \"%s\"\n", v, dnstream.Name())
 		}

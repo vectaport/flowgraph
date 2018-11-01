@@ -261,13 +261,11 @@ func TestDotNaming(t *testing.T) {
 	h1 := fg.NewHub("name1", flowgraph.Sink, nil)
 	h1.SetSourceNames("ABC")
 
-	_, s0ok := h0.FindResult("XYZ")
-	if !s0ok {
+	if h0.Result("XYZ").Empty() {
 		t.Fatalf("ERROR Unable to find result port named XYZ\n")
 	}
 
-	_, s1ok := h1.FindSource("ABC")
-	if !s1ok {
+	if h1.Source("ABC").Empty() {
 		t.Fatalf("ERROR Unable to find source port named ABC\n")
 	}
 
