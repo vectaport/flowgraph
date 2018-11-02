@@ -424,6 +424,16 @@ func TestIterator1(t *testing.T) {
 
 /*=====================================================================*/
 
+/* TestIterator2 Flowgraph HDL *
+
+tbi()(firstval)
+wait(firstval,lastval=0)(oldval)
+sub(oldval,1)(newval)
+steer(newval)(lastval,oldval)
+sink(lastval)()
+
+*/
+
 func TestIterator2(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator2\n")
 	oldRunTime := fgbase.RunTime
@@ -435,17 +445,17 @@ func TestIterator2(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator2")
 
-	nextval := fg.NewStream("nextval")
-	ready := fg.NewStream("ready").Init(0)
+	firstval := fg.NewStream("firstval")
+	lastval := fg.NewStream("lastval").Init(0)
 	oldval := fg.NewStream("oldval")
 	oneval := fg.NewStream("oneval").Const(1)
 	newval := fg.NewStream("newval")
 
 	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
-		ConnectResults(nextval)
+		ConnectResults(firstval)
 
 	fg.NewHub("wait", flowgraph.Wait, true).
-		ConnectSources(nextval, ready).
+		ConnectSources(firstval, lastval).
 		ConnectResults(oldval)
 
 	fg.NewHub("sub", flowgraph.Subtract, nil).
@@ -454,7 +464,7 @@ func TestIterator2(t *testing.T) {
 
 	fg.NewHub("steer", flowgraph.Steer, nil).
 		ConnectSources(newval).
-		ConnectResults(ready, oldval)
+		ConnectResults(lastval, oldval)
 
 	fg.Run()
 
@@ -466,6 +476,16 @@ func TestIterator2(t *testing.T) {
 
 /*=====================================================================*/
 
+/* TestIterator3 Flowgraph HDL * 
+
+tbi()(firstval)
+while(firstval)(lastval) {
+        lastval=sub(firstval, 1)
+}
+sink(lastval)()
+
+*/
+	
 func TestIterator3(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator3\n")
 	oldRunTime := fgbase.RunTime
@@ -505,6 +525,20 @@ func TestIterator3(t *testing.T) {
 
 /*=====================================================================*/
 
+/* TestIterator4 Flowgraph HDL *
+
+tbi()(firstval1)
+while(firstval1)(lastval1) {
+        lastval1=sub(firstval1, 1)
+}
+wait(10,lastval1)(firstval2)
+while(firstval2)(lastval2) {
+        lastval2=sub(firstval2, 1)
+}
+sink(lastval2)()
+
+*/
+	
 func TestIterator4(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator4\n")
 	oldRunTime := fgbase.RunTime
@@ -514,17 +548,6 @@ func TestIterator4(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator4")
 
-	/* Flowgraph HDL
-	tbi()(firstval)
-	while(firstval1)(lastval1) {
-	        lastval1=sub(firstval1, 1)
-	}
-	wait(10,lastval1)(firstval2)
-	while(firstval2)(lastval2) {
-	        lastval2=sub(firstval2, 1)
-	}
-	sink(lastval2)()
-        */
 
 	firstval1 := fg.NewStream("firstval1")
 	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
