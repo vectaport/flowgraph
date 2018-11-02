@@ -12,6 +12,9 @@ type Stream interface {
 	// Name returns the stream name
 	Name() string
 
+	// SetName sets the stream name
+	SetName(name string)
+
 	// Upstream returns upstream hub by index
 	Upstream(i int) Hub
 
@@ -61,6 +64,11 @@ type stream struct {
 // Name returns the stream name
 func (s *stream) Name() string {
 	return s.base.Name
+}
+
+// SetName sets the stream name
+func (s *stream) SetName(name string) {
+	s.base.SetName(name)
 }
 
 // Upstream returns upstream hub by index

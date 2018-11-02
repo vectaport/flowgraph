@@ -34,6 +34,11 @@ func (gh *graphhub) Name() string {
 	return gh.hub.Name()
 }
 
+// SetName sets the name of this hub
+func (gh *graphhub) SetName(name string) {
+	gh.hub.SetName(name)
+}
+
 // Hub returns a hub by index
 func (gh *graphhub) Hub(n int) Hub {
 	return gh.fg.Hub(n)

@@ -370,6 +370,16 @@ func TestLineEq(t *testing.T) {
 
 /*=====================================================================*/
 
+/* TestIterator1 Flowgraph HDL *
+
+tbi()(.X(firstval))
+wait(.A(firstval),.B(lastval=0))(.X(oldval))
+sub(.A(oldval),.B(1))(.X(newval))
+steer(.A(newval))(.X(lastval),.Y(oldval))
+sink(.A(lastval))()
+
+*/
+
 type tbi struct{}
 
 func (t *tbi) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
@@ -405,14 +415,19 @@ func TestIterator1(t *testing.T) {
 		SetSourceNames("A"). // steer condition.
 		SetResultNames("X", "Y")
 
-	fg.Connect(tbi, "X", wait, "A")
-	fg.ConnectInit(steer, "X", wait, "B", 0)
+	sink := fg.NewHub("sink", flowgraph.Sink, nil).
+		SetSourceNames("A")
 
-	fg.Connect(wait, "X", sub, "A")
-	fg.Connect(steer, "Y", sub, "A")
-	fg.Connect(one, "X", sub, "B")
+	fg.Connect(tbi, "X", wait, "A").SetName("firstval")
+	fg.ConnectInit(steer, "X", wait, "B", 0).SetName("lastval")
 
-	fg.Connect(sub, "X", steer, "A")
+	fg.Connect(wait, "X", sub, "A").SetName("oldval")
+	fg.Connect(steer, "Y", sub, "A") // oldval
+	fg.Connect(one, "X", sub, "B").SetName("oneval")
+
+	fg.Connect(sub, "X", steer, "A").SetName("newval")
+
+	fg.Connect(steer, "X", sink, "A") // lastval
 
 	fg.Run()
 
@@ -476,7 +491,7 @@ func TestIterator2(t *testing.T) {
 
 /*=====================================================================*/
 
-/* TestIterator3 Flowgraph HDL * 
+/* TestIterator3 Flowgraph HDL *
 
 tbi()(firstval)
 while(firstval)(lastval) {
@@ -485,7 +500,7 @@ while(firstval)(lastval) {
 sink(lastval)()
 
 */
-	
+
 func TestIterator3(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator3\n")
 	oldRunTime := fgbase.RunTime
@@ -538,7 +553,7 @@ while(firstval2)(lastval2) {
 sink(lastval2)()
 
 */
-	
+
 func TestIterator4(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator4\n")
 	oldRunTime := fgbase.RunTime
@@ -547,7 +562,6 @@ func TestIterator4(t *testing.T) {
 	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestIterator4")
-
 
 	firstval1 := fg.NewStream("firstval1")
 	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).

@@ -10,6 +10,9 @@ type Hub interface {
 	// Name returns the hub name
 	Name() string
 
+	// SetName sets the hub name
+	SetName(name string)
+
 	// Tracef for debug trace printing.  Uses atomic log mechanism.
 	Tracef(format string, v ...interface{})
 
@@ -111,6 +114,11 @@ func (h *hub) Panicf(format string, v ...interface{}) {
 // Name returns the hub name
 func (h *hub) Name() string {
 	return h.base.Name
+}
+
+// SetName returns the hub name
+func (h *hub) SetName(name string) {
+	h.base.Name = name
 }
 
 // Source returns source stream by index
