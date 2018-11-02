@@ -40,7 +40,7 @@ const (
 
 	Graph  // nil		n,m     hub with general purpose internals
 	While  // nil		n,n	hub with internal wait-body-steer loop
-	During // nil		n,n	hub with while loop with continue results
+	During // nil		n,n	hub with while loop with continuous results
 
 	Add      // [Transformer]	2,1	add numbers, concat strings
 	Subtract // [Transformer]	2,1	subtract numbers
