@@ -46,7 +46,7 @@ const (
 	Subtract // [Transformer]	2,1	subtract numbers
 	Multiply // [Transformer]	2,1	multiply numbers
 	Divide   // [Transformer]	2,1	divide numbers
-	Modulo   // [Transformer]	2,1	modulato numbers
+	Modulo   // [Transformer]	2,1	modulate numbers
 	And      // [Transformer]	2,1	AND bool or bit-wise AND integers
 	Or       // [Transformer]	2,1	OR bool or bit-wise OR integers
 	Not      // [Transformer]	1,1	negate bool, invert integers
