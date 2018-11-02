@@ -517,13 +517,13 @@ func TestIterator4(t *testing.T) {
 	/* Flowgraph HDL
 	tbi()(firstval)
 	while(firstval1)(lastval1) {
-     		lastval1=sub(firstval1, 1)
+	        lastval1=sub(firstval1, 1)
 	}
 	wait(10,lastval1)(firstval2)
-        while(firstval2)(lastval2) {
-        	lastval2=sub(firstval2, 1)
-        }
-        sink(lastval2)()
+	while(firstval2)(lastval2) {
+	        lastval2=sub(firstval2, 1)
+	}
+	sink(lastval2)()
         */
 
 	firstval1 := fg.NewStream("firstval1")
