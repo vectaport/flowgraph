@@ -314,9 +314,9 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
 	// dangling inputs
 	for i, s := range gh.isources {
-		gh.Tracef("Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
+		// gh.Tracef("Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
 		for j := 0; j < s.NumDownstream(); j++ {
-			gh.Tracef("\tlinked by source stream %q (*fbase.Edge=%p) that ends at hub %q port %v\n", s.Name(), s.Base().(*fgbase.Edge), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
+			// gh.Tracef("\tlinked by source stream %q (*fbase.Edge=%p) that ends at hub %q port %v\n", s.Name(), s.Base().(*fgbase.Edge), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
 		}
 		jmax := s.NumDownstream()
 		for j := 0; j < jmax; j++ {
@@ -327,8 +327,8 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
 	// dangling or designated outputs
 	for i, r := range gh.iresults {
-		gh.Tracef("Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
-		gh.Tracef("\tlinked by result stream %q (*fgbase.Edge=%p) on outer hub %q\n", gh.Result(i).Name(), gh.Result(i).Base().(*fgbase.Edge), gh.Name())
+		// gh.Tracef("Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
+		// gh.Tracef("\tlinked by result stream %q (*fgbase.Edge=%p) on outer hub %q\n", gh.Result(i).Name(), gh.Result(i).Base().(*fgbase.Edge), gh.Name())
 		jmax := r.NumUpstream()
 		for j := 0; j < jmax; j++ {
 			gh.Link(r, gh.Result(i))

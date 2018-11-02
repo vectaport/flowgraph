@@ -358,14 +358,14 @@ func (h *hub) Code() Code {
 	return h.code
 }
 
-// Flowgraph returns associate flowgraph interface
-func (h *hub) Flowgraph() Flowgraph {
-	return h.fg
-}
-
 // Empty returns true if the underlying implementation is nil
 func (h *hub) Empty() bool {
 	return h.base == nil
+}
+
+// Flowgraph returns associate flowgraph interface
+func (h *hub) Flowgraph() Flowgraph {
+	return h.fg
 }
 
 // Base returns value of underlying implementation
