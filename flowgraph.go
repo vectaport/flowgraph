@@ -16,17 +16,17 @@ import (
 // End of flow
 var EOF = errors.New("EOF")
 
-// Hub code
-type Code int
+// HubCode is code arg to NewHub()
+type HubCode int
 
-// Code constants for NewHub() code arg.
+// HubCode constants for NewHub() code arg.
 // Comment fields are init arg for NewHub, number of source and number of results
 // (if n or m given thru init arg), and description.
 const (
-	Retrieve Code = iota // Retriever	0,1	retrieve one value with Retriever
-	Transmit             // Transmitter	1,0	transmit one value with Transmitter
-	AllOf                // Transformer	n,m	waiting for all sources
-	OneOf                // Transformer	n,m	waiting for one source
+	Retrieve HubCode = iota // Retriever	0,1	retrieve one value with Retriever
+	Transmit                // Transmitter	1,0	transmit one value with Transmitter
+	AllOf                   // Transformer	n,m	waiting for all sources
+	OneOf                   // Transformer	n,m	waiting for one source
 
 	Array    // []interface{}	0,1	produce array of values then EOF
 	Constant // interface{}	0,1	produce constant values forever
@@ -53,7 +53,7 @@ const (
 	Shift    // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
 
-// Shift Code
+// ShiftCode is the subcode for the Shift HubCode
 type ShiftCode int
 
 const (
@@ -65,26 +65,26 @@ const (
 /*=====================================================================*/
 
 // Transformer transforms a slice of source values into a slice
-// of result values with the Transform method.  Used by Hub with AllOf or OneOf Code.
+// of result values with the Transform method.  Used by Hub with AllOf or OneOf HubCode.
 // Use Hub.Tracef for tracing.
 type Transformer interface {
 	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
 
 // Retriever retrieves one value using the Retrieve method.
-// Used by Hub with Retrieve Code.  Use Hub.Tracef for tracing.
+// Used by Hub with Retrieve HubCode.  Use Hub.Tracef for tracing.
 type Retriever interface {
 	Retrieve(h Hub) (result interface{}, err error)
 }
 
 // Transmitter transmits one value using a Transmit method.
-// Used by Hub with Transmit Code to transmit values. Use Hub.Tracef for tracing.
+// Used by Hub with Transmit HubCode to transmit values. Use Hub.Tracef for tracing.
 type Transmitter interface {
 	Transmit(h Hub, source interface{}) (err error)
 }
 
 // Sinker consumes wavefronts of values one at a time forever
-// Optionally used by Hub with Sink Code.
+// Optionally used by Hub with Sink HubCode.
 type Sinker interface {
 	Sink(source []interface{})
 }
@@ -110,13 +110,13 @@ type Flowgraph interface {
 	NumStream() int
 
 	// NewHub returns a new unconnected hub
-	NewHub(name string, code Code, init interface{}) Hub
+	NewHub(name string, code HubCode, init interface{}) Hub
 
 	// NewStream returns a new unconnected stream
 	NewStream(name string) Stream
 
 	// NewGraphHub returns a hub with a flowgraph inside
-	NewGraphHub(name string, Code Code) GraphHub
+	NewGraphHub(name string, code HubCode) GraphHub
 
 	// FindHub finds a hub by name
 	FindHub(name string) Hub
@@ -197,7 +197,7 @@ type fgTransmitter struct {
 }
 
 // NewHub returns a new unconnected hub
-func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
+func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 
 	var n fgbase.Node
 
@@ -257,7 +257,7 @@ func (fg *flowgraph) NewHub(name string, code Code, init interface{}) Hub {
 		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
 
 	default:
-		log.Panicf("Unexpected Hub code:  %v\n", code)
+		log.Panicf("Unexpected Hub code NewHub:  %v\n", code)
 	}
 	if n.Aux == nil {
 		n.Aux = init
@@ -280,7 +280,7 @@ func (fg *flowgraph) NewStream(name string) Stream {
 }
 
 // NewGraphHub returns a hub with an internal flowgraph
-func (fg *flowgraph) NewGraphHub(name string, code Code) GraphHub {
+func (fg *flowgraph) NewGraphHub(name string, code HubCode) GraphHub {
 	newfg := New(name + "_fg")
 
 	var n fgbase.Node
@@ -293,7 +293,7 @@ func (fg *flowgraph) NewGraphHub(name string, code Code) GraphHub {
 	case Graph:
 		n = fgbase.MakeNode(name, nil, nil, nil, graphFire)
 	default:
-		log.Panicf("Unexpected Code for graph:  %v\n", code)
+		log.Panicf("Unexpected HubCode for NewGraphHub:  %v\n", code)
 	}
 	gh := &graphhub{&hub{&n, fg, code}, newfg, nil, nil}
 	n.Owner = gh

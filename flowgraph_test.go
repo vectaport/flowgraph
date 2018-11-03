@@ -387,6 +387,7 @@ func (t *tbi) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 }
 
 func TestIterator1(t *testing.T) {
+
 	fmt.Printf("BEGIN:  TestIterator1\n")
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
@@ -495,7 +496,7 @@ func TestIterator2(t *testing.T) {
 
 tbi()(firstval)
 while(firstval)(lastval) {
-        lastval=sub(firstval, 1)
+        sub(firstval, 1)(lastval)
 }
 sink(lastval)()
 
@@ -544,11 +545,11 @@ func TestIterator3(t *testing.T) {
 
 tbi()(firstval1)
 while(firstval1)(lastval1) {
-        lastval1=sub(firstval1, 1)
+        sub(firstval1, 1)(lastval1)
 }
 wait(10,lastval1)(firstval2)
 while(firstval2)(lastval2) {
-        lastval2=sub(firstval2, 1)
+        sub(firstval2, 1)(lastval2)
 }
 sink(lastval2)()
 
@@ -601,4 +602,67 @@ func TestIterator4(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestIterator4\n")
+}
+
+/*=====================================================================*/
+
+/* TestIterator5 Flowgraph HDL *
+
+tbi()(firstval)
+while(firstval)(lastval) {
+        while(firstval)(lastval) {
+                sub(firstval, 1)(lastval)
+	}
+}
+sink(lastval)()
+
+*/
+
+func TestIterator5(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator5\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator5")
+
+	firstval1 := fg.NewStream("firstval1")
+	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(firstval1)
+
+	lastval1 := fg.NewStream("lastval1")
+	while1 := fg.NewGraphHub("while1", flowgraph.While)
+	while1.ConnectSources(firstval1).
+		ConnectResults(lastval1)
+
+	oneval1 := while1.NewStream("oneval1").Const(1)
+	sub1 := while1.NewHub("sub1", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval1)
+	while1.Loop(sub1)
+
+	tenval := fg.NewStream("tenval").Const(10)
+	firstval2 := fg.NewStream("firstval2")
+	fg.NewHub("wait", flowgraph.Wait, 1).
+		ConnectSources(tenval, lastval1).
+		ConnectResults(firstval2)
+
+	lastval2 := fg.NewStream("lastval2")
+	while2 := fg.NewGraphHub("while2", flowgraph.While)
+	while2.ConnectSources(firstval2).
+		ConnectResults(lastval2)
+
+	oneval2 := while2.NewStream("oneval2").Const(1)
+	sub2 := while2.NewHub("sub2", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval2)
+	while2.Loop(sub2)
+
+	fg.NewHub("sink", flowgraph.Sink, nil).
+		ConnectSources(lastval2)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator5\n")
 }

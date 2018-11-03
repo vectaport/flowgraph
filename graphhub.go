@@ -60,7 +60,7 @@ func (gh *graphhub) NumStream() int {
 }
 
 // NewHub returns a new unconnected hub
-func (gh *graphhub) NewHub(name string, code Code, init interface{}) Hub {
+func (gh *graphhub) NewHub(name string, code HubCode, init interface{}) Hub {
 	return gh.fg.NewHub(name, code, init)
 }
 
@@ -70,7 +70,7 @@ func (gh *graphhub) NewStream(name string) Stream {
 }
 
 // NewGraphHub returns a hub with a sub-graph
-func (gh *graphhub) NewGraphHub(name string, code Code) GraphHub {
+func (gh *graphhub) NewGraphHub(name string, code HubCode) GraphHub {
 	return gh.fg.NewGraphHub(name, code)
 }
 
@@ -211,9 +211,9 @@ func (gh *graphhub) ConnectResults(result ...Stream) Hub {
 
 }
 
-// Code returns code associated with a Hub
-func (gh *graphhub) Code() Code {
-	return gh.hub.Code()
+// HubCode returns code associated with a Hub
+func (gh *graphhub) HubCode() HubCode {
+	return gh.hub.HubCode()
 }
 
 // Flowgraph returns associate flowgraph interface
