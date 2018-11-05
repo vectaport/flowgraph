@@ -636,29 +636,19 @@ func TestIterator5(t *testing.T) {
 	while1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
 
-	oneval1 := while1.NewStream("oneval1").Const(1)
-	sub1 := while1.NewHub("sub1", flowgraph.Subtract, nil).
-		ConnectSources(nil, oneval1)
-	while1.Loop(sub1)
+	while2 := while1.NewGraphHub("while2", flowgraph.While)
+	while2.SetNumSource(1).SetNumResult(1) // could be detected
 
-	tenval := fg.NewStream("tenval").Const(10)
-	firstval2 := fg.NewStream("firstval2")
-	fg.NewHub("wait", flowgraph.Wait, 1).
-		ConnectSources(tenval, lastval1).
-		ConnectResults(firstval2)
+	oneval := while2.NewStream("oneval").Const(1)
+	sub := while2.NewHub("sub", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval)
 
-	lastval2 := fg.NewStream("lastval2")
-	while2 := fg.NewGraphHub("while2", flowgraph.While)
-	while2.ConnectSources(firstval2).
-		ConnectResults(lastval2)
+	while2.Loop(sub)
 
-	oneval2 := while2.NewStream("oneval2").Const(1)
-	sub2 := while2.NewHub("sub2", flowgraph.Subtract, nil).
-		ConnectSources(nil, oneval2)
-	while2.Loop(sub2)
+	while1.Loop(while2)
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
-		ConnectSources(lastval2)
+		ConnectSources(lastval1)
 
 	fg.Run()
 

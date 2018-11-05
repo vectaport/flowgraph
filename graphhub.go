@@ -2,6 +2,8 @@ package flowgraph
 
 import (
 	"github.com/vectaport/fgbase"
+
+	"fmt"
 )
 
 // GraphHub interface for flowgraph hub made out of a graph of hubs
@@ -216,9 +218,9 @@ func (gh *graphhub) HubCode() HubCode {
 	return gh.hub.HubCode()
 }
 
-// Flowgraph returns associate flowgraph interface
+// Flowgraph returns associated flowgraph interface
 func (gh *graphhub) Flowgraph() Flowgraph {
-	return gh.fg
+	return gh.hub.Flowgraph()
 }
 
 // Empty returns true if the underlying implementation is nil
@@ -250,7 +252,10 @@ func (gh *graphhub) Loop(h Hub) {
 
 	nr := h.NumResult()
 	if ns != nr {
-		panic("handle ns != nr\n")
+		h.Panicf("ns != nr not yet supported (ns=%d,nr=%d)\n", ns, nr)
+	}
+	if ns != 1 {
+		h.Panicf("ns!=1 not yet supported (ns=%d,ns=%d)\n", ns, nr)
 	}
 
 	wait := gh.NewHub(h.Name()+"_wait", Wait, nil).
@@ -260,10 +265,6 @@ func (gh *graphhub) Loop(h Hub) {
 	steer := gh.NewHub(h.Name()+"_steer", Steer, nil).
 		SetNumSource(ns).
 		SetNumResult(ns * 2)
-
-	if ns != 1 {
-		panic("need to support more than ns==1\n")
-	}
 
 	for i := 0; i < ns; i++ {
 		gh.Connect(wait, i, h, i)
@@ -284,6 +285,7 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			nodes = gv.(*graphhub).flatten(nodes)
 			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
+				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}
 
 		} else {
@@ -319,24 +321,28 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
 	// dangling inputs
 	for i, s := range gh.isources {
-		// gh.Tracef("Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
-		for j := 0; j < s.NumDownstream(); j++ {
-			// gh.Tracef("\tlinked by source stream %q (*fbase.Edge=%p) that ends at hub %q port %v\n", s.Name(), s.Base().(*fgbase.Edge), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
-		}
+		fmt.Printf("// Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
 		jmax := s.NumDownstream()
 		for j := 0; j < jmax; j++ {
+			fmt.Printf("// \tlinked by source stream %q that ends at hub %q port %v\n", s.Name(), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
 			gh.Link(s, gh.Source(i))
+			if fgbase.DotOutput {
+				gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{"style=\"dashed\" color=\"black\"", "style=\"solid\" color=\"black\"", "style=\"invis\"", "style=\"solid\" color=\"black\""})
+			}
 		}
 
 	}
 
 	// dangling or designated outputs
 	for i, r := range gh.iresults {
-		// gh.Tracef("Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
-		// gh.Tracef("\tlinked by result stream %q (*fgbase.Edge=%p) on outer hub %q\n", gh.Result(i).Name(), gh.Result(i).Base().(*fgbase.Edge), gh.Name())
+		fmt.Printf("// Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
+		fmt.Printf("// \tlinked by result stream %q on outer hub %q\n", gh.Result(i).Name(), gh.Name())
 		jmax := r.NumUpstream()
 		for j := 0; j < jmax; j++ {
 			gh.Link(r, gh.Result(i))
+			if fgbase.DotOutput {
+				gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{"style=\"dashed\"", "style=\"invis\""})
+			}
 		}
 	}
 	return nodes

@@ -255,6 +255,12 @@ func (h *hub) SetNumSource(n int) Hub {
 	return h
 }
 
+// SetNumResult sets the number of result ports
+func (h *hub) SetNumResult(n int) Hub {
+	h.base.SetDstNum(n)
+	return h
+}
+
 // SourceNames returns the names of the source ports
 func (h *hub) SourceNames() []string {
 	return h.base.SrcNames()
@@ -263,12 +269,6 @@ func (h *hub) SourceNames() []string {
 // ResultNames returns the names of the result ports
 func (h *hub) ResultNames() []string {
 	return h.base.DstNames()
-}
-
-// SetNumResult sets the number of result ports
-func (h *hub) SetNumResult(n int) Hub {
-	h.base.SetDstNum(n)
-	return h
 }
 
 // SetSourceNames names the source ports
@@ -371,7 +371,7 @@ func (h *hub) Empty() bool {
 	return h.base == nil
 }
 
-// Flowgraph returns associate flowgraph interface
+// Flowgraph returns associated flowgraph interface
 func (h *hub) Flowgraph() Flowgraph {
 	return h.fg
 }

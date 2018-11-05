@@ -460,6 +460,7 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 			nodes = gv.(*graphhub).flatten(nodes)
 			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
+				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}
 		} else {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
