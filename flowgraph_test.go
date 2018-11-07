@@ -817,9 +817,8 @@ func TestIterator8(t *testing.T) {
 	while2.SetNumSource(1).SetNumResult(1) // could be detected
 	oneval := while1.NewStream("oneval").Const(1)
 	add := while1.NewHub("add", flowgraph.Add, nil).
-		ConnectSources(nil, oneval).
-		SetResultNames("bumpval")
-	while1.Connect(add, 0, while2, 0)
+		ConnectSources(nil, oneval)
+	while1.Connect(add, 0, while2, 0).SetName("bumpval")
 	while1.Loop()
 
 	oneval2 := while2.NewStream("oneval2").Const(1)

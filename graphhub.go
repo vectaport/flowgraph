@@ -6,7 +6,8 @@ import (
 	"fmt"
 )
 
-// GraphHub interface for flowgraph hub made out of a graph of hubs
+// GraphHub interface for flowgraph hub made out of a graph of hubs.
+// Relevant code args for NewGraphHub are Graph, While, and During.
 type GraphHub interface {
 	Hub
 	Flowgraph
