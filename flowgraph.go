@@ -124,7 +124,7 @@ type Flowgraph interface {
 	// FindHub finds a hub by name
 	FindHub(name string) Hub
 
-	// FindStream finds a Stream by name
+	// FindStream finds a stream by name
 	FindStream(name string) Stream
 
 	// Connect connects two hubs via named (string) or indexed (int) ports

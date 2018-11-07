@@ -64,19 +64,19 @@ type Hub interface {
 	// SetResultNames names the result ports
 	SetResultNames(nm ...string) Hub
 
-	// SourceIndex returns the index of a source port matched by name or Stream
+	// SourceIndex returns the index of a source port matched by name or stream
 	SourceIndex(port interface{}) int
 
-	// ResultIndex returns the index of a result port matched by name or Stream
+	// ResultIndex returns the index of a result port matched by name or stream
 	ResultIndex(port interface{}) int
 
-	// ConnectSources connects a list of source Streams to this Hub
+	// ConnectSources connects a list of source Streams to this hub
 	ConnectSources(source ...Stream) Hub
 
-	// ConnectResults connects a list of result Streams to this Hub
+	// ConnectResults connects a list of result Streams to this hub
 	ConnectResults(result ...Stream) Hub
 
-	// HubCode returns code associated with Hub.
+	// HubCode returns code associated with hub.
 	HubCode() HubCode
 
 	// Empty returns true if the underlying implementation is nil
@@ -283,7 +283,7 @@ func (h *hub) SetResultNames(nm ...string) Hub {
 	return h
 }
 
-// SourceIndex returns the index of a source port matched by name or Stream
+// SourceIndex returns the index of a source port matched by name or stream
 func (h *hub) SourceIndex(port interface{}) int {
 	var i int
 	var ok bool
@@ -313,7 +313,7 @@ func (h *hub) SourceIndex(port interface{}) int {
 	return i
 }
 
-// ResultIndex returns the index of a result port matched by name or Stream
+// ResultIndex returns the index of a result port matched by name or stream
 func (h *hub) ResultIndex(port interface{}) int {
 	var i int
 	var ok bool
@@ -343,7 +343,7 @@ func (h *hub) ResultIndex(port interface{}) int {
 	return i
 }
 
-// ConnectSources connects a list of source Streams to this Hub
+// ConnectSources connects a list of source streams to this hub
 func (h *hub) ConnectSources(source ...Stream) Hub {
 	h.SetNumSource(len(source))
 	for i, v := range source {
@@ -352,7 +352,7 @@ func (h *hub) ConnectSources(source ...Stream) Hub {
 	return h
 }
 
-// ConnectResults connects a list of result Streams to this Hub
+// ConnectResults connects a list of result streams to this hub
 func (h *hub) ConnectResults(result ...Stream) Hub {
 	h.SetNumResult(len(result))
 	for i, v := range result {
@@ -361,7 +361,7 @@ func (h *hub) ConnectResults(result ...Stream) Hub {
 	return h
 }
 
-// HubCode returns code associated with a Hub
+// HubCode returns code associated with a hub
 func (h *hub) HubCode() HubCode {
 	return h.code
 }

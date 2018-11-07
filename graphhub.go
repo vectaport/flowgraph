@@ -82,7 +82,7 @@ func (gh *graphhub) FindHub(name string) Hub {
 	return gh.fg.FindHub(name)
 }
 
-// FindStream finds a Stream by name
+// FindStream finds a stream by name
 func (gh *graphhub) FindStream(name string) Stream {
 	return gh.fg.FindStream(name)
 }
@@ -193,28 +193,28 @@ func (gh *graphhub) SetResultNames(nm ...string) Hub {
 	return gh.hub.SetResultNames(nm...)
 }
 
-// SourceIndex returns the index of a source port matched by name or Stream
+// SourceIndex returns the index of a source port matched by name or stream
 func (gh *graphhub) SourceIndex(port interface{}) int {
 	return gh.hub.SourceIndex(port)
 }
 
-// ResultIndex returns the index of a source port matched by name or Stream
+// ResultIndex returns the index of a source port matched by name or stream
 func (gh *graphhub) ResultIndex(port interface{}) int {
 	return gh.hub.ResultIndex(port)
 }
 
-// ConnectSources connects a list of source Streams to this Hub
+// ConnectSources connects a list of source streams to this hub
 func (gh *graphhub) ConnectSources(source ...Stream) Hub {
 	return gh.hub.ConnectSources(source...)
 }
 
-// ConnectResults connects a list of result Streams to this Hub
+// ConnectResults connects a list of result streams to this hub
 func (gh *graphhub) ConnectResults(result ...Stream) Hub {
 	return gh.hub.ConnectResults(result...)
 
 }
 
-// HubCode returns code associated with a Hub
+// HubCode returns code associated with a hub
 func (gh *graphhub) HubCode() HubCode {
 	return gh.hub.HubCode()
 }
@@ -283,7 +283,7 @@ func (gh *graphhub) Loop() {
 
 }
 
-// flatten connects GraphHub external ports to internal dangling streams
+// flatten connects graphhub external ports to internal dangling streams
 func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 	ns, nr := 0, 0
 	for _, v := range gh.fg.(*flowgraph).hubs {
