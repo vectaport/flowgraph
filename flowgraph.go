@@ -34,7 +34,7 @@ const (
 	Split    // n		1,n	split into separate values
 	Join     // n		n,1	join into one value
 	Wait     // n		n+1,1 	wait for last source to pass rest
-	Pass     // n		n,n	pass all values at once
+	Pass     // n		1,1	pass value
 	Steer    // n,m		1+n,n*m	steer rest by m ways from first source
 	Select   // n		1+n,1   select from rest by first source
 
@@ -109,7 +109,7 @@ type Flowgraph interface {
 	// NumHub returns the number of hubs
 	NumHub() int
 
-	// NumStream returns the number of hubs
+	// NumStream returns the number of streams
 	NumStream() int
 
 	// NewHub returns a new unconnected hub
@@ -232,6 +232,10 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		}
 		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
 
+	// General purpose Hubs
+	case Pass:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+
 	// Math Hubs
 	case Add:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
@@ -241,6 +245,8 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.MulFire)
 	case Divide:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
+	case Modulo:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.ModFire)
 
 	// General Purpose Hubs
 	case Wait:

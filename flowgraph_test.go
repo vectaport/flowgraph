@@ -6,6 +6,7 @@ import (
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
 	"io"
+	"math/rand"
 	"os"
 	"testing"
 	"time"
@@ -524,9 +525,9 @@ func TestIterator3(t *testing.T) {
 		ConnectResults(lastval)
 
 	oneval := while.NewStream("oneval").Const(1)
-	sub := while.NewHub("sub", flowgraph.Subtract, nil).
+	while.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-	while.Loop(sub)
+	while.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval)
@@ -574,9 +575,9 @@ func TestIterator4(t *testing.T) {
 		ConnectResults(lastval1)
 
 	oneval1 := while1.NewStream("oneval1").Const(1)
-	sub1 := while1.NewHub("sub1", flowgraph.Subtract, nil).
+	while1.NewHub("sub1", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval1)
-	while1.Loop(sub1)
+	while1.Loop()
 
 	tenval := fg.NewStream("tenval").Const(10)
 	firstval2 := fg.NewStream("firstval2")
@@ -590,9 +591,9 @@ func TestIterator4(t *testing.T) {
 		ConnectResults(lastval2)
 
 	oneval2 := while2.NewStream("oneval2").Const(1)
-	sub2 := while2.NewHub("sub2", flowgraph.Subtract, nil).
+	while2.NewHub("sub2", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval2)
-	while2.Loop(sub2)
+	while2.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval2)
@@ -638,14 +639,12 @@ func TestIterator5(t *testing.T) {
 
 	while2 := while1.NewGraphHub("while2", flowgraph.While)
 	while2.SetNumSource(1).SetNumResult(1) // could be detected
+	while1.Loop()
 
 	oneval := while2.NewStream("oneval").Const(1)
-	sub := while2.NewHub("sub", flowgraph.Subtract, nil).
+	while2.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-
-	while2.Loop(sub)
-
-	while1.Loop(while2)
+	while2.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval1)
@@ -655,4 +654,248 @@ func TestIterator5(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestIterator5\n")
+}
+
+/*=====================================================================*/
+
+/* TestIterator6 Flowgraph HDL *
+
+tbi()(firstval)
+while(firstval)(lastval) {
+        while(firstval)(lastval) {
+        	while(firstval)(lastval) {
+                	sub(firstval, 1)(lastval)
+		}
+	}
+}
+sink(lastval)()
+
+*/
+
+func TestIterator6(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator6\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator6")
+
+	firstval1 := fg.NewStream("firstval1")
+	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(firstval1)
+
+	lastval1 := fg.NewStream("lastval1")
+	while1 := fg.NewGraphHub("while1", flowgraph.While)
+	while1.ConnectSources(firstval1).
+		ConnectResults(lastval1)
+
+	while2 := while1.NewGraphHub("while2", flowgraph.While)
+	while2.SetNumSource(1).SetNumResult(1) // could be detected
+	while1.Loop()
+
+	while3 := while2.NewGraphHub("while3", flowgraph.While)
+	while3.SetNumSource(1).SetNumResult(1) // could be detected
+	while2.Loop()
+
+	oneval := while3.NewStream("oneval").Const(1)
+	while3.NewHub("sub", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval)
+	while3.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, nil).
+		ConnectSources(lastval1)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator6\n")
+}
+
+/*=====================================================================*/
+
+/* TestIterator7 Flowgraph HDL *
+
+tbi()(firstval)
+while(firstval)(lastval) {
+        while(firstval)(lastval) {
+        	while(firstval)(lastval) {
+        		while(firstval)(lastval) {
+                		sub(firstval, 1)(lastval)
+			}
+		}
+	}
+}
+sink(lastval)()
+
+*/
+
+func TestIterator7(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator7\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator7")
+
+	firstval := fg.NewStream("firstval")
+	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(firstval)
+
+	lastval := fg.NewStream("lastval")
+	while1 := fg.NewGraphHub("while1", flowgraph.While)
+	while1.ConnectSources(firstval).
+		ConnectResults(lastval)
+
+	while2 := while1.NewGraphHub("while2", flowgraph.While)
+	while2.SetNumSource(1).SetNumResult(1) // could be detected
+	while1.Loop()
+
+	while3 := while2.NewGraphHub("while3", flowgraph.While)
+	while3.SetNumSource(1).SetNumResult(1) // could be detected
+	while2.Loop()
+
+	while4 := while3.NewGraphHub("while4", flowgraph.While)
+	while4.SetNumSource(1).SetNumResult(1) // could be detected
+	while3.Loop()
+
+	oneval := while4.NewStream("oneval").Const(1)
+	while4.NewHub("sub", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval)
+	while4.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, nil).
+		ConnectSources(lastval)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator7\n")
+}
+
+/*=====================================================================*/
+
+/* TestIterator8 Flowgraph HDL *
+
+tbi()(firstval)
+while(firstval)(lastval) {
+        while(firstval)(lastval) {
+	        add(firstval,1)(bumpval)
+        	while(bumpval)(lastval) {
+        		while(bumpval)(lastval) {
+                		sub(bumpval, 1)(lastval)
+			}
+		}
+	}
+}
+sink(lastval)()
+
+*/
+
+func TestIterator8(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator8\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.VVV
+
+	fg := flowgraph.New("TestIterator8")
+
+	firstval := fg.NewStream("firstval")
+	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(firstval)
+
+	lastval := fg.NewStream("lastval")
+	while1 := fg.NewGraphHub("while1", flowgraph.While)
+	while1.ConnectSources(firstval).
+		ConnectResults(lastval)
+
+	while2 := while1.NewGraphHub("while2", flowgraph.While)
+	while2.SetNumSource(1).SetNumResult(1) // could be detected
+	oneval := while1.NewStream("oneval").Const(1)
+	add := while1.NewHub("add", flowgraph.Add, nil).
+		ConnectSources(nil, oneval).
+		SetResultNames("bumpval")
+	while1.Connect(add, 0, while2, 0)
+	while1.Loop()
+
+	oneval2 := while2.NewStream("oneval2").Const(1)
+	while2.NewHub("sub", flowgraph.Subtract, nil).
+		ConnectSources(nil, oneval2)
+	while2.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, nil).
+		ConnectSources(lastval)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator8\n")
+}
+
+/*=====================================================================*/
+
+/* TestGCD Flowgraph HDL *
+
+tbrand()(mval)
+tbrand()(nval)
+while(mval, nval)(tcond, gcd) {
+        sub(firstval, 1)(lastval)
+}
+sink(gcd)()
+
+*/
+
+type tbrand struct{}
+
+func (t *tbrand) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+	return rand.Intn(100), nil
+}
+
+func TestGCD(t *testing.T) {
+	fmt.Printf("BEGIN:  TestGCD\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestGCD")
+
+	mval := fg.NewStream("mval")
+	nval := fg.NewStream("nval")
+	tcond := fg.NewStream("tcond")
+	gcd := fg.NewStream("gcd")
+
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(mval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbi{}).
+		ConnectResults(nval)
+
+	while := fg.NewGraphHub("while", flowgraph.While)
+	while.ConnectSources(mval, nval).
+		ConnectResults(tcond, gcd)
+
+	graph := while.NewGraphHub("graph", flowgraph.Graph)
+	graph.SetNumSource(2).SetNumResult(2)
+	fanout := graph.NewStream("fanout")
+	graph.NewHub("mod", flowgraph.Modulo, nil).
+		ConnectResults(fanout)
+	graph.NewHub("pass0", flowgraph.Pass, 1).
+		ConnectSources(fanout)
+	graph.NewHub("pass1", flowgraph.Pass, 1).
+		ConnectSources(fanout)
+	while.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, nil).
+		ConnectSources(gcd)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestGCD\n")
 }

@@ -12,7 +12,7 @@ type GraphHub interface {
 	Flowgraph
 
 	// Loop builds a conditional iterator for a while or during loop
-	Loop(h Hub)
+	Loop()
 
 	// Link links an internal stream to an external stream
 	Link(in, ex Stream)
@@ -56,7 +56,7 @@ func (gh *graphhub) NumHub() int {
 	return gh.fg.NumHub()
 }
 
-// NumStream returns the number of hubs
+// NumStream returns the number of streams
 func (gh *graphhub) NumStream() int {
 	return gh.fg.NumStream()
 }
@@ -233,43 +233,48 @@ func (gh *graphhub) Base() interface{} {
 	return gh.hub.Base()
 }
 
-// Loop builds a conditional iterator for a while or during loop
-func (gh *graphhub) Loop(h Hub) {
+// Loop builds a conditional iterator around a hub or flowgraph with dangling edges
+func (gh *graphhub) Loop() {
 
-	checkInternalHub(gh.fg, h)
-
-	ns := h.NumSource()
-	nsmax := ns
-	for i := 0; i < nsmax; i++ {
-		s := h.Source(i)
-		if s.Empty() {
-			continue
+	ns, nr := 0, 0
+	ins := make([]Hub, 0)
+	outs := make([]Hub, 0)
+	for i := 0; i < gh.NumHub(); i++ {
+		h := gh.Hub(i)
+		for j := 0; j < h.NumSource(); j++ {
+			s := h.Source(j)
+			if !s.Empty() {
+				continue
+			}
+			ins = append(ins, h)
+			ns++
 		}
-		if s.IsConst() {
-			ns--
+		for j := 0; j < h.NumResult(); j++ {
+			r := h.Result(j)
+			if !r.Empty() {
+				continue
+			}
+			outs = append(outs, h)
+			nr++
 		}
 	}
 
-	nr := h.NumResult()
-	if ns != nr {
-		h.Panicf("ns != nr not yet supported (ns=%d,nr=%d)\n", ns, nr)
-	}
 	if ns != 1 {
-		h.Panicf("ns!=1 not yet supported (ns=%d,ns=%d)\n", ns, nr)
+		gh.Panicf("ns!=1 not yet supported (ns=%d,ns=%d)\n", ns, nr)
 	}
 
-	wait := gh.NewHub(h.Name()+"_wait", Wait, nil).
+	wait := gh.NewHub(gh.Name()+"_wait", Wait, nil).
 		SetNumSource(ns + 1).
 		SetNumResult(ns)
 
-	steer := gh.NewHub(h.Name()+"_steer", Steer, nil).
+	steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
 		SetNumSource(ns).
 		SetNumResult(ns * 2)
 
 	for i := 0; i < ns; i++ {
-		gh.Connect(wait, i, h, i)
-		gh.Connect(h, i, steer, i)
-		gh.Connect(steer, i+1, h, i)
+		gh.Connect(wait, i, ins[i], i)
+		gh.Connect(outs[i], i, steer, i)
+		gh.Connect(steer, i+1, ins[i], i)
 	}
 	termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
 	termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
