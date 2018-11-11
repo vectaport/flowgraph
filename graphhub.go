@@ -298,13 +298,14 @@ func (gh *graphhub) Loop() {
 	for i := 0; i < gh.NumHub(); i++ {
 		fmt.Printf("// %s\n", gh.Hub(i).Base().(*fgbase.Node).String())
 	}
+	fmt.Printf("\n")
 
 }
 
 // flatten connects graphhub external ports to internal dangling streams
 func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
-	debug := true
+	debug := false
 
 	ns, nr := 0, 0
 	for _, v := range gh.fg.(*flowgraph).hubs {
@@ -388,10 +389,17 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			gh.Link(r, gh.Result(i))
 			if fgbase.DotOutput {
 				if !debug {
-					gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
-						"style=\"dashed\"",
-						"style=\"dotted\"",
-					})
+					kmax := gh.Result(i).NumDownstream()
+					al := make([]string, 0)
+					for k := 0; k < kmax; k++ {
+						fgmatch := gh.Flowgraph() == gh.Result(i).Downstream(k).Flowgraph()
+						if fgmatch {
+							al = append(al, "style=\"dashed\"")
+						} else {
+							al = append(al, "style=\"invis\"")
+						}
+					}
+					gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs(al)
 				} else {
 					gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
 						"color=\"purple\"",
