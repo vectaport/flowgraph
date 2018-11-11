@@ -20,8 +20,9 @@ var EOF = errors.New("EOF")
 type HubCode int
 
 // HubCode constants for NewHub() code arg.
-// Comment fields are init arg for NewHub, number of source and number of results
-// (if n or m given thru init arg), and description.
+// Comment fields are init arg for NewHub, number of source and number of results,
+// and description.  If n or m the number of sources and results are set with
+// SetNumSource and SetNumResult (or SetSource and SetResult)
 const (
 	Retrieve HubCode = iota // Retriever	0,1	retrieve one value with Retriever
 	Transmit                // Transmitter	1,0	transmit one value with Transmitter
@@ -31,12 +32,12 @@ const (
 	Array    // []interface{}	0,1	produce array of values then EOF
 	Constant // interface{}	0,1	produce constant values forever
 	Sink     // [Sinker]	1,0	consume values forever
-	Split    // n		1,n	split into separate values
-	Join     // n		n,1	join into one value
-	Wait     // n		n+1,1 	wait for last source to pass rest
-	Pass     // n		1,1	pass value
-	Steer    // n,m		1+n,n*m	steer rest by m ways from first source
-	Select   // n		1+n,1   select from rest by first source
+	Split    // ni		1,n	split into separate values
+	Join     // ni		n,1	join into one value
+	Wait     // nil		n+1,1 	wait for last source to pass rest
+	Pass     // nil 	1,1	pass value
+	Steer    // nil		2|1,n	steer last source to one of n results
+	Select   // nil		1+n,1   select from rest by first source
 
 	Graph  // nil		n,m     hub with general purpose internals
 	While  // nil		n,n	hub with internal wait-body-steer loop
@@ -234,7 +235,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 
 	// General purpose Hubs
 	case Pass:
-		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, nil)
 
 	// Math Hubs
 	case Add:
@@ -393,11 +394,14 @@ func (fg *flowgraph) connectInit(
 	}
 	if us.Empty() {
 		upstream.SetResult(upstreamPort, ds)
-	} else if ds.Empty() {
-		dnstream.SetSource(dnstreamPort, us)
-	} else {
-		panic("Unexpected with two ports to connect that they both are already connected to another stream as well")
+		return ds
 	}
+	if ds.Empty() {
+		dnstream.SetSource(dnstreamPort, us)
+		return us
+	}
+	upstream.Panicf("Unexpected that with two ports to connect (%s:%v and %s:%v) that they both are already connected to another stream as well",
+		upstream.Name(), upstreamPort, dnstream.Name(), dnstreamPort)
 	return nil
 }
 
@@ -414,7 +418,7 @@ func checkInternalHub(fg Flowgraph, h Hub) {
 	fgknown := fg
 	fgtest := h.Flowgraph()
 	if fgknown != fgtest {
-		panic(fmt.Sprintf("Hub %q created by flowgraph %q (expected flowgraph %q)",
+		panic(fmt.Sprintf("Hub %q created by flowgraph %q (expected it to be created by flowgraph %q)",
 			h.Name(), fgtest.Title(), fgknown.Title()))
 	}
 }
@@ -440,7 +444,7 @@ func checkInternalStream(fg Flowgraph, s Stream) {
 	fgknown := fg
 	fgtest := s.Flowgraph()
 	if fgknown != fgtest {
-		panic(fmt.Sprintf("Stream %q created by flowgraph %q (expected flowgraph %q)",
+		panic(fmt.Sprintf("Stream %q created by flowgraph %q (expected it to be created by flowgraph %q)",
 			s.Name(), fgtest.Title(), fgknown.Title()))
 	}
 }
@@ -580,4 +584,18 @@ func duringFire(n *fgbase.Node) error {
 func graphFire(n *fgbase.Node) error {
 	n.Panicf("graph still needs expanding.")
 	return nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

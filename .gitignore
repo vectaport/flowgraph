@@ -1,0 +1,15 @@
+*~
+
+*.dot
+
+*.png
+
+*.ipd
+
+*.fg
+
+*.log
+
+log
+
+.DS_Store

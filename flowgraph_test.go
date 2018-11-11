@@ -413,7 +413,7 @@ func TestIterator1(t *testing.T) {
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 
-	steer := fg.NewHub("steer", flowgraph.Steer, nil).
+	steer := fg.NewHub("steer", flowgraph.Steer, 1).
 		SetSourceNames("A"). // steer condition.
 		SetResultNames("X", "Y")
 
@@ -800,7 +800,7 @@ func TestIterator8(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second
-	fgbase.TraceLevel = fgbase.VVV
+	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestIterator8")
 
@@ -852,7 +852,7 @@ sink(gcd)()
 type tbrand struct{}
 
 func (t *tbrand) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
-	return rand.Intn(100), nil
+	return rand.Intn(100) + 1, nil
 }
 
 func TestGCD(t *testing.T) {
@@ -860,7 +860,7 @@ func TestGCD(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second
-	fgbase.TraceLevel = fgbase.V
+	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestGCD")
 
@@ -869,28 +869,29 @@ func TestGCD(t *testing.T) {
 	tcond := fg.NewStream("tcond")
 	gcd := fg.NewStream("gcd")
 
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbi{}).
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
 		ConnectResults(mval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbi{}).
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
 		ConnectResults(nval)
 
 	while := fg.NewGraphHub("while", flowgraph.While)
 	while.ConnectSources(mval, nval).
 		ConnectResults(tcond, gcd)
 
-	graph := while.NewGraphHub("graph", flowgraph.Graph)
-	graph.SetNumSource(2).SetNumResult(2)
-	fanout := graph.NewStream("fanout")
-	graph.NewHub("mod", flowgraph.Modulo, nil).
-		ConnectResults(fanout)
-	graph.NewHub("pass0", flowgraph.Pass, 1).
-		ConnectSources(fanout)
-	graph.NewHub("pass1", flowgraph.Pass, 1).
-		ConnectSources(fanout)
+	passm := while.NewHub("passm", flowgraph.Pass, nil)
+
+	mod := while.NewHub("mod", flowgraph.Modulo, nil)
+	while.Connect(passm, 0, mod, 1)
+
+	passx := while.NewHub("passx", flowgraph.Pass, nil)
+	while.Connect(passm, 0, passx, 0)
+
 	while.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(gcd)
+	fg.NewHub("sink2", flowgraph.Sink, nil).
+		ConnectSources(tcond)
 
 	fg.Run()
 

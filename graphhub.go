@@ -239,7 +239,11 @@ func (gh *graphhub) Loop() {
 
 	ns, nr := 0, 0
 	ins := make([]Hub, 0)
+	insPort := make([]int, 0)
+	// insUpstream := 0
 	outs := make([]Hub, 0)
+	outsPort := make([]int, 0)
+	// outsDnstream := 0
 	for i := 0; i < gh.NumHub(); i++ {
 		h := gh.Hub(i)
 		for j := 0; j < h.NumSource(); j++ {
@@ -248,6 +252,7 @@ func (gh *graphhub) Loop() {
 				continue
 			}
 			ins = append(ins, h)
+			insPort = append(insPort, j)
 			ns++
 		}
 		for j := 0; j < h.NumResult(); j++ {
@@ -256,35 +261,51 @@ func (gh *graphhub) Loop() {
 				continue
 			}
 			outs = append(outs, h)
+			outsPort = append(outsPort, j)
 			nr++
 		}
 	}
 
-	if ns != 1 {
-		gh.Panicf("ns!=1 not yet supported (ns=%d,ns=%d)\n", ns, nr)
+	if ns != nr {
+		gh.Panicf("ns!=nr not yet supported (ns=%d,ns=%d)\n", ns, nr)
 	}
 
 	wait := gh.NewHub(gh.Name()+"_wait", Wait, nil).
 		SetNumSource(ns + 1).
 		SetNumResult(ns)
 
-	steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
-		SetNumSource(ns).
-		SetNumResult(ns * 2)
-
 	for i := 0; i < ns; i++ {
-		gh.Connect(wait, i, ins[i], i)
-		gh.Connect(outs[i], i, steer, i)
-		gh.Connect(steer, i+1, ins[i], i)
+		gh.Connect(wait, i, ins[i], insPort[i])
+
+		steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
+			SetNumSource(min(ns, 2)).SetNumResult(2)
+
+		gh.Connect(outs[0], outsPort[i], steer, 0)
+		if ns > 1 {
+			gh.Connect(outs[i], outsPort[i], steer, 1)
+		}
+		gh.Connect(steer, 1, ins[i], insPort[i])
+
+		if i > 0 {
+			continue
+		}
+
+		termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+		termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
+		gh.iresults = append(gh.iresults, termc)
 	}
-	termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
-	termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
-	gh.iresults = append(gh.iresults, termc)
+	fmt.Printf("// While loop %q internals:\n", gh.Name())
+	for i := 0; i < gh.NumHub(); i++ {
+		fmt.Printf("// %s\n", gh.Hub(i).Base().(*fgbase.Node).String())
+	}
 
 }
 
 // flatten connects graphhub external ports to internal dangling streams
 func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
+
+	debug := true
+
 	ns, nr := 0, 0
 	for _, v := range gh.fg.(*flowgraph).hubs {
 		if gv, ok := v.(GraphHub); ok {
@@ -319,9 +340,15 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 		}
 	}
 	if len(gh.isources) != gh.NumSource() {
+		for i := 0; i < len(gh.isources); i++ {
+			gh.Tracef("Dangling input %d:  %q\n", i, gh.isources[i].Name())
+		}
 		gh.Panicf("# of GraphHub sources (%d) does not match # of dangling internal inputs (%d)\n", gh.NumSource(), len(gh.isources))
 	}
 	if len(gh.iresults) != gh.NumResult() {
+		for i := 0; i < len(gh.iresults); i++ {
+			gh.Tracef("Dangling input %d:  %q\n", i, gh.iresults[i].Name())
+		}
 		gh.Panicf("# of GraphHub results (%d) does not match # of dangling internal outputs (%d)\n", gh.NumResult(), len(gh.iresults))
 	}
 
@@ -333,7 +360,20 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			fmt.Printf("// \tlinked by source stream %q that ends at hub %q port %v\n", s.Name(), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
 			gh.Link(s, gh.Source(i))
 			if fgbase.DotOutput {
-				gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{"style=\"dashed\" color=\"black\"", "style=\"solid\" color=\"black\"", "style=\"invis\"", "style=\"solid\" color=\"black\""})
+				if !debug {
+					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
+						"style=\"dashed\" color=\"black\"",
+						"style=\"solid\" color=\"black\"",
+						"style=\"invis\"",
+						"style=\"solid\" color=\"black\""})
+				} else {
+					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
+						"color=\"red\"",
+						"color=\"green\"",
+						"color=\"blue\"",
+						"color=\"orange\"",
+					})
+				}
 			}
 		}
 
@@ -347,7 +387,19 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 		for j := 0; j < jmax; j++ {
 			gh.Link(r, gh.Result(i))
 			if fgbase.DotOutput {
-				gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{"style=\"dashed\"", "style=\"invis\""})
+				if !debug {
+					gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
+						"style=\"dashed\"",
+						"style=\"dotted\"",
+					})
+				} else {
+					gh.Result(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
+						"color=\"purple\"",
+						"color=\"cyan\"",
+						"color=\"yellow\"",
+						"color=\"magenta\"",
+					})
+				}
 			}
 		}
 	}
