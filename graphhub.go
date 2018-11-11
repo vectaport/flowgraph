@@ -17,6 +17,12 @@ type GraphHub interface {
 
 	// Link links an internal stream to an external stream
 	Link(in, ex Stream)
+
+	// ExposeSource marks an internal stream to be used as an input source as well
+	ExposeSource(s Stream)
+
+	// ExposeResult marks an internal stream to be used as an output result as well
+	ExposeResult(s Stream)
 }
 
 // GraphHub implementation
@@ -240,10 +246,8 @@ func (gh *graphhub) Loop() {
 	ns, nr := 0, 0
 	ins := make([]Hub, 0)
 	insPort := make([]int, 0)
-	// insUpstream := 0
 	outs := make([]Hub, 0)
 	outsPort := make([]int, 0)
-	// outsDnstream := 0
 	for i := 0; i < gh.NumHub(); i++ {
 		h := gh.Hub(i)
 		for j := 0; j < h.NumSource(); j++ {
@@ -265,9 +269,27 @@ func (gh *graphhub) Loop() {
 			nr++
 		}
 	}
+	if gh.isources != nil {
+		for _, s := range gh.isources {
+			h := s.Downstream(0)
+			ins = append(ins, h)
+			insPort = append(insPort, h.SourceIndex(s))
+			ns++
+		}
+		gh.isources = nil
+	}
+	if gh.iresults != nil {
+		for _, s := range gh.iresults {
+			h := s.Upstream(0)
+			outs = append(outs, h)
+			outsPort = append(outsPort, h.ResultIndex(s))
+			nr++
+		}
+		gh.iresults = nil
+	}
 
 	if ns != nr {
-		gh.Panicf("ns!=nr not yet supported (ns=%d,ns=%d)\n", ns, nr)
+		gh.Panicf("ns!=nr not yet supported (ns=%d,nr=%d)\n", ns, nr)
 	}
 
 	wait := gh.NewHub(gh.Name()+"_wait", Wait, nil).
@@ -292,7 +314,7 @@ func (gh *graphhub) Loop() {
 
 		termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
 		termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
-		gh.iresults = append(gh.iresults, termc)
+		gh.ExposeResult(termc)
 	}
 	fmt.Printf("// While loop %q internals:\n", gh.Name())
 	for i := 0; i < gh.NumHub(); i++ {
@@ -423,4 +445,16 @@ func (gh *graphhub) Link(in, ex Stream) {
 	ein := in.Base().(*fgbase.Edge)
 	eex := ex.Base().(*fgbase.Edge)
 	gh.Base().(*fgbase.Node).Link(ein, eex)
+}
+
+// ExposeSource marks an internal stream to be used as an input source as well
+func (gh *graphhub) ExposeSource(s Stream) {
+	checkInternalStream(gh.fg, s)
+	gh.isources = append(gh.isources, s)
+}
+
+// ExposeResult marks an internal stream to be used as an output source as well
+func (gh *graphhub) ExposeResult(s Stream) {
+	checkInternalStream(gh.fg, s)
+	gh.iresults = append(gh.iresults, s)
 }
