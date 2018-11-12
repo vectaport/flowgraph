@@ -73,12 +73,18 @@ func (s *stream) SetName(name string) {
 
 // Upstream returns upstream hub by index
 func (s *stream) Upstream(i int) Hub {
-	return s.base.SrcNode(i).Owner.(Hub)
+	if s.base != nil && s.base.SrcNode(i) != nil {
+		return s.base.SrcNode(i).Owner.(Hub)
+	}
+	return nil
 }
 
 // Downstream returns upstream hub by index
 func (s *stream) Downstream(i int) Hub {
-	return s.base.DstNode(i).Owner.(Hub)
+	if s.base != nil && s.base.DstNode(i) != nil {
+		return s.base.DstNode(i).Owner.(Hub)
+	}
+	return nil
 }
 
 // NumUpstream returns the number of upstream hubs
@@ -121,6 +127,14 @@ func (s *stream) IsSink() bool {
 
 // Same returns true if two streams are the same underneath
 func (s *stream) Same(s2 Stream) bool {
+	checkInternalStream(s.fg, s2)
+
+	if s.Base().(*fgbase.Edge) == nil {
+		return s2.Base().(*fgbase.Edge) == nil
+	}
+	if s2.Base().(*fgbase.Edge) == nil {
+		return s.Base().(*fgbase.Edge) == nil
+	}
 	return s.Base().(*fgbase.Edge).Same(s2.Base().(*fgbase.Edge))
 }
 

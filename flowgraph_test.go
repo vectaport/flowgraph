@@ -879,15 +879,8 @@ func TestGCD(t *testing.T) {
 		ConnectResults(tcond, gcd)
 
 	passm := while.NewHub("passm", flowgraph.Pass, nil)
-
 	mod := while.NewHub("mod", flowgraph.Modulo, nil)
-	if false {
-		while.Connect(passm, 0, mod, 1)
-		passx := while.NewHub("passx", flowgraph.Pass, nil)
-		while.Connect(passm, 0, passx, 0)
-	} else {
-		while.ExposeResult(while.Connect(passm, 0, mod, 1))
-	}
+	while.ExposeResult(while.Connect(passm, 0, mod, 1))
 
 	while.Loop()
 
