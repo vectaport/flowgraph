@@ -90,7 +90,8 @@ func (c HubCode) String() string {
 	}[c]
 }
 
-// ShiftCode is the subcode for the Shift HubCode
+// ShiftCode is the subcode for the "Shift" HubCode,
+// provided as the init arg to NewHub.
 type ShiftCode int
 
 const (
@@ -610,22 +611,22 @@ func transmitFire(n *fgbase.Node) error {
 }
 
 func whileFire(n *fgbase.Node) error {
-	n.Panicf("while loop still needs flattening.")
+	n.Panicf("While loop still needs flattening.")
 	return nil
 }
 
 func untilFire(n *fgbase.Node) error {
-	n.Panicf("until loop still needs flattening.")
+	n.Panicf("Until loop still needs flattening.")
 	return nil
 }
 
 func duringFire(n *fgbase.Node) error {
-	n.Panicf("during loop still needs flattening.")
+	n.Panicf("During loop still needs flattening.")
 	return nil
 }
 
 func graphFire(n *fgbase.Node) error {
-	n.Panicf("graph still needs expanding.")
+	n.Panicf("Graph still needs expanding.")
 	return nil
 }
 
