@@ -129,12 +129,12 @@ func (gh *graphhub) Panicf(format string, v ...interface{}) {
 	gh.hub.Panicf(format, v...)
 }
 
-// Source returns source stream by index
+// Source returns source stream selected by string or int
 func (gh *graphhub) Source(port interface{}) Stream {
 	return gh.hub.Source(port)
 }
 
-// Result returns result stream by index
+// Result returns result stream selected by string or int
 func (gh *graphhub) Result(port interface{}) Stream {
 	return gh.hub.Result(port)
 }
@@ -199,12 +199,12 @@ func (gh *graphhub) SetResultNames(nm ...string) Hub {
 	return gh.hub.SetResultNames(nm...)
 }
 
-// SourceIndex returns the index of a source port matched by name or stream
+// SourceIndex returns the index of a source port selected by string or Stream
 func (gh *graphhub) SourceIndex(port interface{}) int {
 	return gh.hub.SourceIndex(port)
 }
 
-// ResultIndex returns the index of a source port matched by name or stream
+// ResultIndex returns the index of a source port selected by string or Stream
 func (gh *graphhub) ResultIndex(port interface{}) int {
 	return gh.hub.ResultIndex(port)
 }
@@ -302,7 +302,7 @@ func (gh *graphhub) Loop() {
 
 	for i := 0; i < ns; i++ {
 		switch gh.HubCode() {
-		
+
 		case While:
 			gh.Connect(wait, i, ins[i], insPort[i])
 
@@ -322,7 +322,7 @@ func (gh *graphhub) Loop() {
 			termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
 			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
 			gh.ExposeResult(termc)
-			
+
 		case Until:
 			gh.Connect(wait, i, ins[i], insPort[i])
 
@@ -345,7 +345,7 @@ func (gh *graphhub) Loop() {
 
 		default:
 			gh.Panicf("Uknown HubCode %q for GraphHub %q\n", gh.HubCode(), gh.Name())
-			
+
 		}
 	}
 	fmt.Printf("// While loop %q internals:\n", gh.Name())

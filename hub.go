@@ -22,10 +22,10 @@ type Hub interface {
 	// Panicf for logging of panic messages.  Uses atomic log mechanism.
 	Panicf(format string, v ...interface{})
 
-	// Source returns source stream by index
+	// Source returns source stream selected by string or int
 	Source(port interface{}) Stream
 
-	// Result returns result stream by index
+	// Result returns result stream selected by string or int
 	Result(port interface{}) Stream
 
 	// SetSource sets a stream on a source port selected by string or int
@@ -64,10 +64,10 @@ type Hub interface {
 	// SetResultNames names the result ports
 	SetResultNames(nm ...string) Hub
 
-	// SourceIndex returns the index of a source port matched by name or stream
+	// SourceIndex returns the index of a source port selected by string or Stream
 	SourceIndex(port interface{}) int
 
-	// ResultIndex returns the index of a result port matched by name or stream
+	// ResultIndex returns the index of a result port selected by string or Stream
 	ResultIndex(port interface{}) int
 
 	// ConnectSources connects a list of source Streams to this hub
@@ -121,7 +121,7 @@ func (h *hub) SetName(name string) {
 	h.base.Name = name
 }
 
-// Source returns source stream by index
+// Source returns source stream selected by int or string
 func (h *hub) Source(port interface{}) Stream {
 	var i int
 	var ok bool
@@ -143,7 +143,7 @@ func (h *hub) Source(port interface{}) Stream {
 	return &stream{h.base.Src(i), h.fg}
 }
 
-// Result returns result stream by index
+// Result returns result stream selected by int or string
 func (h *hub) Result(port interface{}) Stream {
 	var i int
 	var ok bool
@@ -283,7 +283,7 @@ func (h *hub) SetResultNames(nm ...string) Hub {
 	return h
 }
 
-// SourceIndex returns the index of a source port matched by name or stream
+// SourceIndex returns the index of a source port selected by string or stream
 func (h *hub) SourceIndex(port interface{}) int {
 	var i int
 	var ok bool
@@ -313,7 +313,7 @@ func (h *hub) SourceIndex(port interface{}) int {
 	return i
 }
 
-// ResultIndex returns the index of a result port matched by name or stream
+// ResultIndex returns the index of a result port selected by string or stream
 func (h *hub) ResultIndex(port interface{}) int {
 	var i int
 	var ok bool
