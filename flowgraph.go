@@ -90,8 +90,7 @@ func (c HubCode) String() string {
 	}[c]
 }
 
-// ShiftCode is the subcode for the "Shift" HubCode,
-// provided as the init arg to NewHub.
+// ShiftCode is the subcode for the "Shift" HubCode, provided as the init arg to NewHub.
 type ShiftCode int
 
 const (
