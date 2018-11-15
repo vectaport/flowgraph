@@ -520,14 +520,14 @@ func TestIterator3(t *testing.T) {
 	fg.NewHub("tbi", flowgraph.Retrieve, &tbi{}).
 		ConnectResults(firstval)
 
-	while := fg.NewGraphHub("while", flowgraph.While)
-	while.ConnectSources(firstval).
+	until := fg.NewGraphHub("until", flowgraph.Until)
+	until.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	oneval := while.NewStream("oneval").Const(1)
-	while.NewHub("sub", flowgraph.Subtract, nil).
+	oneval := until.NewStream("oneval").Const(1)
+	until.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-	while.Loop()
+	until.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval)
@@ -545,11 +545,11 @@ func TestIterator3(t *testing.T) {
 /* TestIterator4 Flowgraph HDL *
 
 tbi()(firstval1)
-while(firstval1)(lastval1) {
+until(firstval1)(lastval1) {
         sub(firstval1, 1)(lastval1)
 }
 wait(10,lastval1)(firstval2)
-while(firstval2)(lastval2) {
+until(firstval2)(lastval2) {
         sub(firstval2, 1)(lastval2)
 }
 sink(lastval2)()
@@ -570,14 +570,14 @@ func TestIterator4(t *testing.T) {
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
-	while1 := fg.NewGraphHub("while1", flowgraph.While)
-	while1.ConnectSources(firstval1).
+	until1 := fg.NewGraphHub("until1", flowgraph.Until)
+	until1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
 
-	oneval1 := while1.NewStream("oneval1").Const(1)
-	while1.NewHub("sub1", flowgraph.Subtract, nil).
+	oneval1 := until1.NewStream("oneval1").Const(1)
+	until1.NewHub("sub1", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval1)
-	while1.Loop()
+	until1.Loop()
 
 	tenval := fg.NewStream("tenval").Const(10)
 	firstval2 := fg.NewStream("firstval2")
@@ -586,14 +586,14 @@ func TestIterator4(t *testing.T) {
 		ConnectResults(firstval2)
 
 	lastval2 := fg.NewStream("lastval2")
-	while2 := fg.NewGraphHub("while2", flowgraph.While)
-	while2.ConnectSources(firstval2).
+	until2 := fg.NewGraphHub("until2", flowgraph.Until)
+	until2.ConnectSources(firstval2).
 		ConnectResults(lastval2)
 
-	oneval2 := while2.NewStream("oneval2").Const(1)
-	while2.NewHub("sub2", flowgraph.Subtract, nil).
+	oneval2 := until2.NewStream("oneval2").Const(1)
+	until2.NewHub("sub2", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval2)
-	while2.Loop()
+	until2.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval2)
@@ -610,8 +610,8 @@ func TestIterator4(t *testing.T) {
 /* TestIterator5 Flowgraph HDL *
 
 tbi()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
+until(firstval)(lastval) {
+        until(firstval)(lastval) {
                 sub(firstval, 1)(lastval)
 	}
 }
@@ -633,18 +633,18 @@ func TestIterator5(t *testing.T) {
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
-	while1 := fg.NewGraphHub("while1", flowgraph.While)
-	while1.ConnectSources(firstval1).
+	until1 := fg.NewGraphHub("until1", flowgraph.Until)
+	until1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
 
-	while2 := while1.NewGraphHub("while2", flowgraph.While)
-	while2.SetNumSource(1).SetNumResult(1) // could be detected
-	while1.Loop()
+	until2 := until1.NewGraphHub("until2", flowgraph.Until)
+	until2.SetNumSource(1).SetNumResult(1) // could be detected
+	until1.Loop()
 
-	oneval := while2.NewStream("oneval").Const(1)
-	while2.NewHub("sub", flowgraph.Subtract, nil).
+	oneval := until2.NewStream("oneval").Const(1)
+	until2.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-	while2.Loop()
+	until2.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval1)
@@ -661,9 +661,9 @@ func TestIterator5(t *testing.T) {
 /* TestIterator6 Flowgraph HDL *
 
 tbi()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
-        	while(firstval)(lastval) {
+until(firstval)(lastval) {
+        until(firstval)(lastval) {
+        	until(firstval)(lastval) {
                 	sub(firstval, 1)(lastval)
 		}
 	}
@@ -686,22 +686,22 @@ func TestIterator6(t *testing.T) {
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
-	while1 := fg.NewGraphHub("while1", flowgraph.While)
-	while1.ConnectSources(firstval1).
+	until1 := fg.NewGraphHub("until1", flowgraph.Until)
+	until1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
 
-	while2 := while1.NewGraphHub("while2", flowgraph.While)
-	while2.SetNumSource(1).SetNumResult(1) // could be detected
-	while1.Loop()
+	until2 := until1.NewGraphHub("until2", flowgraph.Until)
+	until2.SetNumSource(1).SetNumResult(1) // could be detected
+	until1.Loop()
 
-	while3 := while2.NewGraphHub("while3", flowgraph.While)
-	while3.SetNumSource(1).SetNumResult(1) // could be detected
-	while2.Loop()
+	until3 := until2.NewGraphHub("until3", flowgraph.Until)
+	until3.SetNumSource(1).SetNumResult(1) // could be detected
+	until2.Loop()
 
-	oneval := while3.NewStream("oneval").Const(1)
-	while3.NewHub("sub", flowgraph.Subtract, nil).
+	oneval := until3.NewStream("oneval").Const(1)
+	until3.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-	while3.Loop()
+	until3.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval1)
@@ -718,10 +718,10 @@ func TestIterator6(t *testing.T) {
 /* TestIterator7 Flowgraph HDL *
 
 tbi()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
-        	while(firstval)(lastval) {
-        		while(firstval)(lastval) {
+until(firstval)(lastval) {
+        until(firstval)(lastval) {
+        	until(firstval)(lastval) {
+        		until(firstval)(lastval) {
                 		sub(firstval, 1)(lastval)
 			}
 		}
@@ -745,26 +745,26 @@ func TestIterator7(t *testing.T) {
 		ConnectResults(firstval)
 
 	lastval := fg.NewStream("lastval")
-	while1 := fg.NewGraphHub("while1", flowgraph.While)
-	while1.ConnectSources(firstval).
+	until1 := fg.NewGraphHub("until1", flowgraph.Until)
+	until1.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	while2 := while1.NewGraphHub("while2", flowgraph.While)
-	while2.SetNumSource(1).SetNumResult(1) // could be detected
-	while1.Loop()
+	until2 := until1.NewGraphHub("until2", flowgraph.Until)
+	until2.SetNumSource(1).SetNumResult(1) // could be detected
+	until1.Loop()
 
-	while3 := while2.NewGraphHub("while3", flowgraph.While)
-	while3.SetNumSource(1).SetNumResult(1) // could be detected
-	while2.Loop()
+	until3 := until2.NewGraphHub("until3", flowgraph.Until)
+	until3.SetNumSource(1).SetNumResult(1) // could be detected
+	until2.Loop()
 
-	while4 := while3.NewGraphHub("while4", flowgraph.While)
-	while4.SetNumSource(1).SetNumResult(1) // could be detected
-	while3.Loop()
+	until4 := until3.NewGraphHub("until4", flowgraph.Until)
+	until4.SetNumSource(1).SetNumResult(1) // could be detected
+	until3.Loop()
 
-	oneval := while4.NewStream("oneval").Const(1)
-	while4.NewHub("sub", flowgraph.Subtract, nil).
+	oneval := until4.NewStream("oneval").Const(1)
+	until4.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
-	while4.Loop()
+	until4.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval)
@@ -781,11 +781,11 @@ func TestIterator7(t *testing.T) {
 /* TestIterator8 Flowgraph HDL *
 
 tbi()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
+until(firstval)(lastval) {
+        until(firstval)(lastval) {
 	        add(firstval,1)(bumpval)
-        	while(bumpval)(lastval) {
-        		while(bumpval)(lastval) {
+        	until(bumpval)(lastval) {
+        		until(bumpval)(lastval) {
                 		sub(bumpval, 1)(lastval)
 			}
 		}
@@ -809,22 +809,22 @@ func TestIterator8(t *testing.T) {
 		ConnectResults(firstval)
 
 	lastval := fg.NewStream("lastval")
-	while1 := fg.NewGraphHub("while1", flowgraph.While)
-	while1.ConnectSources(firstval).
+	until1 := fg.NewGraphHub("until1", flowgraph.Until)
+	until1.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	while2 := while1.NewGraphHub("while2", flowgraph.While)
-	while2.SetNumSource(1).SetNumResult(1) // could be detected
-	oneval := while1.NewStream("oneval").Const(1)
-	add := while1.NewHub("add", flowgraph.Add, nil).
+	until2 := until1.NewGraphHub("until2", flowgraph.Until)
+	until2.SetNumSource(1).SetNumResult(1) // could be detected
+	oneval := until1.NewStream("oneval").Const(1)
+	add := until1.NewHub("add", flowgraph.Add, nil).
 		ConnectSources(nil, oneval)
-	while1.Connect(add, 0, while2, 0).SetName("bumpval")
-	while1.Loop()
+	until1.Connect(add, 0, until2, 0).SetName("bumpval")
+	until1.Loop()
 
-	oneval2 := while2.NewStream("oneval2").Const(1)
-	while2.NewHub("sub", flowgraph.Subtract, nil).
+	oneval2 := until2.NewStream("oneval2").Const(1)
+	until2.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval2)
-	while2.Loop()
+	until2.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(lastval)
@@ -842,7 +842,7 @@ func TestIterator8(t *testing.T) {
 
 tbrand()(mval)
 tbrand()(nval)
-while(mval, nval)(tcond, gcd) {
+until(mval, nval)(tcond, gcd) {
         sub(firstval, 1)(lastval)
 }
 sink(gcd)()
@@ -874,15 +874,15 @@ func TestGCD(t *testing.T) {
 	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
 		ConnectResults(nval)
 
-	while := fg.NewGraphHub("while", flowgraph.While)
-	while.ConnectSources(mval, nval).
+	until := fg.NewGraphHub("until", flowgraph.Until)
+	until.ConnectSources(mval, nval).
 		ConnectResults(tcond, gcd)
 
-	passm := while.NewHub("passm", flowgraph.Pass, nil)
-	mod := while.NewHub("mod", flowgraph.Modulo, nil)
-	while.ExposeResult(while.Connect(passm, 0, mod, 1))
+	passm := until.NewHub("passm", flowgraph.Pass, nil)
+	mod := until.NewHub("mod", flowgraph.Modulo, nil)
+	until.ExposeResult(until.Connect(passm, 0, mod, 1))
 
-	while.Loop()
+	until.Loop()
 
 	fg.NewHub("sink", flowgraph.Sink, nil).
 		ConnectSources(gcd)
@@ -894,4 +894,88 @@ func TestGCD(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestGCD\n")
+}
+
+/*=====================================================================*/
+
+/* TestGoRound Flowgraph HDL *
+
+ival,jval,kval=tbrand(),tbrand(),tbrand()
+until(ival,jval,kval)(iout,jout,kout) {
+        iout=pass(ival)
+	jout=pass(jval)
+	kout=pass(kval)
+}
+sink(iout)
+sink(jout)
+sink(kout)
+
+*/
+
+func TestGoRound(t *testing.T) {
+	fmt.Printf("BEGIN:  TestGoRound\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.VVV
+
+	fg := flowgraph.New("TestGoRound")
+
+	ival := fg.NewStream("ival")
+	jval := fg.NewStream("jval")
+	kval := fg.NewStream("kval")
+	lval := fg.NewStream("lval")
+	mval := fg.NewStream("mval")
+	nval := fg.NewStream("nval")
+	iout := fg.NewStream("iout")
+	jout := fg.NewStream("jout")
+	kout := fg.NewStream("kout")
+	lout := fg.NewStream("lout")
+	mout := fg.NewStream("mout")
+	nout := fg.NewStream("nout")
+
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(ival)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(jval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(jval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(lval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(mval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(nval)
+
+	until := fg.NewGraphHub("until", flowgraph.Until)
+	until.ConnectSources(ival, jval, kval, lval, mval, nval).
+		ConnectResults(iout, jout, kout, lout, mout, nout)
+
+	until.NewHub("passi", flowgraph.Pass, nil)
+	until.NewHub("passj", flowgraph.Pass, nil)
+	until.NewHub("passk", flowgraph.Pass, nil)
+	until.NewHub("passl", flowgraph.Pass, nil)
+	until.NewHub("passm", flowgraph.Pass, nil)
+	until.NewHub("passn", flowgraph.Pass, nil)
+
+	until.Loop()
+
+	fg.NewHub("sinki", flowgraph.Sink, nil).
+		ConnectSources(iout)
+	fg.NewHub("sinkj", flowgraph.Sink, nil).
+		ConnectSources(jout)
+	fg.NewHub("sinkk", flowgraph.Sink, nil).
+		ConnectSources(kout)
+	fg.NewHub("sinkl", flowgraph.Sink, nil).
+		ConnectSources(lout)
+	fg.NewHub("sinkm", flowgraph.Sink, nil).
+		ConnectSources(mout)
+	fg.NewHub("sinkn", flowgraph.Sink, nil).
+		ConnectSources(nout)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestGoRound\n")
 }

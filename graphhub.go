@@ -243,6 +243,10 @@ func (gh *graphhub) Base() interface{} {
 // Loop builds a conditional iterator around a hub or flowgraph with dangling edges
 func (gh *graphhub) Loop() {
 
+	if gh.HubCode() != While && gh.HubCode() != Until && gh.HubCode() != During {
+		gh.Panicf("HubCode %q not for GraphHub\n", gh.HubCode())
+	}
+
 	ns, nr := 0, 0
 	ins := make([]Hub, 0)
 	insPort := make([]int, 0)
@@ -297,24 +301,52 @@ func (gh *graphhub) Loop() {
 		SetNumResult(ns)
 
 	for i := 0; i < ns; i++ {
-		gh.Connect(wait, i, ins[i], insPort[i])
+		switch gh.HubCode() {
+		
+		case While:
+			gh.Connect(wait, i, ins[i], insPort[i])
 
-		steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
-			SetNumSource(min(ns, 2)).SetNumResult(2)
+			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
+				SetNumSource(min(ns, 2)).SetNumResult(2)
 
-		gh.Connect(outs[0], outsPort[i], steer, 0)
-		if ns > 1 {
-			gh.Connect(outs[i], outsPort[i], steer, 1)
+			gh.Connect(outs[0], outsPort[i], steer, 0)
+			if ns > 1 {
+				gh.Connect(outs[i], outsPort[i], steer, 1)
+			}
+			gh.Connect(steer, 1, ins[i], insPort[i])
+
+			if i > 0 {
+				continue
+			}
+
+			termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
+			gh.ExposeResult(termc)
+			
+		case Until:
+			gh.Connect(wait, i, ins[i], insPort[i])
+
+			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
+				SetNumSource(min(ns, 2)).SetNumResult(2)
+
+			gh.Connect(outs[0], outsPort[i], steer, 0)
+			if ns > 1 {
+				gh.Connect(outs[i], outsPort[i], steer, 1)
+			}
+			gh.Connect(steer, 1, ins[i], insPort[i])
+
+			if i > 0 {
+				continue
+			}
+
+			termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
+			gh.ExposeResult(termc)
+
+		default:
+			gh.Panicf("Uknown HubCode %q for GraphHub %q\n", gh.HubCode(), gh.Name())
+			
 		}
-		gh.Connect(steer, 1, ins[i], insPort[i])
-
-		if i > 0 {
-			continue
-		}
-
-		termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
-		termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
-		gh.ExposeResult(termc)
 	}
 	fmt.Printf("// While loop %q internals:\n", gh.Name())
 	for i := 0; i < gh.NumHub(); i++ {

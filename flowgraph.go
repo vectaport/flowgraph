@@ -41,6 +41,7 @@ const (
 
 	Graph  // nil		n,m     hub with general purpose internals
 	While  // nil		n,n	hub with internal wait-body-steer loop
+	Until  // nil		n,n	hub with while loop that runs at least once
 	During // nil		n,n	hub with while loop with continuous results
 
 	Add      // [Transformer]	2,1	add numbers, concat strings
@@ -53,6 +54,41 @@ const (
 	Not      // [Transformer]	1,1	negate bool, invert integers
 	Shift    // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
+
+// String method for HubCode
+func (c HubCode) String() string {
+	return []string{
+		"Retrieve",
+		"Transmit",
+		"AllOf",
+		"OneOf",
+
+		"Array",
+		"Constant",
+		"Sink",
+		"Split",
+		"Join",
+		"Wait",
+		"Pass",
+		"Steer",
+		"Select",
+
+		"Graph",
+		"While",
+		"Until",
+		"During	",
+
+		"Add",
+		"Subtract",
+		"Multiply",
+		"Divide",
+		"Modulo",
+		"And",
+		"Or",
+		"Not",
+		"Shift",
+	}[c]
+}
 
 // ShiftCode is the subcode for the Shift HubCode
 type ShiftCode int
@@ -298,6 +334,8 @@ func (fg *flowgraph) NewGraphHub(name string, code HubCode) GraphHub {
 	switch code {
 	case While:
 		n = fgbase.MakeNode(name, nil, nil, nil, whileFire)
+	case Until:
+		n = fgbase.MakeNode(name, nil, nil, nil, untilFire)
 	case During:
 		n = fgbase.MakeNode(name, nil, nil, nil, duringFire)
 	case Graph:
@@ -573,6 +611,11 @@ func transmitFire(n *fgbase.Node) error {
 
 func whileFire(n *fgbase.Node) error {
 	n.Panicf("while loop still needs flattening.")
+	return nil
+}
+
+func untilFire(n *fgbase.Node) error {
+	n.Panicf("until loop still needs flattening.")
 	return nil
 }
 
