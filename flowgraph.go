@@ -24,35 +24,37 @@ type HubCode int
 // and description.  If n or m the number of sources and results are set with
 // SetNumSource and SetNumResult (or SetSource and SetResult)
 const (
-	Retrieve HubCode = iota // Retriever	0,1	retrieve one value with Retriever
-	Transmit                // Transmitter	1,0	transmit one value with Transmitter
-	AllOf                   // Transformer	n,m	waiting for all sources
-	OneOf                   // Transformer	n,m	waiting for one source
+	Nop HubCode = iota
 
-	Wait     // nil		n+1,1 		wait for last source to pass rest
-	Select   // nil		1+n,1   	select from rest by first source
-	Steer    // nil		2|1,n		steer last source to one of n results
-	Cross    // nil        	1+n*2,n*2      	steer left or right rank by first source
+	Retrieve //	Retriever	0,1	retrieve one value with Retriever
+	Transmit // 	Transmitter	1,0	transmit one value with Transmitter
+	AllOf    // 	Transformer	n,m	waiting for all sources
+	OneOf    // 	Transformer	n,m	waiting for one source
 
-	Array	 // []interface{}	0,1	produce array of values then EOF
-	Constant // interface{}		0,1	produce constant values forever
-	Pass	 // nil			1,1	pass value
-	Split	 // nil			1,n     split slice into values
-	Join	 // nil			n,1     join values into slice
-	Sink	 // [Sinker]		1,0	consume values forever
+	Wait   // 	nil		n+1,1 	wait for last source to pass rest
+	Select // 	nil		1+n,1   select from rest by first source
+	Steer  // 	nil		2|1,n	steer last source to one of n results
+	Cross  // 	nil         1+n*2,n*2   steer left or right rank by first source
 
-	Grapxh  	 // nil			n,m     hub with general purpose internals
-	While  	 // nil			n,n	hub with while loop around internals
-	Until  	 // nil			n,n	hub with while loop that runs at least once
-	During 	 // nil			n,n	hub with while loop with continuous results
+	Array    // 	[]interface{}	0,1	produce array of values then EOF
+	Constant // 	interface{}	0,1	produce constant values forever
+	Pass     // 	nil		1,1	pass value
+	Split    // 	nil		1,n     split slice into values
+	Join     // 	nil		n,1     join values into slice
+	Sink     // 	[Sinker]	1,0	consume values forever
 
-	Add      // [Transformer]	2,1	add numbers, concat strings
-	Subtract // [Transformer]	2,1	subtract numbers
-	Multiply // [Transformer]	2,1	multiply numbers
-	Divide   // [Transformer]	2,1	divide numbers
-	Modulo   // [Transformer]	2,1	modulate numbers
-	And      // [Transformer]	2,1	AND bool or bit-wise AND integers
-	Or       // [Transformer]	2,1	OR bool or bit-wise OR integers
+	Graph  // 	nil		n,m     hub with general purpose internals
+	While  // 	nil		n,n	hub with while loop around internals
+	Until  // 	nil		n,n	hub with while loop that runs at least once
+	During // 	nil		n,n	hub with while loop with continuous results
+
+	Add      // 	[Transformer]	2,1	add numbers, concat strings
+	Subtract // 	[Transformer]	2,1	subtract numbers
+	Multiply // 	[Transformer]	2,1	multiply numbers
+	Divide   // 	[Transformer]	2,1	divide numbers
+	Modulo   // 	[Transformer]	2,1	modulate numbers
+	And      // 	[Transformer]	2,1	AND bool or bit-wise AND integers
+	Or       // 	[Transformer]	2,1	OR bool or bit-wise OR integers
 	Not      // [Transformer]	1,1	negate bool, invert integers
 	Shift    // ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
 )
