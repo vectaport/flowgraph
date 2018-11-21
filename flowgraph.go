@@ -27,9 +27,9 @@ const (
 	Nop HubCode = iota
 
 	Retrieve //	Retriever	0,1	retrieve one value with Retriever
-	Transmit // 	Transmitter	1,0	transmit one value with Transmitter
-	AllOf    // 	Transformer	n,m	waiting for all sources
-	OneOf    // 	Transformer	n,m	waiting for one source
+	Transmit //	Transmitter	1,0	transmit one value with Transmitter
+	AllOf    //	Transformer	n,m	waiting for all sources
+	OneOf    //	Transformer	n,m	waiting for one source
 
 	Wait   // 	nil		n+1,1 	wait for last source to pass rest
 	Select // 	nil		1+n,1   select from rest by first source
