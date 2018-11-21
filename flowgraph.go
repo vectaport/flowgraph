@@ -36,12 +36,12 @@ const (
 	Steer  // 	nil		2|1,n	steer last source to one of n results
 	Cross  // 	nil         1+n*2,n*2   steer left or right rank by first source
 
-	Array    // 	[]interface{}	0,1	produce array of values then EOF
-	Constant // 	interface{}	0,1	produce constant values forever
-	Pass     // 	nil		1,1	pass value
-	Split    // 	nil		1,n     split slice into values
-	Join     // 	nil		n,1     join values into slice
-	Sink     // 	[Sinker]	1,0	consume values forever
+	Array    //	[]interface{}	0,1	produce array of values then EOF
+	Constant //	interface{}	0,1	produce constant values forever
+	Pass     //	nil		1,1	pass value
+	Split    //	nil		1,n     split slice into values
+	Join     //	nil		n,1     join values into slice
+	Sink     //	[Sinker]	1,0	consume values forever
 
 	Graph  // 	nil		n,m     hub with general purpose internals
 	While  // 	nil		n,n	hub with while loop around internals
