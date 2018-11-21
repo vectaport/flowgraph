@@ -41,7 +41,7 @@ const (
 	Join	 // nil			n,1     join values into slice
 	Sink	 // [Sinker]		1,0	consume values forever
 
-	Graph  	 // nil			n,m     hub with general purpose internals
+	Grapxh  	 // nil			n,m     hub with general purpose internals
 	While  	 // nil			n,n	hub with while loop around internals
 	Until  	 // nil			n,n	hub with while loop that runs at least once
 	During 	 // nil			n,n	hub with while loop with continuous results
