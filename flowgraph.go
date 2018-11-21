@@ -29,20 +29,22 @@ const (
 	AllOf                   // Transformer	n,m	waiting for all sources
 	OneOf                   // Transformer	n,m	waiting for one source
 
-	Array    // []interface{}	0,1	produce array of values then EOF
-	Constant // interface{}	0,1	produce constant values forever
-	Sink     // [Sinker]	1,0	consume values forever
-	Split    // ni		1,n	split into separate values
-	Join     // ni		n,1	join into one value
-	Wait     // nil		n+1,1 	wait for last source to pass rest
-	Pass     // nil 	1,1	pass value
-	Steer    // nil		2|1,n	steer last source to one of n results
-	Select   // nil		1+n,1   select from rest by first source
+	Wait   // nil			n+1,1 	wait for last source to pass rest
+	Select // nil			1+n,1   select from rest by first source
+	Steer  // nil			2|1,n	steer last source to one of n results
+	Cross  // nil         	1+n*2,n*2      steer left or right rank by first source
 
-	Graph  // nil		n,m     hub with general purpose internals
-	While  // nil		n,n	hub with internal wait-body-steer loop
-	Until  // nil		n,n	hub with while loop that runs at least once
-	During // nil		n,n	hub with while loop with continuous results
+	Array    // []interface{}	0,1	produce array of values then EOF
+	Constant // interface{}		0,1	produce constant values forever
+	Pass     // nil 		1,1	pass value
+	Split    // nil			1,n     split slice into values
+	Join     // nil			n,1     join values into slice
+	Sink     // [Sinker]		1,0	consume values forever
+
+	Graph  // nil			n,m     hub with general purpose internals
+	While  // nil			n,n	hub with while loop around internals
+	Until  // nil			n,n	hub with while loop that runs at least once
+	During // nil			n,n	hub with while loop with continuous results
 
 	Add      // [Transformer]	2,1	add numbers, concat strings
 	Subtract // [Transformer]	2,1	subtract numbers
@@ -63,15 +65,17 @@ func (c HubCode) String() string {
 		"AllOf",
 		"OneOf",
 
+		"Wait",
+		"Select",
+		"Steer",
+		"Cross",
+
 		"Array",
 		"Constant",
-		"Sink",
+		"Pass",
 		"Split",
 		"Join",
-		"Wait",
-		"Pass",
-		"Steer",
-		"Select",
+		"Sink",
 
 		"Graph",
 		"While",
@@ -243,7 +247,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 
 	switch code {
 
-	// User Supplied Hubs
+	// User Hubs
 	case Retrieve:
 		if _, ok := init.(Retriever); !ok {
 			panic(fmt.Sprintf("Hub with Retrieve code not given Retriever for init %T(%+v)", init, init))
@@ -269,11 +273,36 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		}
 		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
 
-	// General purpose Hubs
+	// Control Hubs
+	case Wait:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.RdyFire)
+	case Select:
+		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, selectFire)
+	case Steer:
+		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
+	case Cross:
+		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, crossFire)
+
+	// Data Hubs
+	case Array:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
+	case Constant:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
 	case Pass:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, nil)
+	case Split:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, splitFire)
+	case Join:
+		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, joinFire)
+	case Sink:
+		if init != nil {
+			if _, ok := init.(Sinker); !ok {
+				panic(fmt.Sprintf("Hub with Sink code not given Sinker for init %T(%+v)", init, init))
+			}
+		}
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
 
-	// Math Hubs
+	// Math and Logic Hubs
 	case Add:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
 	case Subtract:
@@ -284,26 +313,17 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
 	case Modulo:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.ModFire)
-
-	// General Purpose Hubs
-	case Wait:
-		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.RdyFire)
-	case Array:
-		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
-	case Constant:
-		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
-	case Sink:
-		if init != nil {
-			if _, ok := init.(Sinker); !ok {
-				panic(fmt.Sprintf("Hub with Sink code not given Sinker for init %T(%+v)", init, init))
-			}
-		}
-		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, nil, nil, fgbase.SinkFire)
-	case Steer:
-		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
+	case And:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, andFire)
+	case Or:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, orFire)
+	case Not:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, notFire)
+	case Shift:
+		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, shiftFire)
 
 	default:
-		log.Panicf("Unexpected Hub code NewHub:  %v\n", code)
+		log.Panicf("Unexpected Hub code NewHub:  %s\n", code)
 	}
 	if n.Aux == nil {
 		n.Aux = init
@@ -438,8 +458,10 @@ func (fg *flowgraph) connectInit(
 		dnstream.SetSource(dnstreamPort, us)
 		return us
 	}
-	upstream.Panicf("Unexpected that with two ports to connect (%s:%v and %s:%v) that they both are already connected to another stream as well",
-		upstream.Name(), upstreamPort, dnstream.Name(), dnstreamPort)
+	/*
+		upstream.Panicf("Unexpected that with two ports to connect (%s:%v(%s) and %s:%v(%s() that they both are already connected to another stream as well",
+			upstream.Name(), upstreamPort, us.Name(), dnstream.Name(), dnstreamPort, ds.Name())
+	*/
 	return nil
 }
 
@@ -513,6 +535,9 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 		} else {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
+	}
+	for _, v := range nodes {
+		fmt.Printf("// %s\n", v)
 	}
 	return nodes
 }
@@ -609,6 +634,26 @@ func transmitFire(n *fgbase.Node) error {
 	return err
 }
 
+func selectFire(n *fgbase.Node) error {
+	n.Panicf("Select HubCode still needs implementation.")
+	return nil
+}
+
+func crossFire(n *fgbase.Node) error {
+	n.Panicf("Cross HubCode still needs implementation.")
+	return nil
+}
+
+func splitFire(n *fgbase.Node) error {
+	n.Panicf("Split HubCode still needs implementation.")
+	return nil
+}
+
+func joinFire(n *fgbase.Node) error {
+	n.Panicf("Join HubCode still needs implementation.")
+	return nil
+}
+
 func whileFire(n *fgbase.Node) error {
 	n.Panicf("While loop still needs flattening.")
 	return nil
@@ -625,7 +670,27 @@ func duringFire(n *fgbase.Node) error {
 }
 
 func graphFire(n *fgbase.Node) error {
-	n.Panicf("Graph still needs expanding.")
+	n.Panicf("Graph still needs flattening.")
+	return nil
+}
+
+func andFire(n *fgbase.Node) error {
+	n.Panicf("And HubCode still needs implementation.")
+	return nil
+}
+
+func orFire(n *fgbase.Node) error {
+	n.Panicf("Or HubCode still needs implementation.")
+	return nil
+}
+
+func notFire(n *fgbase.Node) error {
+	n.Panicf("Not HubCode still needs implementation.")
+	return nil
+}
+
+func shiftFire(n *fgbase.Node) error {
+	n.Panicf("Shift HubCode still needs implementation.")
 	return nil
 }
 

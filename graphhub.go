@@ -304,15 +304,19 @@ func (gh *graphhub) Loop() {
 		switch gh.HubCode() {
 
 		case While:
-			gh.Connect(wait, i, ins[i], insPort[i])
-
 			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
 				SetNumSource(min(ns, 2)).SetNumResult(2)
+
+			gh.Connect(wait, 0, steer, 0)
+			if ns > 1 {
+				gh.Connect(wait, i, steer, 1)
+			}
 
 			gh.Connect(outs[0], outsPort[i], steer, 0)
 			if ns > 1 {
 				gh.Connect(outs[i], outsPort[i], steer, 1)
 			}
+
 			gh.Connect(steer, 1, ins[i], insPort[i])
 
 			if i > 0 {
@@ -329,7 +333,7 @@ func (gh *graphhub) Loop() {
 			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
 				SetNumSource(min(ns, 2)).SetNumResult(2)
 
-			gh.Connect(outs[0], outsPort[i], steer, 0)
+			gh.Connect(outs[0], outsPort[0], steer, 0)
 			if ns > 1 {
 				gh.Connect(outs[i], outsPort[i], steer, 1)
 			}
@@ -354,6 +358,29 @@ func (gh *graphhub) Loop() {
 	}
 	fmt.Printf("\n")
 
+}
+
+// Link links an internal stream to an external stream
+func (gh *graphhub) Link(in, ex Stream) {
+
+	checkInternalStream(gh.fg, in)
+	checkExternalStream(gh.fg, ex)
+
+	ein := in.Base().(*fgbase.Edge)
+	eex := ex.Base().(*fgbase.Edge)
+	gh.Base().(*fgbase.Node).Link(ein, eex)
+}
+
+// ExposeSource marks an internal stream to be used as an input source as well
+func (gh *graphhub) ExposeSource(s Stream) {
+	checkInternalStream(gh.fg, s)
+	gh.isources = append(gh.isources, s)
+}
+
+// ExposeResult marks an internal stream to be used as an output source as well
+func (gh *graphhub) ExposeResult(s Stream) {
+	checkInternalStream(gh.fg, s)
+	gh.iresults = append(gh.iresults, s)
 }
 
 // flatten connects graphhub external ports to internal dangling streams
@@ -419,7 +446,7 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
 						"style=\"dashed\" color=\"black\"",
 						"style=\"solid\" color=\"black\"",
-						"style=\"invis\"",
+						"style=\"dotted\"",
 						"style=\"solid\" color=\"black\""})
 				} else {
 					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
@@ -465,28 +492,6 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			}
 		}
 	}
+
 	return nodes
-}
-
-// Link links an internal stream to an external stream
-func (gh *graphhub) Link(in, ex Stream) {
-
-	checkInternalStream(gh.fg, in)
-	checkExternalStream(gh.fg, ex)
-
-	ein := in.Base().(*fgbase.Edge)
-	eex := ex.Base().(*fgbase.Edge)
-	gh.Base().(*fgbase.Node).Link(ein, eex)
-}
-
-// ExposeSource marks an internal stream to be used as an input source as well
-func (gh *graphhub) ExposeSource(s Stream) {
-	checkInternalStream(gh.fg, s)
-	gh.isources = append(gh.isources, s)
-}
-
-// ExposeResult marks an internal stream to be used as an output source as well
-func (gh *graphhub) ExposeResult(s Stream) {
-	checkInternalStream(gh.fg, s)
-	gh.iresults = append(gh.iresults, s)
 }
