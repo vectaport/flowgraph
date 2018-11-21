@@ -29,10 +29,10 @@ const (
 	AllOf                   // Transformer	n,m	waiting for all sources
 	OneOf                   // Transformer	n,m	waiting for one source
 
-	Wait   // nil			n+1,1 	wait for last source to pass rest
-	Select // nil			1+n,1   select from rest by first source
-	Steer  // nil			2|1,n	steer last source to one of n results
-	Cross  // nil         	1+n*2,n*2      steer left or right rank by first source
+	Wait   // nil		n+1,1 		wait for last source to pass rest
+	Select // nil		1+n,1   	select from rest by first source
+	Steer  // nil		2|1,n		steer last source to one of n results
+	Cross  // nil         	1+n*2,n*2      	steer left or right rank by first source
 
 	Array    // []interface{}	0,1	produce array of values then EOF
 	Constant // interface{}		0,1	produce constant values forever
