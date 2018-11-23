@@ -903,15 +903,21 @@ func TestGCD(t *testing.T) {
 
 /* TestGoRound Flowgraph HDL *
 
-ival,jval,kval=tbrand(),tbrand(),tbrand()
-until(ival,jval,kval)(iout,jout,kout) {
+ival,jval,kval,lval,mval,nval=tbrand(),tbrand(),tbrand(),tbrand(),tbrand(),tbrand()
+until(ival,jval,kval,lval,mval,nval)(iout,jout,kout,lout,mout,noutx) {
         iout=pass(ival)
 	jout=pass(jval)
 	kout=pass(kval)
+        lout=pass(lval)
+	mout=pass(mval)
+	nout=pass(nval)
 }
 sink(iout)
 sink(jout)
 sink(kout)
+sink(lout)
+sink(mout)
+sink(nout)
 
 */
 
@@ -981,4 +987,63 @@ func TestGoRound(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestGoRound\n")
+}
+
+/*=====================================================================*/
+
+/* TestCross Flowgraph HDL *
+
+ival,jval=tbtoggle(),tbrand()
+cross(ival,jval)(iout,jout)
+sink(iout)
+sink(kout)
+
+*/
+
+type tbtoggle struct {
+	last bool
+}
+
+func (t *tbtoggle) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+	f := t.last
+	t.last = !f
+	return f, nil
+}
+
+func TestCross(t *testing.T) {
+	fmt.Printf("BEGIN:  TestCross\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TraceLevel = fgbase.VVV
+
+	fg := flowgraph.New("TestCross")
+
+	ival := fg.NewStream("ival")
+	jval := fg.NewStream("jval")
+	kval := fg.NewStream("kval")
+	iout := fg.NewStream("iout")
+	jout := fg.NewStream("jout")
+
+	fg.NewHub("tbtoggle", flowgraph.Retrieve, &tbtoggle{}).
+		ConnectResults(ival)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(jval)
+	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+		ConnectResults(kval)
+
+	fg.NewHub("cross", flowgraph.Cross, nil).
+		ConnectSources(ival, jval, kval).
+		ConnectResults(iout, jout)
+
+	fg.NewHub("sinki", flowgraph.Sink, nil).
+		ConnectSources(iout)
+	fg.NewHub("sinkj", flowgraph.Sink, nil).
+		ConnectSources(jout)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestCross\n")
 }

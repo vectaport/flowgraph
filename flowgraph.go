@@ -62,8 +62,8 @@ const (
 // String method for HubCode
 func (c HubCode) String() string {
 	return []string{
-	        "Nop",
-		
+		"Nop",
+
 		"Retrieve",
 		"Transmit",
 		"AllOf",
@@ -286,7 +286,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 	case Steer:
 		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
 	case Cross:
-		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, crossFire)
+		n = fgbase.MakeNode(name, nil, nil, crossRdy, crossFire)
 
 	// Data Hubs
 	case Array:
@@ -644,8 +644,84 @@ func selectFire(n *fgbase.Node) error {
 	return nil
 }
 
+func ranksz(n *fgbase.Node) int {
+	return (n.SrcCnt() - 1) / 2
+}
+
+type crossStruct struct {
+	in  int
+	out int
+}
+
+func crossRdy(n *fgbase.Node) bool {
+	numrank := ranksz(n)
+	if !n.Srcs[0].SrcRdy(n) {
+		return false
+	}
+	cs, init := n.Aux.(crossStruct)
+	if !init {
+		cs = crossStruct{}
+	}
+	cs.out = func() int {
+		z := fgbase.IsZero(n.Srcs[0].SrcGet())
+		if z {
+			return 0
+		}
+		return 1
+	}()
+
+	f := func(offset int) bool {
+		for i := 0; i < numrank; i++ {
+			if !n.Srcs[i+offset+1].SrcRdy(n) {
+				return false
+			}
+		}
+		return true
+	}
+	left := f(0)
+	right := f(numrank)
+	if left || right {
+		if cs.in == 0 {
+			if right {
+				cs.in = 1
+			} else {
+				cs.in = 0
+			}
+		} else {
+			if left {
+				cs.in = 0
+			} else {
+				cs.in = 1
+			}
+		}
+		return n.Dsts[cs.out].DstRdy(n)
+	}
+	return false
+}
+
 func crossFire(n *fgbase.Node) error {
-	n.Panicf("Cross HubCode still needs implementation.")
+	numrank := ranksz(n)
+	cs, init := n.Aux.(crossStruct)
+	if !init {
+		cs = crossStruct{}
+	}
+
+	if fgbase.IsZero(n.Srcs[0].SrcGet()) {
+		cs.out = 0
+	} else {
+		cs.out = 1
+	}
+
+	if cs.out == 0 {
+		for i := 0; i < numrank; i++ {
+			n.Dsts[i].DstPut(n.Srcs[cs.in*numrank+i+1].SrcGet())
+		}
+	} else {
+		for i := 0; i < numrank; i++ {
+			n.Dsts[numrank+i].DstPut(n.Srcs[cs.in*numrank+i+1].SrcGet())
+		}
+	}
+	n.Aux = cs
 	return nil
 }
 
