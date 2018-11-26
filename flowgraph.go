@@ -269,8 +269,6 @@ func (fg *flowgraph) NewGraphHub(name string, code HubCode) GraphHub {
 	switch code {
 	case While:
 		n = fgbase.MakeNode(name, nil, nil, nil, whileFire)
-	case Until:
-		n = fgbase.MakeNode(name, nil, nil, nil, untilFire)
 	case During:
 		n = fgbase.MakeNode(name, nil, nil, nil, duringFire)
 	case Graph:
@@ -647,11 +645,6 @@ func joinFire(n *fgbase.Node) error {
 
 func whileFire(n *fgbase.Node) error {
 	n.Panicf("While loop still needs flattening.")
-	return nil
-}
-
-func untilFire(n *fgbase.Node) error {
-	n.Panicf("Until loop still needs flattening.")
 	return nil
 }
 

@@ -31,7 +31,6 @@ const (
 
 	Graph  // 	nil		n,m     hub with general purpose internals
 	While  // 	nil		n,n	hub with while loop around internals
-	Until  // 	nil		n,n	hub with while loop that runs at least once
 	During // 	nil		n,n	hub with while loop with continuous results
 
 	Add      //	[Transformer]	2,1	add numbers, concat strings
@@ -69,7 +68,6 @@ func (c HubCode) String() string {
 
 		"Graph",
 		"While",
-		"Until",
 		"During	",
 
 		"Add",

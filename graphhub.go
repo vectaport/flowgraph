@@ -7,7 +7,7 @@ import (
 )
 
 // GraphHub interface for flowgraph hub made out of a graph of hubs.
-// Relevant code args for NewGraphHub are Graph, While, Until, and During.
+// Relevant code args for NewGraphHub are Graph, While, and During.
 type GraphHub interface {
 	Hub
 	Flowgraph
@@ -243,7 +243,7 @@ func (gh *graphhub) Base() interface{} {
 // Loop builds a conditional iterator around a hub or flowgraph with dangling edges
 func (gh *graphhub) Loop() {
 
-	if gh.HubCode() != While && gh.HubCode() != Until && gh.HubCode() != During {
+	if gh.HubCode() != While && gh.HubCode() != During {
 		gh.Panicf("HubCode %q not for GraphHub\n", gh.HubCode())
 	}
 
@@ -314,7 +314,6 @@ func (gh *graphhub) Loop() {
 		case While:
 			gh.Connect(wait, i, cross, i)
 			gh.Connect(outs[i], outsPort[i], cross, i+ns)
-
 			gh.Connect(cross, i+ns, ins[i], insPort[i])
 
 			if i > 0 {
@@ -322,26 +321,6 @@ func (gh *graphhub) Loop() {
 			}
 
 			termc := gh.ConnectInit(cross, 0, wait, ns, 0) // termination condition recycled but also needs to be output
-			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
-			gh.ExposeResult(termc)
-
-		case Until:
-			gh.Connect(wait, i, ins[i], insPort[i])
-
-			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
-				SetNumSource(min(ns, 2)).SetNumResult(2)
-
-			gh.Connect(outs[0], outsPort[0], steer, 0)
-			if ns > 1 {
-				gh.Connect(outs[i], outsPort[i], steer, 1)
-			}
-			gh.Connect(steer, 1, ins[i], insPort[i])
-
-			if i > 0 {
-				continue
-			}
-
-			termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
 			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
 			gh.ExposeResult(termc)
 
