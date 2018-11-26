@@ -300,30 +300,28 @@ func (gh *graphhub) Loop() {
 		SetNumSource(ns + 1).
 		SetNumResult(ns)
 
+	var cross Hub
+
+	if gh.HubCode() == While {
+		cross = gh.NewHub(gh.Name()+"_cross", Cross, nil).
+			SetNumSource(ns * 2).
+			SetNumResult(ns * 2)
+	}
+
 	for i := 0; i < ns; i++ {
 		switch gh.HubCode() {
 
 		case While:
-			steer := gh.NewHub(gh.Name()+"_steer", Steer, nil).
-				SetNumSource(min(ns, 2)).SetNumResult(2)
+			gh.Connect(wait, i, cross, i)
+			gh.Connect(outs[i], outsPort[i], cross, i+ns)
 
-			gh.Connect(wait, 0, steer, 0)
-			if ns > 1 {
-				gh.Connect(wait, i, steer, 1)
-			}
-
-			gh.Connect(outs[0], outsPort[i], steer, 0)
-			if ns > 1 {
-				gh.Connect(outs[i], outsPort[i], steer, 1)
-			}
-
-			gh.Connect(steer, 1, ins[i], insPort[i])
+			gh.Connect(cross, i+ns, ins[i], insPort[i])
 
 			if i > 0 {
 				continue
 			}
 
-			termc := gh.ConnectInit(steer, 0, wait, ns, 0) // termination condition recycled but also needs to be output
+			termc := gh.ConnectInit(cross, 0, wait, ns, 0) // termination condition recycled but also needs to be output
 			termc.Base().(*fgbase.Edge).Val = nil          // remove initialization condition from termination condition
 			gh.ExposeResult(termc)
 
@@ -392,7 +390,7 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 	for _, v := range gh.fg.(*flowgraph).hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
-			if fgbase.DotOutput {
+			if false && fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
 				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}
@@ -443,11 +441,17 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 			gh.Link(s, gh.Source(i))
 			if fgbase.DotOutput {
 				if !debug {
-					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
-						"style=\"dashed\" color=\"black\"",
-						"style=\"solid\" color=\"black\"",
-						"style=\"dotted\"",
-						"style=\"solid\" color=\"black\""})
+					kmax := gh.Source(i).NumDownstream()
+					al := make([]string, 0)
+					for k := 0; k < kmax; k++ {
+						fgmatch := s.Flowgraph() == gh.Source(i).Downstream(k).Flowgraph()
+						if fgmatch {
+							al = append(al, "color=\"black\"")
+						} else {
+							al = append(al, "style=\"dashed\"")
+						}
+					}
+					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs(al)
 				} else {
 					gh.Source(i).Base().(*fgbase.Edge).SetDotAttrs([]string{
 						"color=\"red\"",

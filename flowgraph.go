@@ -13,99 +13,9 @@ import (
 
 /*=====================================================================*/
 
-// End of flow
+// End of flow. Transmitted when end-of-file occurs, and promises no more
+// data to follow.
 var EOF = errors.New("EOF")
-
-// HubCode is code arg to NewHub()
-type HubCode int
-
-// HubCode constants for NewHub() code arg.
-// Comment fields are init arg for NewHub, number of source and number of results,
-// and description.  If n or m the number of sources and results are set with
-// SetNumSource and SetNumResult (or SetSource and SetResult)
-const (
-	Nop HubCode = iota
-
-	Retrieve //	Retriever	0,1	retrieve one value with Retrieve method
-	Transmit //	Transmitter	1,0	transmit one value with Transmit method
-	AllOf    //	Transformer	n,m	waiting for all sources for Transform method
-	OneOf    //	Transformer	n,m	waiting for one source for Transform method
-
-	Wait   // 	nil		n+1,1 	wait for last source to pass rest
-	Select // 	nil		1+n,1   select from rest by first source
-	Steer  // 	nil		2|1,2	steer last source by first source
-	Cross  // 	nil         1+2*n,2*n   steer left or right rank by first source
-
-	Array    //	[]interface{}	0,1	produce array of values then EOF
-	Constant //	interface{}	0,1	produce constant values forever
-	Pass     //	nil		1,1	pass value
-	Split    //	nil		1,n     split slice into values
-	Join     //	nil		n,1     join values into slice
-	Sink     //	[Sinker]	1,0	consume values forever
-
-	Graph  // 	nil		n,m     hub with general purpose internals
-	While  // 	nil		n,n	hub with while loop around internals
-	Until  // 	nil		n,n	hub with while loop that runs at least once
-	During // 	nil		n,n	hub with while loop with continuous results
-
-	Add      //	[Transformer]	2,1	add numbers, concat strings
-	Subtract //	[Transformer]	2,1	subtract numbers
-	Multiply //	[Transformer]	2,1	multiply numbers
-	Divide   //	[Transformer]	2,1	divide numbers
-	Modulo   //	[Transformer]	2,1	modulate numbers
-	And      //	[Transformer]	2,1	AND bool or bit-wise AND integers
-	Or       //	[Transformer]	2,1	OR bool or bit-wise OR integers
-	Not      //	[Transformer]	1,1	negate bool, invert integers
-	Shift    //	ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
-)
-
-// String method for HubCode
-func (c HubCode) String() string {
-	return []string{
-		"Nop",
-
-		"Retrieve",
-		"Transmit",
-		"AllOf",
-		"OneOf",
-
-		"Wait",
-		"Select",
-		"Steer",
-		"Cross",
-
-		"Array",
-		"Constant",
-		"Pass",
-		"Split",
-		"Join",
-		"Sink",
-
-		"Graph",
-		"While",
-		"Until",
-		"During	",
-
-		"Add",
-		"Subtract",
-		"Multiply",
-		"Divide",
-		"Modulo",
-		"And",
-		"Or",
-		"Not",
-		"Shift",
-	}[c]
-}
-
-// ShiftCode is the subcode for the "Shift" HubCode, provided as the init arg to NewHub.
-type ShiftCode int
-
-const (
-	Arith ShiftCode = iota
-	Barrel
-	Signed
-)
 
 /*=====================================================================*/
 
@@ -533,7 +443,7 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 	for _, v := range fg.hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
-			if fgbase.DotOutput {
+			if false && fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
 				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}
@@ -541,9 +451,11 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
 	}
+	fmt.Printf("\n")
 	for _, v := range nodes {
 		fmt.Printf("// %s\n", v)
 	}
+	fmt.Printf("\n")
 	return nodes
 }
 
@@ -645,7 +557,7 @@ func selectFire(n *fgbase.Node) error {
 }
 
 func ranksz(n *fgbase.Node) int {
-	return (n.SrcCnt() - 1) / 2
+	return n.SrcCnt() / 2
 }
 
 type crossStruct struct {
@@ -654,25 +566,16 @@ type crossStruct struct {
 }
 
 func crossRdy(n *fgbase.Node) bool {
-	numrank := ranksz(n)
-	if !n.Srcs[0].SrcRdy(n) {
-		return false
-	}
 	cs, init := n.Aux.(crossStruct)
 	if !init {
 		cs = crossStruct{}
 	}
-	cs.out = func() int {
-		z := fgbase.IsZero(n.Srcs[0].SrcGet())
-		if z {
-			return 0
-		}
-		return 1
-	}()
+
+	numrank := ranksz(n)
 
 	f := func(offset int) bool {
 		for i := 0; i < numrank; i++ {
-			if !n.Srcs[i+offset+1].SrcRdy(n) {
+			if !n.Srcs[i+offset].SrcRdy(n) {
 				return false
 			}
 		}
@@ -680,6 +583,14 @@ func crossRdy(n *fgbase.Node) bool {
 	}
 	left := f(0)
 	right := f(numrank)
+
+	steerDir := func() int {
+		if fgbase.IsZero(n.Srcs[numrank*cs.in].SrcGet()) {
+			return 0
+		}
+		return 1
+	}
+
 	if left || right {
 		if cs.in == 0 {
 			if right {
@@ -694,7 +605,13 @@ func crossRdy(n *fgbase.Node) bool {
 				cs.in = 1
 			}
 		}
-		return n.Dsts[cs.out].DstRdy(n)
+		cs.out = steerDir()
+		rdy := n.Dsts[cs.out].DstRdy(n)
+		if false && rdy {
+			n.Tracef("STEERDIR IS %d\n", cs.out)
+		}
+		n.Aux = cs
+		return rdy
 	}
 	return false
 }
@@ -706,22 +623,15 @@ func crossFire(n *fgbase.Node) error {
 		cs = crossStruct{}
 	}
 
-	if fgbase.IsZero(n.Srcs[0].SrcGet()) {
-		cs.out = 0
-	} else {
-		cs.out = 1
-	}
-
 	if cs.out == 0 {
 		for i := 0; i < numrank; i++ {
-			n.Dsts[i].DstPut(n.Srcs[cs.in*numrank+i+1].SrcGet())
+			n.Dsts[i].DstPut(n.Srcs[cs.in*numrank+i].SrcGet())
 		}
 	} else {
 		for i := 0; i < numrank; i++ {
-			n.Dsts[numrank+i].DstPut(n.Srcs[cs.in*numrank+i+1].SrcGet())
+			n.Dsts[numrank+i].DstPut(n.Srcs[cs.in*numrank+i].SrcGet())
 		}
 	}
-	n.Aux = cs
 	return nil
 }
 
