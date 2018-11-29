@@ -369,7 +369,7 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 	for _, v := range gh.fg.(*flowgraph).hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
-			if false && fgbase.DotOutput {
+			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
 				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}

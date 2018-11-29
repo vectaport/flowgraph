@@ -20,7 +20,7 @@ const (
 	Wait   // 	nil		n+1,1 	wait for last source to pass rest
 	Select // 	nil		1+n,1   select from rest by first source
 	Steer  // 	nil		2|1,2	steer last source by first source
-	Cross  // 	nil         1+2*n,2*n   steer left or right rank by first source
+	Cross  // 	nil           2*n,2*n   steer left or right rank by first source of each
 
 	Array    //	[]interface{}	0,1	produce array of values then EOF
 	Constant //	interface{}	0,1	produce constant values forever
@@ -41,7 +41,7 @@ const (
 	And      //	[Transformer]	2,1	AND bool or bit-wise AND integers
 	Or       //	[Transformer]	2,1	OR bool or bit-wise OR integers
 	Not      //	[Transformer]	1,1	negate bool, invert integers
-	Shift    //	ShiftCode|Transformer	2,1	shift first by second, Arith,Barrel,Signed
+	Shift    //	ShiftCode|Transformer   2,1   shift first by second, Arith,Barrel,Signed
 )
 
 // String method for HubCode

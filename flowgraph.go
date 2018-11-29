@@ -11,44 +11,9 @@ import (
 	"log"
 )
 
-/*=====================================================================*/
-
 // End of flow. Transmitted when end-of-file occurs, and promises no more
 // data to follow.
 var EOF = errors.New("EOF")
-
-/*=====================================================================*/
-
-// Transformer transforms a slice of source values into a slice
-// of result values with the Transform method. Provide as init arg to
-// NewHub with AllOf or OneOf HubCode or optionally with a logic or
-// math HubCode (access HubCode from a Transform method to customize
-// these transforms). Use Hub.Tracef for tracing.
-type Transformer interface {
-	Transform(h Hub, source []interface{}) (result []interface{}, err error)
-}
-
-// Retriever retrieves one value using the Retrieve method.
-// Provide as init arg to NewHub with Retrieve HubCode.
-// Use Hub.Tracef for tracing.
-type Retriever interface {
-	Retrieve(h Hub) (result interface{}, err error)
-}
-
-// Transmitter transmits one value using a Transmit method.
-// Provide as init arg to NewHub with Transmit HubCode.
-// Use Hub.Tracef for tracing.
-type Transmitter interface {
-	Transmit(h Hub, source interface{}) (err error)
-}
-
-// Sinker consumes wavefronts of values one at a time forever.
-// Optionally provide as init arg to NewHub with Sink HubCode.
-type Sinker interface {
-	Sink(source []interface{})
-}
-
-/*=====================================================================*/
 
 // Flowgraph interface for flowgraphs assembled out of hubs and streams
 type Flowgraph interface {
@@ -441,7 +406,7 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 	for _, v := range fg.hubs {
 		if gv, ok := v.(GraphHub); ok {
 			nodes = gv.(*graphhub).flatten(nodes)
-			if false && fgbase.DotOutput {
+			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
 				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
 			}
