@@ -29,7 +29,7 @@ func max(a, b int) int {
 /*=====================================================================*/
 
 func TestMain(m *testing.M) {
-	fgbase.ConfigByFlag(map[string]interface{}{"trace": "QQ"})
+	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
 	os.Exit(m.Run())
 }
 
@@ -510,13 +510,13 @@ type sinkIterator2 struct {
 }
 
 func (st *sinkIterator2) Sink(source []interface{}) {
-        (*st).i = (*st).i-1
-        if (*st).i!= source[0].(int) {
+	(*st).i = (*st).i - 1
+	if (*st).i != source[0].(int) {
 		st.t.Fatalf("ERROR Iterator2 FAILED\n")
 	}
-	if (*st).i==0 {
-	   (*st).i=10
-        }
+	if (*st).i == 0 {
+		(*st).i = 10
+	}
 }
 
 func TestIterator2(t *testing.T) {
@@ -551,8 +551,8 @@ func TestIterator2(t *testing.T) {
 		ConnectSources(newval).
 		ConnectResults(lastval, oldval)
 
-	fg.NewHub("sink", flowgraph.Sink, &sinkIterator2{t,10}).
-	        ConnectSources(newval)
+	fg.NewHub("sink", flowgraph.Sink, &sinkIterator2{t, 10}).
+		ConnectSources(newval)
 
 	fg.Run()
 
@@ -919,6 +919,92 @@ func TestIterator8(t *testing.T) {
 
 /*=====================================================================*/
 
+/* TestIterator9 Flowgraph HDL *
+
+tbtens()(firstval)
+while(firstval)(lastval) {
+        sub(firstval, 1)(lastval)
+}
+sink(lastval)()
+
+*/
+
+type valIterator9 struct {
+	Count int
+	ID    int
+}
+
+type tbtens struct{}
+
+var tbtensID int
+
+func (t *tbtens) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+	id := tbtensID
+	tbtensID++
+	return &valIterator9{10, id}, nil
+}
+
+type sinkIterator9 struct {
+	t *testing.T
+}
+
+func (st *sinkIterator9) Sink(source []interface{}) {
+	if source[0].(int) != 0 {
+		st.t.Fatalf("ERROR Iterator9 FAILED\n")
+	}
+}
+
+type subber struct{}
+
+func (s *subber) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	result = make([]interface{}, 1)
+	a := source[0].(*valIterator9).Count
+	b := source[1].(int)
+	x := a - b
+	result[0] = &valIterator9{x, source[0].(*valIterator9).ID}
+	return
+}
+
+func TestIterator9(t *testing.T) {
+	fmt.Printf("BEGIN:  TestIterator9\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestIterator9")
+
+	firstval := fg.NewStream("firstval")
+	lastval := fg.NewStream("lastval")
+
+	fg.NewHub("tbtens", flowgraph.Retrieve, &tbtens{}).
+		ConnectResults(firstval)
+
+	while := fg.NewGraphHub("while", flowgraph.While)
+	while.ConnectSources(firstval).
+		ConnectResults(lastval)
+
+	oneval := while.NewStream("oneval").Const(1)
+	while.NewHub("subber", flowgraph.AllOf, &subber{}).
+		ConnectSources(nil, oneval).
+		SetNumResult(1)
+	while.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, &sinkIterator9{t}).
+		ConnectSources(lastval)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestIterator9\n")
+}
+
+/*=====================================================================*/
+
 /* TestGCD Flowgraph HDL *
 
 tbrand()(mval)
@@ -987,7 +1073,7 @@ func TestGCD(t *testing.T) {
 
 /* TestGoRound Flowgraph HDL *
 
-ival,jval,kval,lval,mval,nval=tbrand(),tbrand(),tbrand(),tbrand(),tbrand(),tbrand()
+ival,jval,kval,lval,mval,nval=tbcar(),tbcar(),tbcar(),tbcar(),tbcar(),tbcar()
 while(ival,jval,kval,lval,mval,nval)(iout,jout,kout,lout,mout,nout) {
         iout,jout,kout,lout,mout,nout=onelap(ival,jval,kval,lval,mval,nval)
 }
@@ -1000,14 +1086,34 @@ sink(nout)
 
 */
 
+type car struct {
+	number   int64
+	distance int
+	winner   int
+}
+
+func (c *car) Break() bool {
+	return c.winner != -1
+}
+
+type tbcar struct {
+}
+
+func (t *tbcar) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
+	return &car{h.Base().(*fgbase.Node).ID, rand.Intn(100) + 1, -1}, nil
+}
+
 type onelap struct{}
 
 func (l *onelap) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	result = make([]interface{}, len(source))
 	for i := range source {
-		result[i] = max(0, source[i].(int)-rand.Intn(6)+1)
-		if result[i] == 0 {
-			result[0] = 0
+		cprev := source[i].(*car)
+		cnext := &car{cprev.number, max(0, cprev.distance-rand.Intn(6)+1), -1}
+		result[i] = cnext
+		if cnext.distance == 0 {
+			czero := result[0].(*car)
+			czero.winner = i
 		}
 	}
 	return
@@ -1036,17 +1142,17 @@ func TestGoRound(t *testing.T) {
 	mout := fg.NewStream("mout")
 	nout := fg.NewStream("nout")
 
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(ival)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(jval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(kval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(lval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(mval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(nval)
 
 	while := fg.NewGraphHub("while", flowgraph.While)

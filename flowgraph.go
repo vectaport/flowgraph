@@ -155,7 +155,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 
 	// Control Hubs
 	case Wait:
-		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.RdyFire)
+		n = fgbase.MakeNode(name, nil, nil, waitRdy, waitFire)
 	case Select:
 		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, selectFire)
 	case Steer:
@@ -514,6 +514,39 @@ func transmitFire(n *fgbase.Node) error {
 	return err
 }
 
+type waitStruct struct {
+	Request int
+}
+
+func waitRdy(n *fgbase.Node) bool {
+	ws, init := n.Aux.(waitStruct)
+	if !init {
+		ws = waitStruct{Request: fgbase.ChannelSize}
+	}
+
+	ns := n.SrcCnt()
+	for i := 0; i < ns-1; i++ {
+		if !n.Srcs[i].SrcRdy(n) {
+			return false
+		}
+	}
+	if ws.Request > 0 {
+		ws.Request--
+		n.Srcs[ns-1].Flow = false
+		n.Aux = ws
+		return true
+	}
+	n.Aux = ws
+	return n.Srcs[ns-1].SrcRdy(n)
+}
+
+func waitFire(n *fgbase.Node) error {
+	for i := 0; i < len(n.Srcs)-1; i++ {
+		n.Dsts[i].DstPut(n.Srcs[i].SrcGet())
+	}
+	return nil
+}
+
 func selectFire(n *fgbase.Node) error {
 	n.Panicf("Select HubCode still needs implementation.")
 	return nil
@@ -548,7 +581,13 @@ func crossRdy(n *fgbase.Node) bool {
 	right := f(numrank)
 
 	steerDir := func() int {
-		if fgbase.IsZero(n.Srcs[numrank*cs.in].SrcGet()) {
+		v := n.Srcs[numrank*cs.in].SrcGet()
+		if b, ok := v.(Breaker); ok {
+			if b.Break() {
+				return 0
+			}
+		}
+		if fgbase.IsZero(v) {
 			return 0
 		}
 		return 1
@@ -581,10 +620,7 @@ func crossRdy(n *fgbase.Node) bool {
 
 func crossFire(n *fgbase.Node) error {
 	numrank := ranksz(n)
-	cs, init := n.Aux.(crossStruct)
-	if !init {
-		cs = crossStruct{}
-	}
+	cs := n.Aux.(crossStruct)
 
 	if cs.out == 0 {
 		for i := 0; i < numrank; i++ {

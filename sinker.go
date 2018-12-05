@@ -1,7 +1,6 @@
 package flowgraph
 
-import (
-)
+import ()
 
 // Sinker consumes wavefronts of values one at a time forever.
 // Optionally provide as init arg to NewHub with Sink HubCode.

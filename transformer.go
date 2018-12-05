@@ -1,7 +1,6 @@
 package flowgraph
 
-import (
-)
+import ()
 
 // Transformer transforms a slice of source values into a slice
 // of result values with the Transform method. Provide as init arg to
@@ -11,4 +10,3 @@ import (
 type Transformer interface {
 	Transform(h Hub, source []interface{}) (result []interface{}, err error)
 }
-

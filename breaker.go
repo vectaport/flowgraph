@@ -1,9 +1,8 @@
 package flowgraph
 
-import (
-)
+import ()
 
-// Breaker returns true to break out of a loop.  
+// Breaker returns true to break out of a loop.
 type Breaker interface {
-     Break() bool
+	Break() bool
 }
