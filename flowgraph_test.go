@@ -30,6 +30,7 @@ func max(a, b int) int {
 
 func TestMain(m *testing.M) {
 	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
+	fgbase.TraceStyle = fgbase.New
 	os.Exit(m.Run())
 }
 
@@ -934,6 +935,10 @@ type valIterator9 struct {
 	ID    int
 }
 
+func (vi *valIterator9) Break() bool {
+	return vi.Count == 0
+}
+
 type tbtens struct{}
 
 var tbtensID int
@@ -949,7 +954,7 @@ type sinkIterator9 struct {
 }
 
 func (st *sinkIterator9) Sink(source []interface{}) {
-	if source[0].(int) != 0 {
+	if source[0].(*valIterator9).Count != 0 {
 		st.t.Fatalf("ERROR Iterator9 FAILED\n")
 	}
 }
@@ -970,9 +975,11 @@ func TestIterator9(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
+	oldChannelSize := fgbase.ChannelSize
 	fgbase.RunTime = time.Second
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
+	fgbase.ChannelSize = 8
 
 	fg := flowgraph.New("TestIterator9")
 
@@ -1000,6 +1007,7 @@ func TestIterator9(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
+	fgbase.ChannelSize = oldChannelSize
 	fmt.Printf("END:    TestIterator9\n")
 }
 

@@ -409,6 +409,13 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
 				v.Base().(*fgbase.Node).SetDotAttr("style=\"dashed\"")
+			} else {
+				for i := 0; i < v.NumSource(); i++ {
+					v.Source(i).Base().(*fgbase.Edge).Disconnect(v.Base().(*fgbase.Node))
+				}
+				for i := 0; i < v.NumResult(); i++ {
+					v.Result(i).Base().(*fgbase.Edge).Disconnect(v.Base().(*fgbase.Node))
+				}
 			}
 		} else {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
@@ -519,12 +526,20 @@ type waitStruct struct {
 }
 
 func waitRdy(n *fgbase.Node) bool {
+	ns := n.SrcCnt()
 	ws, init := n.Aux.(waitStruct)
 	if !init {
 		ws = waitStruct{Request: fgbase.ChannelSize}
+		elocal := n.Srcs[ns-1]
+		usnode := elocal.SrcNode(0)
+		for i := 0; i < len(usnode.Dsts); i++ {
+			if usnode.Dsts[i].Same(elocal) {
+				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize
+				break
+			}
+		}
 	}
 
-	ns := n.SrcCnt()
 	for i := 0; i < ns-1; i++ {
 		if !n.Srcs[i].SrcRdy(n) {
 			return false
@@ -537,13 +552,16 @@ func waitRdy(n *fgbase.Node) bool {
 		return true
 	}
 	n.Aux = ws
+
 	return n.Srcs[ns-1].SrcRdy(n)
 }
 
 func waitFire(n *fgbase.Node) error {
-	for i := 0; i < len(n.Srcs)-1; i++ {
+	ns := n.SrcCnt()
+	for i := 0; i < ns-1; i++ {
 		n.Dsts[i].DstPut(n.Srcs[i].SrcGet())
 	}
+	n.Srcs[ns-1].Flow = true
 	return nil
 }
 
