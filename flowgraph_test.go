@@ -951,12 +951,14 @@ func (t *tbtens) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 
 type sinkIterator9 struct {
 	t *testing.T
+	c int
 }
 
 func (st *sinkIterator9) Sink(source []interface{}) {
 	if source[0].(*valIterator9).Count != 0 {
 		st.t.Fatalf("ERROR Iterator9 FAILED\n")
 	}
+	st.c++
 }
 
 type subber struct{}
@@ -979,7 +981,7 @@ func TestIterator9(t *testing.T) {
 	fgbase.RunTime = time.Second
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
-	fgbase.ChannelSize = 8
+	fgbase.ChannelSize = 512
 
 	fg := flowgraph.New("TestIterator9")
 
@@ -999,7 +1001,8 @@ func TestIterator9(t *testing.T) {
 		SetNumResult(1)
 	while.Loop()
 
-	fg.NewHub("sink", flowgraph.Sink, &sinkIterator9{t}).
+	si := &sinkIterator9{t, 0}
+	fg.NewHub("sink", flowgraph.Sink, si).
 		ConnectSources(lastval)
 
 	fg.Run()
@@ -1008,6 +1011,7 @@ func TestIterator9(t *testing.T) {
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
 	fgbase.ChannelSize = oldChannelSize
+	fmt.Printf("SINKS: %d\n", si.c)
 	fmt.Printf("END:    TestIterator9\n")
 }
 

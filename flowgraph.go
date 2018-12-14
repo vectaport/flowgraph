@@ -538,6 +538,7 @@ func waitRdy(n *fgbase.Node) bool {
 				break
 			}
 		}
+		n.Aux = ws
 	}
 
 	for i := 0; i < ns-1; i++ {
