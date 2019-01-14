@@ -3,7 +3,7 @@
 ### Getting Started
 
 ```
-go get github.com/vectaport/flowgraph
+go get -u github.com/vectaport/flowgraph
 go test
 ```
 
