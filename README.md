@@ -2,7 +2,7 @@
 
 ### Overview
 
-Flowgraphs (github.com/vectaport/flowgraph) are built out of hubs interconnected by streams. The hubs are implemented with goroutines that use select to wait on incoming data or back-pressure handshakes. The data and handshakes travel on streams implemented with channels of empty interfaces for forward flow (interface{}) and channels of empty structs for back-pressure (struct{}).
+Flowgraphs are built out of hubs interconnected by streams. The hubs are implemented with goroutines that use select to wait on incoming data or back-pressure handshakes. The data and handshakes travel on streams implemented with channels of empty interfaces for forward flow (interface{}) and channels of empty structs for back-pressure (struct{}).
 
 The user of this package is completely isolated from the details of using goroutines, channels, and select, and only has to provide the empty interface functions that transform incoming data into outgoing data as needed for each hub of the application under construction. It includes the ability to log each data flow and transformation at the desired level of detail for debugging and monitoring purposes. 
 
