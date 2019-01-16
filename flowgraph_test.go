@@ -1,13 +1,15 @@
 package flowgraph_test
 
 import (
-	"errors"
-	"fmt"
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
+
+	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -974,14 +976,6 @@ func (s *subber) Transform(n flowgraph.Hub, source []interface{}) (result []inte
 
 func TestIterator9(t *testing.T) {
 	fmt.Printf("BEGIN:  TestIterator9\n")
-	oldRunTime := fgbase.RunTime
-	oldTracePorts := fgbase.TracePorts
-	oldTraceLevel := fgbase.TraceLevel
-	oldChannelSize := fgbase.ChannelSize
-	fgbase.RunTime = time.Second
-	fgbase.TracePorts = true
-	fgbase.TraceLevel = fgbase.V
-	fgbase.ChannelSize = 512
 
 	fg := flowgraph.New("TestIterator9")
 
@@ -1007,11 +1001,7 @@ func TestIterator9(t *testing.T) {
 
 	fg.Run()
 
-	fgbase.RunTime = oldRunTime
-	fgbase.TracePorts = oldTracePorts
-	fgbase.TraceLevel = oldTraceLevel
-	fgbase.ChannelSize = oldChannelSize
-	fmt.Printf("SINKS: %d\n", si.c)
+	fmt.Printf("// SINKS: %d\n", si.c)
 	fmt.Printf("END:    TestIterator9\n")
 }
 
@@ -1263,4 +1253,95 @@ func TestCross(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestCross\n")
+}
+
+/*=====================================================================*/
+
+/* DuckPondA Flowgraph HDL *
+
+tbten()(firstval)
+while(firstval)(midval) {
+        sub(firstval, 1)(midval)
+}
+while(midval)(lastval) {
+        sub(midval, 1)(lastval)
+}
+sink(lastval)()
+
+*/
+
+var duckCnt int64 = 0
+
+type duck struct {
+	ID    int64
+	Loops int
+	exit  bool
+}
+
+func (d duck) Break() bool {
+	return d.exit
+}
+
+type nest struct{}
+
+func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
+	d := duck{duckCnt, 0, false}
+	atomic.AddInt64(&duckCnt, 1)
+	return d, nil
+}
+
+type swim struct {
+	Count int
+}
+
+func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	d := source[0].(duck)
+	if d.Loops == 0 {
+		s.Count++
+	}
+	d.exit = rand.Intn(100) >= 99
+	if d.exit {
+		s.Count--
+	}
+	d.Loops++
+	result = []interface{}{d}
+	return
+}
+
+type sink struct{}
+
+func (s *sink) Sink(source []interface{}) {
+	fmt.Printf("Duck %+v leaving pond\n", source[0])
+}
+
+func TestDuckPondA(t *testing.T) {
+	fmt.Printf("BEGIN:  TestDuckPondA\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second * 30
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestDuckPondA")
+
+	newduck := fg.NewStream("newduck")
+	fg.NewHub("nest", flowgraph.Retrieve, &nest{}).
+		ConnectResults(newduck)
+
+	oldduck := fg.NewStream("oldduck")
+	pond := fg.NewGraphHub("pond", flowgraph.While)
+	pond.ConnectSources(newduck).
+		ConnectResults(oldduck)
+
+	pond.NewHub("swim", flowgraph.AllOf, &swim{}).
+		SetNumSource(1).SetNumResult(1)
+	pond.Loop()
+
+	fg.NewHub("sink", flowgraph.Sink, &sink{}).
+		ConnectSources(oldduck)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestDuckPondA\n")
 }

@@ -110,6 +110,10 @@ type fgTransformer struct {
 	t  Transformer
 }
 
+func (f *fgTransformer) String() string {
+	return fgbase.String(f.t)
+}
+
 type fgRetriever struct {
 	fg *flowgraph
 	r  Retriever
@@ -134,12 +138,12 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		}
 		n = fgbase.MakeNode(name, nil, nil, nil, retrieveFire)
 		init = &fgRetriever{fg, init.(Retriever)}
+
 	case Transmit:
 		if _, ok := init.(Transmitter); !ok {
 			panic(fmt.Sprintf("Hub with Transmit code not given Transmitter for init %T(%+v)", init, init))
 		}
-		n = fgbase.MakeNode(name, nil, nil, nil, transmitFire)
-		init = &fgTransmitter{fg, init.(Transmitter)}
+
 	case AllOf:
 		if _, ok := init.(Transformer); !ok {
 			panic(fmt.Sprintf("Hub with AllOf code not given Transformer for init %T(%+v)", init, init))
@@ -156,24 +160,32 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 	// Control Hubs
 	case Wait:
 		n = fgbase.MakeNode(name, nil, nil, waitRdy, waitFire)
+
 	case Select:
 		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, selectFire)
+
 	case Steer:
 		n = fgbase.MakeNode(name, nil, nil, fgbase.SteervRdy, fgbase.SteervFire)
+
 	case Cross:
 		n = fgbase.MakeNode(name, nil, nil, crossRdy, crossFire)
 
 	// Data Hubs
 	case Array:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ArrayFire)
+
 	case Constant:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, fgbase.ConstFire)
+
 	case Pass:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, nil)
+
 	case Split:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, splitFire)
+
 	case Join:
 		n = fgbase.MakeNode(name, nil, []*fgbase.Edge{nil}, nil, joinFire)
+
 	case Sink:
 		if init != nil {
 			if _, ok := init.(Sinker); !ok {
@@ -185,20 +197,28 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 	// Math and Logic Hubs
 	case Add:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.AddFire)
+
 	case Subtract:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.SubFire)
+
 	case Multiply:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.MulFire)
+
 	case Divide:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.DivFire)
+
 	case Modulo:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, fgbase.ModFire)
+
 	case And:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, andFire)
+
 	case Or:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, orFire)
+
 	case Not:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil}, []*fgbase.Edge{nil}, nil, notFire)
+
 	case Shift:
 		n = fgbase.MakeNode(name, []*fgbase.Edge{nil, nil}, []*fgbase.Edge{nil}, nil, shiftFire)
 
@@ -529,7 +549,7 @@ func waitRdy(n *fgbase.Node) bool {
 	ns := n.SrcCnt()
 	ws, init := n.Aux.(waitStruct)
 	if !init {
-		ws = waitStruct{Request: fgbase.ChannelSize}
+		ws = waitStruct{Request: fgbase.ChannelSize - 1}
 		elocal := n.Srcs[ns-1]
 		usnode := elocal.SrcNode(0)
 		for i := 0; i < len(usnode.Dsts); i++ {
@@ -554,7 +574,11 @@ func waitRdy(n *fgbase.Node) bool {
 	}
 	n.Aux = ws
 
-	return n.Srcs[ns-1].SrcRdy(n)
+	rdy := n.Srcs[ns-1].SrcRdy(n)
+	if rdy {
+		n.Srcs[ns-1].Flow = true
+	}
+	return rdy
 }
 
 func waitFire(n *fgbase.Node) error {
@@ -562,7 +586,6 @@ func waitFire(n *fgbase.Node) error {
 	for i := 0; i < ns-1; i++ {
 		n.Dsts[i].DstPut(n.Srcs[i].SrcGet())
 	}
-	n.Srcs[ns-1].Flow = true
 	return nil
 }
 
@@ -605,6 +628,7 @@ func crossRdy(n *fgbase.Node) bool {
 			if b.Break() {
 				return 0
 			}
+			return 1
 		}
 		if fgbase.IsZero(v) {
 			return 0
