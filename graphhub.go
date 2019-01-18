@@ -296,14 +296,14 @@ func (gh *graphhub) Loop() {
 		gh.Panicf("ns!=nr not yet supported (ns=%d,nr=%d)\n", ns, nr)
 	}
 
-	wait := gh.NewHub(gh.Name()+"_wait", Wait, nil).
+	wait := gh.NewHub(gh.Name()+"Wait", Wait, nil).
 		SetNumSource(ns + 1).
 		SetNumResult(ns)
 
 	var cross Hub
 
 	if gh.HubCode() == While {
-		cross = gh.NewHub(gh.Name()+"_cross", Cross, nil).
+		cross = gh.NewHub(gh.Name()+"Cross", Cross, nil).
 			SetNumSource(ns * 2).
 			SetNumResult(ns * 2)
 	}

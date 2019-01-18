@@ -156,6 +156,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 			panic(fmt.Sprintf("Hub with OneOf code not given Transformer for init %T(%+v)", init, init))
 		}
 		n = fgbase.MakeNode(name, nil, nil, oneOfRdy, oneOfFire)
+		init = &fgTransformer{fg, init.(Transformer)}
 
 	// Control Hubs
 	case Wait:
@@ -474,7 +475,9 @@ func allOfFire(n *fgbase.Node) error {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
 		} else {
-			n.Dsts[i].DstPut(x[i])
+			if x[i] != nil {
+				n.Dsts[i].DstPut(x[i])
+			}
 		}
 	}
 	if eofflag {
@@ -515,7 +518,9 @@ func oneOfFire(n *fgbase.Node) error {
 		if eofflag {
 			n.Dsts[i].DstPut(EOF)
 		} else {
-			n.Dsts[i].DstPut(x[i])
+			if x[i] != nil {
+				n.Dsts[i].DstPut(x[i])
+			}
 		}
 	}
 	if eofflag {

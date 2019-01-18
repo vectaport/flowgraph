@@ -1259,14 +1259,11 @@ func TestCross(t *testing.T) {
 
 /* DuckPondA Flowgraph HDL *
 
-tbten()(firstval)
-while(firstval)(midval) {
-        sub(firstval, 1)(midval)
+nest()(newduck)
+while(newduck)(oldduck) {
+        pond(newduck)(oldduck)
 }
-while(midval)(lastval) {
-        sub(midval, 1)(lastval)
-}
-sink(lastval)()
+sink(oldduck)()
 
 */
 
@@ -1275,6 +1272,7 @@ var duckCnt int64 = 0
 type duck struct {
 	ID    int64
 	Loops int
+	Orig  string
 	exit  bool
 }
 
@@ -1285,16 +1283,16 @@ func (d duck) Break() bool {
 type nest struct{}
 
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
-	d := duck{duckCnt, 0, false}
+	d := duck{duckCnt, 0, h.Name()[0:1], false}
 	atomic.AddInt64(&duckCnt, 1)
 	return d, nil
 }
 
-type swim struct {
+type swimA struct {
 	Count int
 }
 
-func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	d := source[0].(duck)
 	if d.Loops == 0 {
 		s.Count++
@@ -1329,10 +1327,9 @@ func TestDuckPondA(t *testing.T) {
 
 	oldduck := fg.NewStream("oldduck")
 	pond := fg.NewGraphHub("pond", flowgraph.While)
-	pond.ConnectSources(newduck).
-		ConnectResults(oldduck)
+	pond.ConnectSources(newduck).ConnectResults(oldduck)
 
-	pond.NewHub("swim", flowgraph.AllOf, &swim{}).
+	pond.NewHub("swim", flowgraph.AllOf, &swimA{}).
 		SetNumSource(1).SetNumResult(1)
 	pond.Loop()
 
@@ -1344,4 +1341,90 @@ func TestDuckPondA(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestDuckPondA\n")
+}
+
+/*=====================================================================*/
+
+/* DuckPondB Flowgraph HDL *
+
+nestN()(duckNW)
+nestS()(duckNW)
+while(duckNW)(duckSE) {
+        pond(duckNW)(duckSE)
+}
+steerSE(duckSE)(duckS, duckE)
+sink_s(duckS)()
+sink_e(duckE)()
+
+*/
+
+type swimB struct {
+	Count int
+}
+
+func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	d := source[0].(duck)
+	if d.Loops == 0 {
+		s.Count++
+	}
+	d.exit = rand.Intn(100) >= 99
+	if d.exit {
+		s.Count--
+	}
+	d.Loops++
+	result = []interface{}{d}
+	return
+}
+
+type steerSE struct {
+}
+
+func (s *steerSE) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	d := source[0].(duck)
+	if d.Loops%2 == 0 {
+		result = []interface{}{d, nil}
+	} else {
+		result = []interface{}{nil, d}
+	}
+	return
+}
+
+func TestDuckPondB(t *testing.T) {
+	fmt.Printf("BEGIN:  TestDuckPondB\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second * 30
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestDuckPondB")
+
+	duckNW := fg.NewStream("duckNW")
+	fg.NewHub("nestN", flowgraph.Retrieve, &nest{}).
+		ConnectResults(duckNW)
+	fg.NewHub("nestW", flowgraph.Retrieve, &nest{}).
+		ConnectResults(duckNW)
+
+	duckSE := fg.NewStream("duckSE")
+	pond := fg.NewGraphHub("pond", flowgraph.While)
+	pond.ConnectSources(duckNW).ConnectResults(duckSE)
+
+	pond.NewHub("swim", flowgraph.AllOf, &swimB{}).
+		SetNumSource(1).SetNumResult(1)
+	pond.Loop()
+
+	duckS := fg.NewStream("duckS")
+	duckE := fg.NewStream("duckE")
+	fg.NewHub("steer", flowgraph.AllOf, &steerSE{}).
+		ConnectSources(duckSE).ConnectResults(duckS, duckE)
+
+	fg.NewHub("sinkS", flowgraph.Sink, &sink{}).
+		ConnectSources(duckS)
+	fg.NewHub("sinkE", flowgraph.Sink, &sink{}).
+		ConnectSources(duckE)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestDuckPondB\n")
 }
