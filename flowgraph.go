@@ -143,6 +143,8 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		if _, ok := init.(Transmitter); !ok {
 			panic(fmt.Sprintf("Hub with Transmit code not given Transmitter for init %T(%+v)", init, init))
 		}
+		n = fgbase.MakeNode(name, nil, nil, nil, transmitFire)
+		init = &fgTransmitter{fg, init.(Transmitter)}
 
 	case AllOf:
 		if _, ok := init.(Transformer); !ok {

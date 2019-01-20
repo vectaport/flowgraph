@@ -1316,7 +1316,7 @@ func TestDuckPondA(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondA\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 30
+	fgbase.RunTime = time.Second * 4
 	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestDuckPondA")
@@ -1352,9 +1352,9 @@ nestS()(duckNW)
 while(duckNW)(duckSE) {
         pond(duckNW)(duckSE)
 }
-steerSE(duckSE)(duckS, duckE)
-sink_s(duckS)()
-sink_e(duckE)()
+steer(duckSE)(duckS, duckE)
+sinkS(duckS)()
+sinkE(duckE)()
 
 */
 
@@ -1393,7 +1393,7 @@ func TestDuckPondB(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondB\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 30
+	fgbase.RunTime = time.Second * 4
 	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestDuckPondB")
@@ -1427,4 +1427,93 @@ func TestDuckPondB(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestDuckPondB\n")
+}
+
+/*=====================================================================*/
+
+/* DuckPondC Flowgraph HDL *
+
+nestW()(duckImport00)
+sinkW(duckW)()
+
+while(duckImport00)(duckExport00) {
+        pond(duckImport00)(duckExport00)
+}
+steer00(duckExport00)(duckImport10, duckW)
+
+while(duckImport10)(duckExport10) {
+        pond(duckImport10)(duckExport10)
+}
+steer10(duckExport10)(duckImport00, duckE)
+
+nestE()(duckExport10)
+sinkE(duckE)()
+
+*/
+
+type swimC struct {
+	Count int
+}
+
+func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	d := source[0].(duck)
+	if d.Loops == 0 {
+		s.Count++
+	}
+	d.exit = rand.Intn(100) >= 99
+	if d.exit {
+		s.Count--
+	}
+	d.Loops++
+	result = []interface{}{d}
+	return
+}
+
+func TestDuckPondC(t *testing.T) {
+	fmt.Printf("BEGIN:  TestDuckPondC\n")
+	oldRunTime := fgbase.RunTime
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second * 4
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestDuckPondC")
+
+	duckImport00 := fg.NewStream("duckImport00")
+	duckImport10 := fg.NewStream("duckImport10")
+	duckW := fg.NewStream("duckW")
+	duckE := fg.NewStream("duckE")
+
+	fg.NewHub("nestW", flowgraph.Retrieve, &nest{}).
+		ConnectResults(duckImport00)
+	fg.NewHub("sinkW", flowgraph.Sink, &sink{}).
+		ConnectSources(duckW)
+
+	duckExport00 := fg.NewStream("duckExport00")
+	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
+	pond00.ConnectSources(duckImport00).ConnectResults(duckExport00)
+	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{}).
+		SetNumSource(1).SetNumResult(1)
+	pond00.Loop()
+	fg.NewHub("steer00", flowgraph.AllOf, &steerSE{}).
+		ConnectSources(duckExport00).ConnectResults(duckW, duckImport10)
+
+	duckExport10 := fg.NewStream("duckExport10")
+	pond10 := fg.NewGraphHub("pond10", flowgraph.While)
+	pond10.ConnectSources(duckImport10).ConnectResults(duckExport10)
+	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{}).
+		SetNumSource(1).SetNumResult(1)
+	pond10.Loop()
+	fg.NewHub("steer10", flowgraph.AllOf, &steerSE{}).
+		ConnectSources(duckExport10).ConnectResults(duckImport00, duckE)
+
+	fg.NewHub("nestE", flowgraph.Retrieve, &nest{}).
+		ConnectResults(duckExport10)
+	fg.NewHub("sinkE", flowgraph.Sink, &sink{}).
+		ConnectSources(duckE)
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestDuckPondC\n")
 }
