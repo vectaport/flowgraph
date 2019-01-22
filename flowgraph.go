@@ -15,6 +15,8 @@ import (
 // data to follow.
 var EOF = errors.New("EOF")
 
+var FlatDot bool
+
 // Flowgraph interface for flowgraphs assembled out of hubs and streams
 type Flowgraph interface {
 
@@ -425,9 +427,12 @@ func checkExternalStream(fg Flowgraph, s Stream) {
 
 // flatten connects GraphHub external ports to internal dangling streams
 func (fg *flowgraph) flatten() []*fgbase.Node {
+	if FlatDot {
+		fgbase.DotOutput = true
+	}
 	nodes := make([]*fgbase.Node, 0)
 	for _, v := range fg.hubs {
-		if gv, ok := v.(GraphHub); ok {
+		if gv, ok := v.(GraphHub); ok && (FlatDot || !fgbase.DotOutput) {
 			nodes = gv.(*graphhub).flatten(nodes)
 			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))

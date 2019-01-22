@@ -5,6 +5,7 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"math/rand"
@@ -31,8 +32,11 @@ func max(a, b int) int {
 /*=====================================================================*/
 
 func TestMain(m *testing.M) {
+	var flatdotDef interface{} = false
+	flatdotPtr := flag.Bool("flatdot", flatdotDef.(bool), "flatten dot output")
 	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
 	fgbase.TraceStyle = fgbase.New
+	flowgraph.FlatDot = *flatdotPtr
 	os.Exit(m.Run())
 }
 
@@ -592,7 +596,7 @@ func TestIterator3(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second
+	fgbase.RunTime = time.Second * 10
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
@@ -1283,7 +1287,7 @@ func (d duck) Break() bool {
 type nest struct{}
 
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
-	d := duck{duckCnt, 0, h.Name()[0:1], false}
+	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
 	atomic.AddInt64(&duckCnt, 1)
 	return d, nil
 }
@@ -1297,7 +1301,7 @@ func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(100) >= 99
+	d.exit = rand.Intn(100) >= 9
 	if d.exit {
 		s.Count--
 	}
@@ -1376,10 +1380,10 @@ func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	return
 }
 
-type steerSE struct {
+type steerDuck struct {
 }
 
-func (s *steerSE) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *steerDuck) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	d := source[0].(duck)
 	if d.Loops%2 == 0 {
 		result = []interface{}{d, nil}
@@ -1414,7 +1418,7 @@ func TestDuckPondB(t *testing.T) {
 
 	duckS := fg.NewStream("duckS")
 	duckE := fg.NewStream("duckE")
-	fg.NewHub("steer", flowgraph.AllOf, &steerSE{}).
+	fg.NewHub("steer", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckSE).ConnectResults(duckS, duckE)
 
 	fg.NewHub("sinkS", flowgraph.Sink, &sink{}).
@@ -1451,6 +1455,15 @@ sinkE(duckE)()
 
 */
 
+type nestC struct{}
+
+func (n *nestC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
+	atomic.AddInt64(&duckCnt, 1)
+	result = []interface{}{d}
+	return
+}
+
 type swimC struct {
 	Count int
 }
@@ -1473,20 +1486,18 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 4
-	fgbase.TraceLevel = fgbase.V
+	fgbase.RunTime = time.Second * 30
+	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")
 
 	duckImport00 := fg.NewStream("duckImport00")
 	duckImport10 := fg.NewStream("duckImport10")
-	duckW := fg.NewStream("duckW")
-	duckE := fg.NewStream("duckE")
+	duckW := fg.NewStream("duckW").Init(1)
+	duckE := fg.NewStream("duckE").Init(1)
 
-	fg.NewHub("nestW", flowgraph.Retrieve, &nest{}).
-		ConnectResults(duckImport00)
-	fg.NewHub("sinkW", flowgraph.Sink, &sink{}).
-		ConnectSources(duckW)
+	fg.NewHub("nestW", flowgraph.AllOf, &nestC{}).
+		ConnectSources(duckW).ConnectResults(duckImport00)
 
 	duckExport00 := fg.NewStream("duckExport00")
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
@@ -1494,7 +1505,7 @@ func TestDuckPondC(t *testing.T) {
 	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{}).
 		SetNumSource(1).SetNumResult(1)
 	pond00.Loop()
-	fg.NewHub("steer00", flowgraph.AllOf, &steerSE{}).
+	fg.NewHub("steer00", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckExport00).ConnectResults(duckW, duckImport10)
 
 	duckExport10 := fg.NewStream("duckExport10")
@@ -1503,13 +1514,11 @@ func TestDuckPondC(t *testing.T) {
 	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{}).
 		SetNumSource(1).SetNumResult(1)
 	pond10.Loop()
-	fg.NewHub("steer10", flowgraph.AllOf, &steerSE{}).
+	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckExport10).ConnectResults(duckImport00, duckE)
 
-	fg.NewHub("nestE", flowgraph.Retrieve, &nest{}).
-		ConnectResults(duckExport10)
-	fg.NewHub("sinkE", flowgraph.Sink, &sink{}).
-		ConnectSources(duckE)
+	fg.NewHub("nestE", flowgraph.AllOf, &nestC{}).
+		ConnectSources(duckE).ConnectResults(duckImport10)
 
 	fg.Run()
 
