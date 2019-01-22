@@ -5,7 +5,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"math/rand"
@@ -32,11 +31,7 @@ func max(a, b int) int {
 /*=====================================================================*/
 
 func TestMain(m *testing.M) {
-	var flatdotDef interface{} = false
-	flatdotPtr := flag.Bool("flatdot", flatdotDef.(bool), "flatten dot output")
-	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
-	fgbase.TraceStyle = fgbase.New
-	flowgraph.FlatDot = *flatdotPtr
+	flowgraph.ParseFlags()
 	os.Exit(m.Run())
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/vectaport/fgbase"
 
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 )
@@ -15,7 +16,14 @@ import (
 // data to follow.
 var EOF = errors.New("EOF")
 
-var FlatDot bool
+// ParseFlags parses the command line flags for this package
+var flatDot = false
+
+func ParseFlags() {
+	flag.BoolVar(&flatDot, "flatdot", false, "flatten dot output")
+	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
+	fgbase.TraceStyle = fgbase.New
+}
 
 // Flowgraph interface for flowgraphs assembled out of hubs and streams
 type Flowgraph interface {
@@ -427,12 +435,12 @@ func checkExternalStream(fg Flowgraph, s Stream) {
 
 // flatten connects GraphHub external ports to internal dangling streams
 func (fg *flowgraph) flatten() []*fgbase.Node {
-	if FlatDot {
+	if flatDot {
 		fgbase.DotOutput = true
 	}
 	nodes := make([]*fgbase.Node, 0)
 	for _, v := range fg.hubs {
-		if gv, ok := v.(GraphHub); ok && (FlatDot || !fgbase.DotOutput) {
+		if gv, ok := v.(GraphHub); ok && (flatDot || !fgbase.DotOutput) {
 			nodes = gv.(*graphhub).flatten(nodes)
 			if fgbase.DotOutput {
 				nodes = append(nodes, v.Base().(*fgbase.Node))
