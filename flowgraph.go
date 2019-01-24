@@ -146,7 +146,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 		if _, ok := init.(Retriever); !ok {
 			panic(fmt.Sprintf("Hub with Retrieve code not given Retriever for init %T(%+v)", init, init))
 		}
-		n = fgbase.MakeNode(name, nil, nil, nil, retrieveFire)
+		n = fgbase.MakeNode(name, nil, nil, retrieveRdy, retrieveFire)
 		init = &fgRetriever{fg, init.(Retriever)}
 
 	case Transmit:
@@ -504,12 +504,22 @@ func allOfFire(n *fgbase.Node) error {
 }
 
 func oneOfRdy(n *fgbase.Node) bool {
+	r := false
 	for _, v := range n.Srcs {
 		if v.SrcRdy(n) {
-			return true
+			r = true
+			break
 		}
 	}
-	return false
+	if !r {
+		return false
+	}
+	for _, v := range n.Dsts {
+		if !v.DstRdy(n) {
+			return false
+		}
+	}
+	return true
 }
 
 func oneOfFire(n *fgbase.Node) error {
@@ -546,6 +556,12 @@ func oneOfFire(n *fgbase.Node) error {
 
 }
 
+func retrieveRdy(n *fgbase.Node) bool {
+	r := n.DefaultRdyFunc()
+	n.Tracef("Retriever Rdy %t\n", r)
+	return r
+}
+
 func retrieveFire(n *fgbase.Node) error {
 	retriever := n.Aux.(*fgRetriever).r
 	fg := n.Aux.(*fgRetriever).fg
@@ -567,6 +583,13 @@ type waitStruct struct {
 
 func waitRdy(n *fgbase.Node) bool {
 	ns := n.SrcCnt()
+	nr := n.DstCnt()
+	for i := 0; i < nr; i++ {
+		if !n.Dsts[i].DstRdy(n) {
+			return false
+		}
+	}
+
 	ws, init := n.Aux.(waitStruct)
 	if !init {
 		ws = waitStruct{Request: fgbase.ChannelSize - 1}

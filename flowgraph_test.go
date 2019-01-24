@@ -4,10 +4,12 @@ import (
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
 
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"os"
 	"sync/atomic"
 	"testing"
@@ -1450,12 +1452,61 @@ sinkE(duckE)()
 
 */
 
-type nestC struct{}
+func dialPort(hostPort string) (conn net.Conn) {
+	conn, err := net.Dial("tcp", hostPort)
+	if err != nil {
+		fgbase.StderrLog.Printf("%v\n", err)
+		return
+	}
+	return
+}
 
-func (n *nestC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func buffConn(hostPort string) (rw *bufio.ReadWriter) {
+	if fgbase.DotOutput {
+		return nil
+	}
+	conn := dialPort(hostPort)
+	reader := bufio.NewReader(conn)
+	writer := bufio.NewWriter(conn)
+	return bufio.NewReadWriter(reader, writer)
+}
+
+type nestC struct {
+	rw   *bufio.ReadWriter
+	init bool
+}
+
+var delta = 0
+
+func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
 	atomic.AddInt64(&duckCnt, 1)
-	result = []interface{}{d}
+	result = d
+
+	// handle ack by new-line
+	if n.init {
+		// h.Tracef("LOOKING FOR ACK BACK FROM REMOTE\n")
+		_, err := n.rw.ReadString('\n')
+		if err != nil {
+			h.LogError("%v", err)
+		}
+		// h.Tracef("ACK BACK FROM REMOTE:  %s\n", s)
+
+	} else {
+		n.init = true
+	}
+
+	// write data
+	s := fmt.Sprintf("global(duck%d)=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");move(%d %d);handles();update\n", d.ID, rand.Intn(200)-100+delta, rand.Intn(200)-100+delta)
+	delta++
+	// h.Tracef("WRITING DATA TO REMOTE:  %s\n", s)
+	_, err = n.rw.WriteString(s)
+	if err != nil {
+		h.LogError("%v", err)
+	}
+	n.rw.Flush()
+	// h.Tracef("DATA SENT TO REMOTE\n")
+
 	return
 }
 
@@ -1477,6 +1528,28 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	return
 }
 
+type sinkC struct {
+	rw   *bufio.ReadWriter
+	init bool
+}
+
+func (k *sinkC) Sink(source []interface{}) {
+	fmt.Printf("// Duck %+v leaving pond\n", source[0])
+
+	// handle ack by new-line
+	if k.init {
+		k.rw.ReadString('\n')
+	} else {
+		k.init = true
+	}
+
+	// write data
+	s := fmt.Sprintf("delete(duck%d);update\n", source[0].(duck).ID)
+	k.rw.WriteString(s)
+	k.rw.Flush()
+
+}
+
 func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
@@ -1487,12 +1560,21 @@ func TestDuckPondC(t *testing.T) {
 	fg := flowgraph.New("TestDuckPondC")
 
 	duckImport00 := fg.NewStream("duckImport00")
-	duckImport10 := fg.NewStream("duckImport10")
-	duckW := fg.NewStream("duckW").Init(1)
-	duckE := fg.NewStream("duckE").Init(1)
+	whatTheDuck := fg.NewStream("whatTheDuck")
+	duckW := fg.NewStream("duckW").Init(duck{duckCnt, 0, "W", false})
+	atomic.AddInt64(&duckCnt, 1)
 
-	fg.NewHub("nestW", flowgraph.AllOf, &nestC{}).
-		ConnectSources(duckW).ConnectResults(duckImport00)
+	duckImport10 := fg.NewStream("duckImport10")
+	duckWait10 := fg.NewStream("duckWait10")
+	duckE := fg.NewStream("duckE").Init(duck{duckCnt, 0, "E", false})
+	atomic.AddInt64(&duckCnt, 1)
+
+	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002")}).
+		ConnectResults(whatTheDuck)
+	fg.NewHub("waitW", flowgraph.Wait, nil).
+		ConnectSources(whatTheDuck, duckW).ConnectResults(duckImport00)
+	fg.NewHub("sinkW", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
+		ConnectSources(duckW)
 
 	duckExport00 := fg.NewStream("duckExport00")
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
@@ -1512,8 +1594,12 @@ func TestDuckPondC(t *testing.T) {
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckExport10).ConnectResults(duckImport00, duckE)
 
-	fg.NewHub("nestE", flowgraph.AllOf, &nestC{}).
-		ConnectSources(duckE).ConnectResults(duckImport10)
+	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002")}).
+		ConnectResults(duckWait10)
+	fg.NewHub("waitE", flowgraph.Wait, nil).
+		ConnectSources(duckWait10, duckE).ConnectResults(duckImport10)
+	fg.NewHub("sinkE", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
+		ConnectSources(duckE)
 
 	fg.Run()
 
