@@ -1454,9 +1454,13 @@ sinkE(duckE)()
 
 func dialPort(hostPort string) (conn net.Conn) {
 	conn, err := net.Dial("tcp", hostPort)
+	if conn == nil {
+		fgbase.StderrLog.Printf("Connection to %s refused\n", hostPort)
+		os.Exit(1)
+	}
 	if err != nil {
 		fgbase.StderrLog.Printf("%v\n", err)
-		return
+		os.Exit(1)
 	}
 	return
 }
@@ -1471,12 +1475,25 @@ func buffConn(hostPort string) (rw *bufio.ReadWriter) {
 	return bufio.NewReadWriter(reader, writer)
 }
 
+func readNewLineAck(h flowgraph.Hub, rw *bufio.ReadWriter) {
+	_, err := rw.ReadString('\n')
+	if err != nil {
+		h.LogError("%v", err)
+	}
+}
+
+func writeCommand(h flowgraph.Hub, rw *bufio.ReadWriter, cmd string) {
+	_, err := rw.WriteString(cmd)
+	if err != nil {
+		h.LogError("%v", err)
+	}
+	rw.Flush()
+}
+
 type nestC struct {
 	rw   *bufio.ReadWriter
 	init bool
 }
-
-var delta = 0
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
@@ -1485,32 +1502,23 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	// handle ack by new-line
 	if n.init {
-		// h.Tracef("LOOKING FOR ACK BACK FROM REMOTE\n")
-		_, err := n.rw.ReadString('\n')
-		if err != nil {
-			h.LogError("%v", err)
-		}
-		// h.Tracef("ACK BACK FROM REMOTE:  %s\n", s)
-
+		readNewLineAck(h, n.rw)
 	} else {
 		n.init = true
 	}
 
-	// write data
-	s := fmt.Sprintf("global(duck%d)=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");move(%d %d);handles();update\n", d.ID, rand.Intn(200)-100+delta, rand.Intn(200)-100+delta)
-	delta++
-	// h.Tracef("WRITING DATA TO REMOTE:  %s\n", s)
-	_, err = n.rw.WriteString(s)
-	if err != nil {
-		h.LogError("%v", err)
-	}
-	n.rw.Flush()
-	// h.Tracef("DATA SENT TO REMOTE\n")
+	// write command
+	s := fmt.Sprintf(
+		"global(duckcnt)=duckcnt+1;dal=list(:attr);dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");dal.dx=%d;dal.dy=%d;dal.nsteps=60;at(ducks %d :set dal);update\n",
+		rand.Intn(30)-15, rand.Intn(30)-15, d.ID)
+	writeCommand(h, n.rw, s)
 
 	return
 }
 
 type swimC struct {
+	rw    *bufio.ReadWriter
+	init  bool
 	Count int
 }
 
@@ -1525,6 +1533,20 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	}
 	d.Loops++
 	result = []interface{}{d}
+
+	/*
+		// handle ack by new-line
+		if s.init {
+			readNewLineAck(h, s.rw)
+		} else {
+			s.init = true
+		}
+
+		// write command
+		c := fmt.Sprintf("acknowledgebox(\"%s:  READY TO SWIM for %d\")", h.Name(), d.ID)
+		writeCommand(h, s.rw, c)
+	*/
+
 	return
 }
 
@@ -1534,7 +1556,11 @@ type sinkC struct {
 }
 
 func (k *sinkC) Sink(source []interface{}) {
-	fmt.Printf("// Duck %+v leaving pond\n", source[0])
+
+	if source[0].(duck).ID < 0 {
+		return
+	}
+	// fmt.Printf("// Duck %+v leaving pond\n", source[0])
 
 	// handle ack by new-line
 	if k.init {
@@ -1543,8 +1569,8 @@ func (k *sinkC) Sink(source []interface{}) {
 		k.init = true
 	}
 
-	// write data
-	s := fmt.Sprintf("delete(duck%d);update\n", source[0].(duck).ID)
+	// write comman
+	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;delete(at(ducks %d).duck);at(ducks %d :set nil);update\n", source[0].(duck).ID, source[0].(duck).ID)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
@@ -1554,20 +1580,18 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 30
+	fgbase.RunTime = time.Second * 60
 	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")
 
 	duckImport00 := fg.NewStream("duckImport00")
 	whatTheDuck := fg.NewStream("whatTheDuck")
-	duckW := fg.NewStream("duckW").Init(duck{duckCnt, 0, "W", false})
-	atomic.AddInt64(&duckCnt, 1)
+	duckW := fg.NewStream("duckW").Init(duck{-2, 0, "W", false})
 
 	duckImport10 := fg.NewStream("duckImport10")
 	duckWait10 := fg.NewStream("duckWait10")
-	duckE := fg.NewStream("duckE").Init(duck{duckCnt, 0, "E", false})
-	atomic.AddInt64(&duckCnt, 1)
+	duckE := fg.NewStream("duckE").Init(duck{-1, 0, "E", false})
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002")}).
 		ConnectResults(whatTheDuck)
@@ -1579,7 +1603,7 @@ func TestDuckPondC(t *testing.T) {
 	duckExport00 := fg.NewStream("duckExport00")
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
 	pond00.ConnectSources(duckImport00).ConnectResults(duckExport00)
-	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{}).
+	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
 		SetNumSource(1).SetNumResult(1)
 	pond00.Loop()
 	fg.NewHub("steer00", flowgraph.AllOf, &steerDuck{}).
@@ -1588,7 +1612,7 @@ func TestDuckPondC(t *testing.T) {
 	duckExport10 := fg.NewStream("duckExport10")
 	pond10 := fg.NewGraphHub("pond10", flowgraph.While)
 	pond10.ConnectSources(duckImport10).ConnectResults(duckExport10)
-	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{}).
+	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
 		SetNumSource(1).SetNumResult(1)
 	pond10.Loop()
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).

@@ -593,6 +593,7 @@ func waitRdy(n *fgbase.Node) bool {
 	ws, init := n.Aux.(waitStruct)
 	if !init {
 		ws = waitStruct{Request: fgbase.ChannelSize - 1}
+		n.Aux = ws
 		elocal := n.Srcs[ns-1]
 		usnode := elocal.SrcNode(0)
 		for i := 0; i < len(usnode.Dsts); i++ {
@@ -601,7 +602,6 @@ func waitRdy(n *fgbase.Node) bool {
 				break
 			}
 		}
-		n.Aux = ws
 	}
 
 	for i := 0; i < ns-1; i++ {
@@ -615,7 +615,6 @@ func waitRdy(n *fgbase.Node) bool {
 		n.Aux = ws
 		return true
 	}
-	n.Aux = ws
 
 	rdy := n.Srcs[ns-1].SrcRdy(n)
 	if rdy {
