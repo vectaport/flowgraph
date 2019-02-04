@@ -558,7 +558,6 @@ func oneOfFire(n *fgbase.Node) error {
 
 func retrieveRdy(n *fgbase.Node) bool {
 	r := n.DefaultRdyFunc()
-	n.Tracef("Retriever Rdy %t\n", r)
 	return r
 }
 
@@ -598,7 +597,7 @@ func waitRdy(n *fgbase.Node) bool {
 		usnode := elocal.SrcNode(0)
 		for i := 0; i < len(usnode.Dsts); i++ {
 			if usnode.Dsts[i].Same(elocal) {
-				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize
+				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize-1
 				break
 			}
 		}
@@ -652,7 +651,7 @@ func crossRdy(n *fgbase.Node) bool {
 	}
 
 	numrank := ranksz(n)
-
+	
 	f := func(offset int) bool {
 		for i := 0; i < numrank; i++ {
 			if !n.Srcs[i+offset].SrcRdy(n) {
@@ -692,6 +691,14 @@ func crossRdy(n *fgbase.Node) bool {
 				cs.in = 1
 			}
 		}
+	        notin := 0
+	        if cs.in == 0 {
+		        notin = numrank
+		}
+		for i := 0; i < numrank; i++ {
+			n.Srcs[i+notin].Flow = false
+		}
+		
 		cs.out = steerDir()
 		rdy := n.Dsts[cs.out].DstRdy(n)
 		if false && rdy {
@@ -700,10 +707,12 @@ func crossRdy(n *fgbase.Node) bool {
 		n.Aux = cs
 		return rdy
 	}
+
 	return false
 }
 
 func crossFire(n *fgbase.Node) error {
+	
 	numrank := ranksz(n)
 	cs := n.Aux.(crossStruct)
 

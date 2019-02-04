@@ -1368,7 +1368,7 @@ func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(100) >= 99
+	d.exit = rand.Intn(1000) >= 999
 	if d.exit {
 		s.Count--
 	}
@@ -1509,8 +1509,18 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	// write command
 	s := fmt.Sprintf(
-		"global(duckcnt)=duckcnt+1;dal=list(:attr);dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");dal.dx=%d;dal.dy=%d;dal.nsteps=60;at(ducks %d :set dal);update\n",
-		rand.Intn(30)-15, rand.Intn(30)-15, d.ID)
+ 	     "global(duckcnt)=duckcnt+1;" +
+			"dal=list(:attr);" +
+			"dal.ID=%d;" +
+			"dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");" +
+			"dal.dx=%d;" +
+			"dal.dy=%d;" +
+			"dal.nsteps=100;" +
+			"g=text(dtos(gtod(dal.duck 0,0)) \"%02d\");" +
+			"dal.duck=growgroup(dal.duck g);" +
+			"at(ducks %d :set dal);" +
+			"update\n",
+	        d.ID, rand.Intn(30)-15, rand.Intn(30)-15, d.ID, d.ID)
 	writeCommand(h, n.rw, s)
 
 	return
@@ -1570,7 +1580,7 @@ func (k *sinkC) Sink(source []interface{}) {
 	}
 
 	// write comman
-	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;delete(at(ducks %d).duck);at(ducks %d :set nil);update\n", source[0].(duck).ID, source[0].(duck).ID)
+	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;at(ducks %d).nsteps=0;delete(at(ducks %d).duck);at(ducks %d :set nil);update\n", source[0].(duck).ID, source[0].(duck).ID, source[0].(duck).ID)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
@@ -1580,7 +1590,7 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 60
+	fgbase.RunTime = time.Second * 10
 	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")
