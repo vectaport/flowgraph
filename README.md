@@ -1,5 +1,17 @@
 # flowgraph
 
+### Getting Started
+
+```
+go get -u github.com/vectaport/flowgraph
+go test
+```
+
+### Links
+
+* [![GoDoc](https://godoc.org/github.com/vectaport/flowgraph?status.svg)](https://godoc.org/github.com/vectaport/flowgraph)
+* [Wiki](https://github.com/vectaport/flowgraph/wiki)
+
 ### Overview
 
 Flowgraphs are built out of hubs interconnected by streams. The hubs are implemented with goroutines that use select to wait on incoming data or back-pressure handshakes. The data and handshakes travel on streams implemented with channels of empty interfaces for forward flow (interface{}) and channels of empty structs for back-pressure (struct{}).
@@ -10,15 +22,3 @@ The package allows for correct-by-construction dataflow systems that avoid deadl
 
 All of this is made available with an API designed to directly underlie a future HDL for a flowgraph language.
 
-### Getting Started
-
-```
-go get -u github.com/vectaport/flowgraph
-go test
-```
-
-
-### Links
-
-* [![GoDoc](https://godoc.org/github.com/vectaport/flowgraph?status.svg)](https://godoc.org/github.com/vectaport/flowgraph)
-* [Wiki](https://github.com/vectaport/flowgraph/wiki)
