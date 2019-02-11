@@ -129,9 +129,17 @@ type fgRetriever struct {
 	r  Retriever
 }
 
+func (f *fgRetriever) String() string {
+	return fgbase.String(f.r)
+}
+
 type fgTransmitter struct {
 	fg *flowgraph
 	t  Transmitter
+}
+
+func (f *fgTransmitter) String() string {
+	return fgbase.String(f.t)
 }
 
 // NewHub returns a new unconnected hub
@@ -597,7 +605,7 @@ func waitRdy(n *fgbase.Node) bool {
 		usnode := elocal.SrcNode(0)
 		for i := 0; i < len(usnode.Dsts); i++ {
 			if usnode.Dsts[i].Same(elocal) {
-				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize-1
+				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize - 1
 				break
 			}
 		}
@@ -610,7 +618,7 @@ func waitRdy(n *fgbase.Node) bool {
 	}
 	if ws.Request > 0 {
 		ws.Request--
-		n.Srcs[ns-1].Flow = false
+		// n.Srcs[ns-1].Flow = false
 		n.Aux = ws
 		return true
 	}
@@ -651,7 +659,7 @@ func crossRdy(n *fgbase.Node) bool {
 	}
 
 	numrank := ranksz(n)
-	
+
 	f := func(offset int) bool {
 		for i := 0; i < numrank; i++ {
 			if !n.Srcs[i+offset].SrcRdy(n) {
@@ -691,14 +699,14 @@ func crossRdy(n *fgbase.Node) bool {
 				cs.in = 1
 			}
 		}
-	        notin := 0
-	        if cs.in == 0 {
-		        notin = numrank
+		notin := 0
+		if cs.in == 0 {
+			notin = numrank
 		}
 		for i := 0; i < numrank; i++ {
 			n.Srcs[i+notin].Flow = false
 		}
-		
+
 		cs.out = steerDir()
 		rdy := n.Dsts[cs.out].DstRdy(n)
 		if false && rdy {
@@ -712,7 +720,7 @@ func crossRdy(n *fgbase.Node) bool {
 }
 
 func crossFire(n *fgbase.Node) error {
-	
+
 	numrank := ranksz(n)
 	cs := n.Aux.(crossStruct)
 

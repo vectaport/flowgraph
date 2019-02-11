@@ -320,7 +320,7 @@ func TestAdd(t *testing.T) {
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second / 100
 	fgbase.TracePorts = true
-	fgbase.TraceLevel = fgbase.V
+	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestAdd")
 
@@ -347,6 +347,85 @@ func TestAdd(t *testing.T) {
 	fgbase.TracePorts = oldTracePorts
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestAdd\n")
+}
+
+/*=====================================================================*/
+
+type rand1 struct{}
+
+func (r *rand1) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
+	return rand.Float64(), nil
+}
+
+type euclid struct{}
+
+func (e *euclid) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+	result = make([]interface{}, 1)
+	a := source[0].(float64)
+	b := source[1].(float64)
+	x := a*a + b*b
+	result[0] = x <= 1.0
+	return
+}
+
+type piCalc struct {
+	cnt int
+	sum int
+	Pi  float64
+}
+
+func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
+	p.cnt++
+
+	t := source.(bool)
+	if t {
+		p.sum++
+	}
+
+	p.Pi = 4.0 * float64(p.sum) / float64(p.cnt)
+
+	if p.cnt > 1 {
+		fmt.Printf("\b\b\b\b\b\b\b\b")
+	}
+	fmt.Printf("%8.6f", p.Pi)
+
+	return nil
+}
+
+func TestPi(t *testing.T) {
+	fmt.Printf("BEGIN:  TestPi\n")
+	oldRunTime := fgbase.RunTime
+	oldTracePorts := fgbase.TracePorts
+	oldTraceLevel := fgbase.TraceLevel
+	fgbase.RunTime = time.Second * 100
+	fgbase.TracePorts = true
+	fgbase.TraceLevel = fgbase.V
+
+	fg := flowgraph.New("TestPi")
+
+	randA := fg.NewHub("randA", flowgraph.Retrieve, &rand1{}).
+		SetResultNames("X")
+
+	randB := fg.NewHub("randB", flowgraph.Retrieve, &rand1{}).
+		SetResultNames("X")
+
+	edist := fg.NewHub("edist", flowgraph.AllOf, &euclid{}).
+		SetSourceNames("A", "B").
+		SetResultNames("X")
+
+	pi := fg.NewHub("pi", flowgraph.Transmit, &piCalc{}).
+		SetSourceNames("A")
+
+	fg.Connect(randA, "X", edist, "A")
+	fg.Connect(randB, "X", edist, "B")
+	fg.Connect(edist, "X", pi, "A")
+
+	fg.Run()
+
+	fgbase.RunTime = oldRunTime
+	fgbase.TracePorts = oldTracePorts
+	fgbase.TraceLevel = oldTraceLevel
+	fmt.Printf("END:    TestPi\n")
 }
 
 /*=====================================================================*/
@@ -1268,7 +1347,7 @@ sink(oldduck)()
 
 */
 
-var duckCnt int64 = 0
+var duckCnt int64 = -1
 
 type duck struct {
 	ID    int64
@@ -1284,8 +1363,8 @@ func (d duck) Break() bool {
 type nest struct{}
 
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
-	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
-	atomic.AddInt64(&duckCnt, 1)
+	dc := atomic.AddInt64(&duckCnt, 1)
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
 	return d, nil
 }
 
@@ -1368,7 +1447,7 @@ func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(1000) >= 999
+	d.exit = rand.Intn(100) >= 99
 	if d.exit {
 		s.Count--
 	}
@@ -1491,44 +1570,62 @@ func writeCommand(h flowgraph.Hub, rw *bufio.ReadWriter, cmd string) {
 }
 
 type nestC struct {
-	rw   *bufio.ReadWriter
-	init bool
+	rw  *bufio.ReadWriter
+	loc string
 }
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
-	d := duck{duckCnt, 0, h.Name()[len(h.Name())-1:], false}
-	atomic.AddInt64(&duckCnt, 1)
+	dc := atomic.AddInt64(&duckCnt, 1)
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
 	result = d
 
-	// handle ack by new-line
-	if n.init {
-		readNewLineAck(h, n.rw)
-	} else {
-		n.init = true
-	}
+	animstr := func() string {
+		dx, dy := 0, 0
+		if n.loc == "W" {
+			dx = 4
+		} else {
+			dx = -4
+		}
+		return fmt.Sprintf("dal.dx=%d;dal.dy=%d;dal.nsteps=75;", dx, dy)
+	}()
+
+	flipstr := func() string {
+		if n.loc == "W" {
+			return "fliph();"
+		}
+		return ""
+	}()
+
+	movestr := func() string {
+		if n.loc == "W" {
+			return "move(-520 0);"
+		}
+		return "move(520 0);"
+	}()
 
 	// write command
-	s := fmt.Sprintf(
- 	     "global(duckcnt)=duckcnt+1;" +
-			"dal=list(:attr);" +
-			"dal.ID=%d;" +
-			"dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");" +
-			"dal.dx=%d;" +
-			"dal.dy=%d;" +
-			"dal.nsteps=100;" +
-			"g=text(dtos(gtod(dal.duck 0,0)) \"%02d\");" +
-			"dal.duck=growgroup(dal.duck g);" +
-			"at(ducks %d :set dal);" +
-			"update\n",
-	        d.ID, rand.Intn(30)-15, rand.Intn(30)-15, d.ID, d.ID)
+	s := fmt.Sprintf("global(duckcnt)=duckcnt+1;"+
+		"dal=list(:attr);"+
+		"dal.ID=%d;"+
+		"dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");"+
+		flipstr+
+		"g=text(dtos(gtod(dal.duck 0,0)) \"%02d\");"+
+		"dal.duck=growgroup(dal.duck g);"+
+		animstr+
+		"at(ducks %d :set dal);"+
+		movestr+
+		"update\n",
+		d.ID, d.ID, d.ID)
 	writeCommand(h, n.rw, s)
+
+	// handle ack by new-line
+	readNewLineAck(h, n.rw)
 
 	return
 }
 
 type swimC struct {
 	rw    *bufio.ReadWriter
-	init  bool
 	Count int
 }
 
@@ -1537,32 +1634,25 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(100) >= 99
+	d.exit = rand.Intn(1000) >= 999
 	if d.exit {
 		s.Count--
 	}
 	d.Loops++
 	result = []interface{}{d}
 
-	/*
-		// handle ack by new-line
-		if s.init {
-			readNewLineAck(h, s.rw)
-		} else {
-			s.init = true
-		}
+	// write command
+	cmd := fmt.Sprintf("fp=open(\"pond.log\" \"a\");dal=at(ducks %d);dal.FIX=1;dal.nsteps=100;dal.dx=%d;dal.dy=%d;print(dal :prefix \"SWIM:  \" :file fp);close(fp)\n", source[0].(duck).ID, 1, 1)
+	writeCommand(h, s.rw, cmd)
 
-		// write command
-		c := fmt.Sprintf("acknowledgebox(\"%s:  READY TO SWIM for %d\")", h.Name(), d.ID)
-		writeCommand(h, s.rw, c)
-	*/
+	// handle ack by new-line
+	readNewLineAck(h, s.rw)
 
 	return
 }
 
 type sinkC struct {
-	rw   *bufio.ReadWriter
-	init bool
+	rw *bufio.ReadWriter
 }
 
 func (k *sinkC) Sink(source []interface{}) {
@@ -1572,25 +1662,21 @@ func (k *sinkC) Sink(source []interface{}) {
 	}
 	// fmt.Printf("// Duck %+v leaving pond\n", source[0])
 
-	// handle ack by new-line
-	if k.init {
-		k.rw.ReadString('\n')
-	} else {
-		k.init = true
-	}
-
-	// write comman
+	// write command
+	return
 	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;at(ducks %d).nsteps=0;delete(at(ducks %d).duck);at(ducks %d :set nil);update\n", source[0].(duck).ID, source[0].(duck).ID, source[0].(duck).ID)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
+	// handle ack by new-line
+	k.rw.ReadString('\n')
 }
 
 func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 10
+	fgbase.RunTime = time.Second * 20
 	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")
@@ -1603,7 +1689,7 @@ func TestDuckPondC(t *testing.T) {
 	duckWait10 := fg.NewStream("duckWait10")
 	duckE := fg.NewStream("duckE").Init(duck{-1, 0, "E", false})
 
-	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002")}).
+	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
 		ConnectResults(whatTheDuck)
 	fg.NewHub("waitW", flowgraph.Wait, nil).
 		ConnectSources(whatTheDuck, duckW).ConnectResults(duckImport00)
@@ -1628,7 +1714,7 @@ func TestDuckPondC(t *testing.T) {
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckExport10).ConnectResults(duckImport00, duckE)
 
-	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002")}).
+	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "E"}).
 		ConnectResults(duckWait10)
 	fg.NewHub("waitE", flowgraph.Wait, nil).
 		ConnectSources(duckWait10, duckE).ConnectResults(duckImport10)

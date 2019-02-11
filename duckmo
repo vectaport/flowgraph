@@ -1,0 +1,60 @@
+#! /usr/bin/env comterp_run
+#
+# duckmo  set up to animate ducks moving
+#
+
+/* command line help */
+if(arg(1)=="help" || arg(1)=="-h" || /*arg(1)==nil ||*/ arg(1)=="?" ||
+  arg(1)=="-help" || arg(1)=="--help" || arg(1)=="-?" :then
+  
+    print("duckmo  set up to animate ducks moving\n");
+    print("Usage:  duckmo --prequit\n\n");
+    print("--prequit\tonly close previous copy of comdraw\n");
+    exit)
+
+prequit_flag=false
+dummy2_flag=false
+for(i=1 i<narg() i++
+  switch(substr(arg(i) 2 :after)
+    :prequit prequit_flag=true
+    :dummmy2 dummy2_flag=true;if(substr(arg(i+1) 2)=="--" :then continue);i++;dummy2_val=arg(i)
+    :default print("duckmo:  Unknown argument %s\n" arg(i) :err)))
+
+
+sock=socket("localhost" 20002)
+
+if(prequit_flag :then
+  remote(sock "exit\n");
+  exit)
+
+cmdstr =
+" \
+global(ducks)=list();global(duckcnt)=0;handles(false); \
+import(\"/Users/scott/Pictures/Sprites/DuckNest.drs\"); move(-500 0);\
+import(\"/Users/scott/Pictures/Sprites/DuckNest.drs\"); move(500 0);\
+import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(-200 0);\
+import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(200 0);\
+tock=func( \
+  fp=open(\"tock.log\" \"a\"); \
+  for(ii=0 ii<size(ducks) ii=ii+1 \
+    dal = at(ducks ii); \
+    if(dal == nil :then continue); \
+    if(dal.duck != nil && dal.nsteps>0 :then \
+      tr=trans(dal.duck); \
+      if(tr==nil :then tr=1.,0.,0.,1.,0.,0.); \
+      at(tr 4 :set at(tr 4)+dal.dx); \
+      at(tr 5 :set at(tr 5)+dal.dy); \
+      dal.nsteps=dal.nsteps-1; \
+      dal.tick = t; \
+      if(dal.nsteps==0 :then print(dal :prefix \"duck done swimming:  \" :file fp)); \
+      trans(dal.duck tr))); \
+  close(fp); \
+  update;\"TOCK\" \
+)"
+
+print(cmdstr :prefix "")
+remote(sock cmdstr)
+
+i=0
+while(1
+  print(remote(sock print("tock(:t %d)" i :str)));print("\n");usleep(1+33333*0);i++)

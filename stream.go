@@ -18,7 +18,7 @@ type Stream interface {
 	// Upstream returns upstream hub by index
 	Upstream(i int) Hub
 
-	// Downstream returns upstream hub by index
+	// Downstream returns downstream hub by index
 	Downstream(i int) Hub
 
 	// NumUpstream returns the number of upstream hubs
