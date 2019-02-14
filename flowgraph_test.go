@@ -351,15 +351,19 @@ func TestAdd(t *testing.T) {
 
 /*=====================================================================*/
 
-type rand1 struct{}
+type randOne struct{}
 
-func (r *rand1) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
+func (r *randOne) Retrieve(hub flowgraph.Hub) (
+	result interface{}, err error) {
+
 	return rand.Float64(), nil
 }
 
-type euclid struct{}
+type checkSumSquare struct{}
 
-func (e *euclid) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (e *checkSumSquare) Transform(n flowgraph.Hub, source []interface{}) (
+	result []interface{}, err error) {
+
 	result = make([]interface{}, 1)
 	a := source[0].(float64)
 	b := source[1].(float64)
@@ -384,6 +388,8 @@ func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
 
 	p.Pi = 4.0 * float64(p.sum) / float64(p.cnt)
 
+	return nil
+
 	if p.cnt > 1 {
 		fmt.Printf("\b\b\b\b\b\b\b\b")
 	}
@@ -397,28 +403,28 @@ func TestPi(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTracePorts := fgbase.TracePorts
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 100
+	fgbase.RunTime = time.Second * 10
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestPi")
 
-	randA := fg.NewHub("randA", flowgraph.Retrieve, &rand1{}).
+	randA := fg.NewHub("randA", flowgraph.Retrieve, &randOne{}).
 		SetResultNames("X")
 
-	randB := fg.NewHub("randB", flowgraph.Retrieve, &rand1{}).
+	randB := fg.NewHub("randB", flowgraph.Retrieve, &randOne{}).
 		SetResultNames("X")
 
-	edist := fg.NewHub("edist", flowgraph.AllOf, &euclid{}).
+	check := fg.NewHub("check", flowgraph.AllOf, &checkSumSquare{}).
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 
 	pi := fg.NewHub("pi", flowgraph.Transmit, &piCalc{}).
 		SetSourceNames("A")
 
-	fg.Connect(randA, "X", edist, "A")
-	fg.Connect(randB, "X", edist, "B")
-	fg.Connect(edist, "X", pi, "A")
+	fg.Connect(randA, "X", check, "A")
+	fg.Connect(randB, "X", check, "B")
+	fg.Connect(check, "X", pi, "A")
 
 	fg.Run()
 
@@ -499,7 +505,7 @@ func TestLineEq(t *testing.T) {
 
 /* TestIterator1 Flowgraph HDL *
 
-tbten()(.X(firstval))
+ten()(.X(firstval))
 wait(.A(firstval),.B(lastval=0))(.X(oldval))
 sub(.A(oldval),.B(1))(.X(newval))
 steer(.A(newval))(.X(lastval),.Y(oldval))
@@ -507,9 +513,9 @@ sink(.A(lastval))()
 
 */
 
-type tbten struct{}
+type ten struct{}
 
-func (t *tbten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 	return 10, nil
 }
 
@@ -535,7 +541,7 @@ func TestIterator1(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator1")
 
-	tbten := fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	ten := fg.NewHub("ten", flowgraph.Constant, 10).
 		SetResultNames("X")
 
 	wait := fg.NewHub("wait", flowgraph.Wait, true).
@@ -556,7 +562,7 @@ func TestIterator1(t *testing.T) {
 	sink := fg.NewHub("sink", flowgraph.Sink, &sinkIterator1{t}).
 		SetSourceNames("A")
 
-	fg.Connect(tbten, "X", wait, "A").SetName("firstval")
+	fg.Connect(ten, "X", wait, "A").SetName("firstval")
 	fg.ConnectInit(steer, "X", wait, "B", 0).SetName("lastval")
 
 	fg.Connect(wait, "X", sub, "A").SetName("oldval")
@@ -619,7 +625,7 @@ func TestIterator2(t *testing.T) {
 	oneval := fg.NewStream("oneval").Const(1)
 	newval := fg.NewStream("newval")
 
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Constant, 10).
 		ConnectResults(firstval)
 
 	fg.NewHub("wait", flowgraph.Wait, true).
@@ -649,7 +655,7 @@ func TestIterator2(t *testing.T) {
 
 /* TestIterator3 Flowgraph HDL *
 
-tbten()(firstval)
+ten()(firstval)
 while(firstval)(lastval) {
         sub(firstval, 1)(lastval)
 }
@@ -681,7 +687,7 @@ func TestIterator3(t *testing.T) {
 	firstval := fg.NewStream("firstval")
 	lastval := fg.NewStream("lastval")
 
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
 
 	while := fg.NewGraphHub("while", flowgraph.While)
@@ -708,13 +714,13 @@ func TestIterator3(t *testing.T) {
 
 /* TestIterator4 Flowgraph HDL *
 
-tbten()(firstval1)
-while(firstval1)(lastval1) {
-        sub(firstval1, 1)(lastval1)
+ten()(firstval1)
+while1(firstval1)(lastval1) {
+        sub1(firstval1, 1)(lastval1)
 }
 wait(10,lastval1)(firstval2)
-while(firstval2)(lastval2) {
-        sub(firstval2, 1)(lastval2)
+while2(firstval2)(lastval2) {
+        sub2(firstval2, 1)(lastval2)
 }
 sink(lastval2)()
 
@@ -730,7 +736,7 @@ func TestIterator4(t *testing.T) {
 	fg := flowgraph.New("TestIterator4")
 
 	firstval1 := fg.NewStream("firstval1")
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
@@ -773,9 +779,9 @@ func TestIterator4(t *testing.T) {
 
 /* TestIterator5 Flowgraph HDL *
 
-tbten()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
+ten()(firstval)
+while1(firstval)(lastval) {
+        while2(firstval)(lastval) {
                 sub(firstval, 1)(lastval)
 	}
 }
@@ -793,7 +799,7 @@ func TestIterator5(t *testing.T) {
 	fg := flowgraph.New("TestIterator5")
 
 	firstval1 := fg.NewStream("firstval1")
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
@@ -824,10 +830,10 @@ func TestIterator5(t *testing.T) {
 
 /* TestIterator6 Flowgraph HDL *
 
-tbten()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
-        	while(firstval)(lastval) {
+ten()(firstval)
+while1(firstval)(lastval) {
+        while2(firstval)(lastval) {
+        	while3(firstval)(lastval) {
                 	sub(firstval, 1)(lastval)
 		}
 	}
@@ -846,7 +852,7 @@ func TestIterator6(t *testing.T) {
 	fg := flowgraph.New("TestIterator6")
 
 	firstval1 := fg.NewStream("firstval1")
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
 	lastval1 := fg.NewStream("lastval1")
@@ -881,11 +887,11 @@ func TestIterator6(t *testing.T) {
 
 /* TestIterator7 Flowgraph HDL *
 
-tbten()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
-        	while(firstval)(lastval) {
-        		while(firstval)(lastval) {
+ten()(firstval)
+while1(firstval)(lastval) {
+        while2(firstval)(lastval) {
+        	while3(firstval)(lastval) {
+        		while4(firstval)(lastval) {
                 		sub(firstval, 1)(lastval)
 			}
 		}
@@ -905,7 +911,7 @@ func TestIterator7(t *testing.T) {
 	fg := flowgraph.New("TestIterator7")
 
 	firstval := fg.NewStream("firstval")
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
 
 	lastval := fg.NewStream("lastval")
@@ -944,12 +950,12 @@ func TestIterator7(t *testing.T) {
 
 /* TestIterator8 Flowgraph HDL *
 
-tbten()(firstval)
-while(firstval)(lastval) {
-        while(firstval)(lastval) {
+ten()(firstval)
+while1(firstval)(lastval) {
+        while2(firstval)(lastval) {
 	        add(firstval,1)(bumpval)
-        	while(bumpval)(lastval) {
-        		while(bumpval)(lastval) {
+        	while3(bumpval)(lastval) {
+        		while4(bumpval)(lastval) {
                 		sub(bumpval, 1)(lastval)
 			}
 		}
@@ -969,7 +975,7 @@ func TestIterator8(t *testing.T) {
 	fg := flowgraph.New("TestIterator8")
 
 	firstval := fg.NewStream("firstval")
-	fg.NewHub("tbten", flowgraph.Retrieve, &tbten{}).
+	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
 
 	lastval := fg.NewStream("lastval")
@@ -1089,20 +1095,22 @@ func TestIterator9(t *testing.T) {
 
 /* TestGCD Flowgraph HDL *
 
-tbrand()(mval)
-tbrand()(nval)
+rand100()(mval)
+rand100()(nval)
 while(mval, nval)(tcond, gcd) {
-        sub(firstval, 1)(lastval)
+        pass(mval)(gcd)
+        mod(nval, mval)(tcond)
 }
 sink(gcd)()
+sink2(tcond)()
 
 */
 
-type tbrand struct {
+type rand100 struct {
 	init bool
 }
 
-func (t *tbrand) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 	if !(*t).init {
 		// (*t).init = true
 		return rand.Intn(100) + 1, nil
@@ -1114,8 +1122,8 @@ func TestGCD(t *testing.T) {
 	fmt.Printf("BEGIN:  TestGCD\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second
-	fgbase.TraceLevel = fgbase.VVV
+	fgbase.RunTime = time.Second * 5
+	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestGCD")
 
@@ -1124,9 +1132,9 @@ func TestGCD(t *testing.T) {
 	tcond := fg.NewStream("tcond")
 	gcd := fg.NewStream("gcd")
 
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(mval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(nval)
 
 	while := fg.NewGraphHub("while", flowgraph.While)
@@ -1149,6 +1157,7 @@ func TestGCD(t *testing.T) {
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
 	fmt.Printf("END:    TestGCD\n")
+	// fmt.Printf("RESULTS %d,%d\n", fgbase.ChannelSize, while.Hub(3).Base().(*fgbase.Node).Cnt)
 }
 
 /*=====================================================================*/
@@ -1271,7 +1280,7 @@ func TestGoRound(t *testing.T) {
 
 /* TestCross Flowgraph HDL *
 
-ival,jval=tbtoggle(),tbrand()
+ival,jval=tbtoggle(),rand100()
 cross(ival,jval)(iout,jout)
 sink(iout)
 sink(kout)
@@ -1308,11 +1317,11 @@ func TestCross(t *testing.T) {
 
 	fg.NewHub("tbtoggle", flowgraph.Retrieve, &tbtoggle{}).
 		ConnectResults(ival)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(jval)
 	fg.NewHub("tbtoggle", flowgraph.Retrieve, &tbtoggle{}).
 		ConnectResults(kval)
-	fg.NewHub("tbrand", flowgraph.Retrieve, &tbrand{}).
+	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(lval)
 
 	fg.NewHub("cross", flowgraph.Cross, nil).

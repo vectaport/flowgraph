@@ -465,11 +465,13 @@ func (fg *flowgraph) flatten() []*fgbase.Node {
 			nodes = append(nodes, v.Base().(*fgbase.Node))
 		}
 	}
-	fmt.Printf("\n")
-	for _, v := range nodes {
-		fmt.Printf("// %s\n", v)
+	if fgbase.TraceLevel >= fgbase.V {
+		fmt.Printf("\n")
+		for _, v := range nodes {
+			fmt.Printf("// %s\n", v)
+		}
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
 	return nodes
 }
 

@@ -329,11 +329,13 @@ func (gh *graphhub) Loop() {
 
 		}
 	}
-	fmt.Printf("// While loop %q internals:\n", gh.Name())
-	for i := 0; i < gh.NumHub(); i++ {
-		fmt.Printf("// %s\n", gh.Hub(i).Base().(*fgbase.Node).String())
+	if fgbase.TraceLevel >= fgbase.V {
+		fmt.Printf("// While loop %q internals:\n", gh.Name())
+		for i := 0; i < gh.NumHub(); i++ {
+			fmt.Printf("// %s\n", gh.Hub(i).Base().(*fgbase.Node).String())
+		}
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
 
 }
 
@@ -413,10 +415,14 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
 	// dangling inputs
 	for i, s := range gh.isources {
-		fmt.Printf("// Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
+		if fgbase.TraceLevel >= fgbase.V {
+			fmt.Printf("// Source stream %q on outer hub \"%s\"\n", gh.Source(i).Name(), gh.Name())
+		}
 		jmax := s.NumDownstream()
 		for j := 0; j < jmax; j++ {
-			fmt.Printf("// \tlinked by source stream %q that ends at hub %q port %v\n", s.Name(), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
+			if fgbase.TraceLevel >= fgbase.V {
+				fmt.Printf("// \tlinked by source stream %q that ends at hub %q port %v\n", s.Name(), s.Downstream(j).Name(), s.Downstream(j).SourceIndex(s))
+			}
 			gh.Link(s, gh.Source(i))
 			if fgbase.DotOutput {
 				if !debug {
@@ -446,8 +452,10 @@ func (gh *graphhub) flatten(nodes []*fgbase.Node) []*fgbase.Node {
 
 	// dangling or designated outputs
 	for i, r := range gh.iresults {
-		fmt.Printf("// Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
-		fmt.Printf("// \tlinked by result stream %q on outer hub %q\n", gh.Result(i).Name(), gh.Name())
+		if fgbase.TraceLevel >= fgbase.V {
+			fmt.Printf("// Result stream %q that starts at hub %q port %v\n", r.Name(), r.Upstream(0).Name(), r.Upstream(0).ResultIndex(r))
+			fmt.Printf("// \tlinked by result stream %q on outer hub %q\n", gh.Result(i).Name(), gh.Name())
+		}
 		jmax := r.NumUpstream()
 		for j := 0; j < jmax; j++ {
 			gh.Link(r, gh.Result(i))

@@ -8,5 +8,6 @@ import ()
 // math HubCode (access HubCode from a Transform method to customize
 // these transforms). Use Hub.Tracef for tracing.
 type Transformer interface {
-	Transform(h Hub, source []interface{}) (result []interface{}, err error)
+	Transform(h Hub, source []interface{}) (
+		result []interface{}, err error)
 }
