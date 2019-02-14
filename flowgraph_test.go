@@ -1581,6 +1581,7 @@ func writeCommand(h flowgraph.Hub, rw *bufio.ReadWriter, cmd string) {
 type nestC struct {
 	rw  *bufio.ReadWriter
 	loc string
+	wcnt, ecnt int
 }
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
@@ -1594,9 +1595,11 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 		if n.loc == "W" {
 			ox = -360
 			dx = 4
+			n.wcnt++
 		} else {
 			ox = 360
 			dx = -4
+			n.ecnt++
 		}
 		return fmt.Sprintf("dal.stepl=list();tal=list(:attr);dal.stepl,tal;tal.ID=dal.ID;tal.dx=%d;tal.dy=%d;tal.nsteps=30;dal.ox=%d;dal.oy=%d;", dx, dy, ox, oy)
 	}()
@@ -1610,9 +1613,9 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	movestr := func() string {
 		if n.loc == "W" {
-			return "move(-560 mod(dal.ID 4)*16-32);"
+			return fmt.Sprintf("move(-560 mod(%d 4)*16-32);", n.wcnt)
 		}
-		return "move(530 mod(dal.ID 4)*16-32);"
+		return fmt.Sprintf("move(530 mod(%d 4)*16-32);", n.ecnt)
 	}()
 
 	// write command
