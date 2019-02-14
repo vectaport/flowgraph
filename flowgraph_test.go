@@ -1613,9 +1613,9 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	movestr := func() string {
 		if n.loc == "W" {
-			return fmt.Sprintf("move(-560 mod(%d 4)*16-32);", n.wcnt)
+			return fmt.Sprintf("move(-560 mod(%d %d)*16-32);", n.wcnt, fgbase.ChannelSize)
 		}
-		return fmt.Sprintf("move(530 mod(%d 4)*16-32);", n.ecnt)
+		return fmt.Sprintf("move(530 mod(%d %d)*16-32);", n.ecnt, fgbase.ChannelSize)
 	}()
 
 	// write command
