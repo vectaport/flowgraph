@@ -1122,7 +1122,7 @@ func TestGCD(t *testing.T) {
 	fmt.Printf("BEGIN:  TestGCD\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 5
+	fgbase.RunTime = time.Second * 1
 	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestGCD")
