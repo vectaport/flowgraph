@@ -1610,9 +1610,9 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	movestr := func() string {
 		if n.loc == "W" {
-			return "move(-560 0);"
+			return "move(-560 mod(dal.ID 4)*16-32);"
 		}
-		return "move(530 0);"
+		return "move(530 mod(dal.ID 4)*16-32);"
 	}()
 
 	// write command
