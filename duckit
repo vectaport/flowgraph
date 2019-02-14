@@ -4,7 +4,7 @@ rm -f pond.log
 rm -f tock.log
 ./duckmo --prequit
 /usr/local/bin/comdraw -geometry 1400x1000 >&comdraw.log &
-sleep 2
+sleep 1
 ./duckmo >&duckmo.log &
 sleep 2
 testit DuckPondC -chansz 1 >& log

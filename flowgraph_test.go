@@ -1595,7 +1595,7 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 		} else {
 			dx = -4
 		}
-		return fmt.Sprintf("dal.dx=%d;dal.dy=%d;dal.nsteps=75;", dx, dy)
+		return fmt.Sprintf("dal.stepl=list();tal=list(:attr);dal.stepl,tal;tal.ID=dal.ID;tal.dx=%d;tal.dy=%d;tal.nsteps=40;", dx, dy)
 	}()
 
 	flipstr := func() string {
@@ -1651,7 +1651,7 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	result = []interface{}{d}
 
 	// write command
-	cmd := fmt.Sprintf("fp=open(\"pond.log\" \"a\");dal=at(ducks %d);dal.FIX=1;dal.nsteps=100;dal.dx=%d;dal.dy=%d;print(dal :prefix \"SWIM:  \" :file fp);close(fp)\n", source[0].(duck).ID, 1, 1)
+	cmd := fmt.Sprintf("fp=open(\"pond.log\" \"a\");dal=at(ducks %d);dal.SWIM=1;tal=list(:attr);tal.ID=dal.ID;tal.nsteps=10;tal.dx=int(rand(0,3))-1;tal.dy=int(rand(0,3))-1;dal.stepl,tal;print(tal :prefix \"SWIM tal:  \" :file fp);print(dal :prefix \"SWIM dal:  \" :file fp);close(fp)\n", source[0].(duck).ID)
 	writeCommand(h, s.rw, cmd)
 
 	// handle ack by new-line
@@ -1672,8 +1672,8 @@ func (k *sinkC) Sink(source []interface{}) {
 	// fmt.Printf("// Duck %+v leaving pond\n", source[0])
 
 	// write command
-	return
-	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;at(ducks %d).nsteps=0;delete(at(ducks %d).duck);at(ducks %d :set nil);update\n", source[0].(duck).ID, source[0].(duck).ID, source[0].(duck).ID)
+	id := source[0].(duck).ID
+	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;dd=at(ducks %d);select(dd.duck);flipv();if(false :then at(ducks %d :set nil);delete(dd.duck));update\n", id, id)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
@@ -1685,7 +1685,7 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 20
+	fgbase.RunTime = time.Second * 60
 	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")

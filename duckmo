@@ -39,15 +39,21 @@ tock=func( \
   for(ii=0 ii<size(ducks) ii=ii+1 \
     dal = at(ducks ii); \
     if(dal == nil :then continue); \
-    if(dal.duck != nil && dal.nsteps>0 :then \
+    if(dal.duck != nil && size(dal.stepl)>0 :then \
+      tal=at(dal.stepl 0); \
       tr=trans(dal.duck); \
       if(tr==nil :then tr=1.,0.,0.,1.,0.,0.); \
-      at(tr 4 :set at(tr 4)+dal.dx); \
-      at(tr 5 :set at(tr 5)+dal.dy); \
-      dal.nsteps=dal.nsteps-1; \
+      at(tr 4 :set at(tr 4)+tal.dx); \
+      at(tr 5 :set at(tr 5)+tal.dy); \
+      tal.nsteps=tal.nsteps-1; \
+      if(tal.nsteps==0 :then \
+        newstepl=list(); \
+        dal.stepl=newstepl); \
       dal.tick = t; \
-      if(dal.nsteps==0 :then print(dal :prefix \"duck done swimming:  \" :file fp)); \
+      if(tal.nsteps==0 :then print(dal :prefix \"duck done swimming -- dal:  \" :file fp);print(tal :prefix \"duck done swimming -- tal:  \" :file fp)); \
+      if(tal.nsteps==0 :then ); \
       trans(dal.duck tr))); \
+  print(\"tick = %d\" t :prefix \"\"); \
   close(fp); \
   update;\"TOCK\" \
 )"
