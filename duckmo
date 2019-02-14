@@ -43,15 +43,18 @@ tock=func( \
       tal=at(dal.stepl 0); \
       tr=trans(dal.duck); \
       if(tr==nil :then tr=1.,0.,0.,1.,0.,0.); \
-      at(tr 4 :set at(tr 4)+tal.dx); \
-      at(tr 5 :set at(tr 5)+tal.dy); \
+      ddx=tal.dx+if(dal.ox>100 :then -2 :else if(dal.ox<-100 :then 2 :else 0));  \
+      ddy=tal.dy+if(dal.oy>100 :then -2 :else if(dal.oy<-100 :then 2 :else 0));  \
+      at(tr 4 :set at(tr 4)+ddx); \
+      at(tr 5 :set at(tr 5)+ddy); \
+      dal.ox=ddx+dal.ox; \
+      dal.oy=ddy+dal.oy; \
       tal.nsteps=tal.nsteps-1; \
       if(tal.nsteps==0 :then \
         newstepl=list(); \
         dal.stepl=newstepl); \
       dal.tick = t; \
       if(tal.nsteps==0 :then print(dal :prefix \"duck done swimming -- dal:  \" :file fp);print(tal :prefix \"duck done swimming -- tal:  \" :file fp)); \
-      if(tal.nsteps==0 :then ); \
       trans(dal.duck tr))); \
   print(\"tick = %d\" t :prefix \"\"); \
   close(fp); \

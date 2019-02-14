@@ -1590,12 +1590,15 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	animstr := func() string {
 		dx, dy := 0, 0
+		ox, oy := 0, 0
 		if n.loc == "W" {
+			ox = -360
 			dx = 4
 		} else {
+			ox = 360
 			dx = -4
 		}
-		return fmt.Sprintf("dal.stepl=list();tal=list(:attr);dal.stepl,tal;tal.ID=dal.ID;tal.dx=%d;tal.dy=%d;tal.nsteps=40;", dx, dy)
+		return fmt.Sprintf("dal.stepl=list();tal=list(:attr);dal.stepl,tal;tal.ID=dal.ID;tal.dx=%d;tal.dy=%d;tal.nsteps=30;dal.ox=%d;dal.oy=%d;", dx, dy, ox, oy)
 	}()
 
 	flipstr := func() string {
@@ -1607,9 +1610,9 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 
 	movestr := func() string {
 		if n.loc == "W" {
-			return "move(-520 0);"
+			return "move(-560 0);"
 		}
-		return "move(520 0);"
+		return "move(530 0);"
 	}()
 
 	// write command
@@ -1685,7 +1688,7 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 60
+	fgbase.RunTime = time.Second * 600
 	fgbase.TraceLevel = fgbase.VVV
 
 	fg := flowgraph.New("TestDuckPondC")

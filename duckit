@@ -7,5 +7,5 @@ rm -f tock.log
 sleep 1
 ./duckmo >&duckmo.log &
 sleep 2
-testit DuckPondC -chansz 1 >& log
+testit DuckPondC -chansz 4 >& log
 
