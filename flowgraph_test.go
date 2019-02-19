@@ -1365,8 +1365,10 @@ type duck struct {
 	exit  bool
 }
 
-func (d duck) Break() bool {
-	return d.exit
+func (d *duck) Break() bool {
+	t := d.exit
+	d.exit = false
+	return t
 }
 
 type nest struct{}
@@ -1374,7 +1376,7 @@ type nest struct{}
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
 	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
-	return d, nil
+	return &d, nil
 }
 
 type swimA struct {
@@ -1382,7 +1384,7 @@ type swimA struct {
 }
 
 func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	d := source[0].(duck)
+	d := source[0].(*duck)
 	if d.Loops == 0 {
 		s.Count++
 	}
@@ -1452,7 +1454,7 @@ type swimB struct {
 }
 
 func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	d := source[0].(duck)
+	d := source[0].(*duck)
 	if d.Loops == 0 {
 		s.Count++
 	}
@@ -1469,7 +1471,7 @@ type steerDuck struct {
 }
 
 func (s *steerDuck) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	d := source[0].(duck)
+	d := source[0].(*duck)
 	if d.Loops%2 == 0 {
 		result = []interface{}{d, nil}
 	} else {
@@ -1523,20 +1525,20 @@ func TestDuckPondB(t *testing.T) {
 /* DuckPondC Flowgraph HDL *
 
 nestW()(duckImport00)
-sinkW(duckW)()
+sinkW(duckSinkW)()
 
 while(duckImport00)(duckExport00) {
         pond(duckImport00)(duckExport00)
 }
-steer00(duckExport00)(duckImport10, duckW)
+steer00(duckExport00)(duckImport10, duckSinkW)
 
 while(duckImport10)(duckExport10) {
         pond(duckImport10)(duckExport10)
 }
-steer10(duckExport10)(duckImport00, duckE)
+steer10(duckExport10)(duckImport00, duckSinkE)
 
 nestE()(duckExport10)
-sinkE(duckE)()
+sinkE(duckSinkE)()
 
 */
 
@@ -1579,15 +1581,15 @@ func writeCommand(h flowgraph.Hub, rw *bufio.ReadWriter, cmd string) {
 }
 
 type nestC struct {
-	rw  *bufio.ReadWriter
-	loc string
+	rw         *bufio.ReadWriter
+	loc        string
 	wcnt, ecnt int
 }
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
 	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
-	result = d
+	result = &d
 
 	animstr := func() string {
 		dx, dy := 0, 0
@@ -1645,7 +1647,7 @@ type swimC struct {
 }
 
 func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	d := source[0].(duck)
+	d := source[0].(*duck)
 	if d.Loops == 0 {
 		s.Count++
 	}
@@ -1657,7 +1659,28 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	result = []interface{}{d}
 
 	// write command
-	cmd := fmt.Sprintf("fp=open(\"pond.log\" \"a\");dal=at(ducks %d);dal.SWIM=1;tal=list(:attr);tal.ID=dal.ID;tal.nsteps=10;tal.dx=int(rand(0,3))-1;tal.dy=int(rand(0,3))-1;dal.stepl,tal;print(tal :prefix \"SWIM tal:  \" :file fp);print(dal :prefix \"SWIM dal:  \" :file fp);close(fp)\n", source[0].(duck).ID)
+	flystr := ""
+	if d.exit && d.Loops%2 == 1 {
+		if d.Orig == "W" {
+			flystr = "dal.ox=dal.ox-300;select(dal.duck);scale(1 1);"
+		} else {
+			flystr = "dal.ox=dal.ox+300;select(dal.duck);scale(1 1);"
+		}
+	}
+	cmd := fmt.Sprintf(""+
+		"fp=open(\"pond.log\" \"a\");"+
+		"dal=at(ducks %d);"+
+		flystr+
+		"tal=list(:attr);"+
+		"tal.ID=dal.ID;"+
+		"tal.nsteps=10;"+
+		"tal.dx=int(rand(0,3))-1;"+
+		"tal.dy=int(rand(0,3))-1;"+
+		"dal.stepl,tal;"+
+		"print(tal :prefix \"SWIM tal:  \" :file fp);"+
+		"print(dal :prefix \"SWIM dal:  \" :file fp);"+
+		"close(fp)\n",
+		source[0].(*duck).ID)
 	writeCommand(h, s.rw, cmd)
 
 	// handle ack by new-line
@@ -1672,14 +1695,14 @@ type sinkC struct {
 
 func (k *sinkC) Sink(source []interface{}) {
 
-	if source[0].(duck).ID < 0 {
+	if source[0].(*duck).ID < 0 {
 		return
 	}
 	// fmt.Printf("// Duck %+v leaving pond\n", source[0])
 
 	// write command
-	id := source[0].(duck).ID
-	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;dd=at(ducks %d);select(dd.duck);flipv();if(false :then at(ducks %d :set nil);delete(dd.duck));update\n", id, id)
+	id := source[0].(*duck).ID
+	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;dd=at(ducks %d);select(dd.duck);colors(12 11);if(false :then at(ducks %d :set nil);delete(dd.duck));update;select(:clear);colors(1 10)\n", id, id)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
@@ -1698,18 +1721,18 @@ func TestDuckPondC(t *testing.T) {
 
 	duckImport00 := fg.NewStream("duckImport00")
 	whatTheDuck := fg.NewStream("whatTheDuck")
-	duckW := fg.NewStream("duckW").Init(duck{-2, 0, "W", false})
+	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", false})
 
 	duckImport10 := fg.NewStream("duckImport10")
 	duckWait10 := fg.NewStream("duckWait10")
-	duckE := fg.NewStream("duckE").Init(duck{-1, 0, "E", false})
+	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", false})
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
 		ConnectResults(whatTheDuck)
 	fg.NewHub("waitW", flowgraph.Wait, nil).
-		ConnectSources(whatTheDuck, duckW).ConnectResults(duckImport00)
+		ConnectSources(whatTheDuck, duckSinkW).ConnectResults(duckImport00)
 	fg.NewHub("sinkW", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
-		ConnectSources(duckW)
+		ConnectSources(duckSinkW)
 
 	duckExport00 := fg.NewStream("duckExport00")
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
@@ -1718,7 +1741,7 @@ func TestDuckPondC(t *testing.T) {
 		SetNumSource(1).SetNumResult(1)
 	pond00.Loop()
 	fg.NewHub("steer00", flowgraph.AllOf, &steerDuck{}).
-		ConnectSources(duckExport00).ConnectResults(duckW, duckImport10)
+		ConnectSources(duckExport00).ConnectResults(duckSinkW, duckImport10)
 
 	duckExport10 := fg.NewStream("duckExport10")
 	pond10 := fg.NewGraphHub("pond10", flowgraph.While)
@@ -1727,14 +1750,14 @@ func TestDuckPondC(t *testing.T) {
 		SetNumSource(1).SetNumResult(1)
 	pond10.Loop()
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
-		ConnectSources(duckExport10).ConnectResults(duckImport00, duckE)
+		ConnectSources(duckExport10).ConnectResults(duckImport00, duckSinkE)
 
 	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "E"}).
 		ConnectResults(duckWait10)
 	fg.NewHub("waitE", flowgraph.Wait, nil).
-		ConnectSources(duckWait10, duckE).ConnectResults(duckImport10)
+		ConnectSources(duckWait10, duckSinkE).ConnectResults(duckImport10)
 	fg.NewHub("sinkE", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
-		ConnectSources(duckE)
+		ConnectSources(duckSinkE)
 
 	fg.Run()
 
