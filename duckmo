@@ -35,7 +35,6 @@ import(\"/Users/scott/Pictures/Sprites/DuckNest.drs\"); move(500 0);\
 import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(-200 0);\
 import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(200 0);\
 tock=func( \
-  fp=open(\"tock.log\" \"a\"); \
   for(ii=0 ii<size(ducks) ii=ii+1 \
     dal = at(ducks ii); \
     if(dal == nil :then continue); \
@@ -54,10 +53,8 @@ tock=func( \
         newstepl=list(); \
         dal.stepl=newstepl); \
       dal.tick = t; \
-      if(tal.nsteps==0 :then print(dal :prefix \"duck done swimming -- dal:  \" :file fp);print(tal :prefix \"duck done swimming -- tal:  \" :file fp)); \
       trans(dal.duck tr))); \
   print(\"tick = %d\" t :prefix \"\"); \
-  close(fp); \
   update;\"TOCK\" \
 )"
 

@@ -1362,12 +1362,17 @@ type duck struct {
 	ID    int64
 	Loops int
 	Orig  string
-	exit  bool
+	Curr  string
+	Exit  bool
+	Flew bool
 }
 
 func (d *duck) Break() bool {
-	t := d.exit
-	d.exit = false
+	t := d.Exit
+	if d.Exit {
+	        d.Flew = true
+	}
+	d.Exit = false
 	return t
 }
 
@@ -1375,7 +1380,7 @@ type nest struct{}
 
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
-	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false}
 	return &d, nil
 }
 
@@ -1388,8 +1393,8 @@ func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(100) >= 9
-	if d.exit {
+	d.Exit = rand.Intn(100) >= 9
+	if d.Exit {
 		s.Count--
 	}
 	d.Loops++
@@ -1458,8 +1463,8 @@ func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Loops == 0 {
 		s.Count++
 	}
-	d.exit = rand.Intn(100) >= 99
-	if d.exit {
+	d.Exit = rand.Intn(100) >= 99
+	if d.Exit {
 		s.Count--
 	}
 	d.Loops++
@@ -1588,7 +1593,7 @@ type nestC struct {
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
-	d := duck{dc, 0, h.Name()[len(h.Name())-1:], false}
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false}
 	result = &d
 
 	animstr := func() string {
@@ -1648,11 +1653,12 @@ type swimC struct {
 
 func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	d := source[0].(*duck)
-	if d.Loops == 0 {
+	if d.Flew == true || d.Loops == 0 {
 		s.Count++
+		d.Flew = false
 	}
-	d.exit = rand.Intn(1000) >= 999
-	if d.exit {
+	d.Exit = rand.Intn(1000) >= 999
+	if d.Exit {
 		s.Count--
 	}
 	d.Loops++
@@ -1660,15 +1666,16 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 
 	// write command
 	flystr := ""
-	if d.exit && d.Loops%2 == 1 {
-		if d.Orig == "W" {
-			flystr = "dal.ox=dal.ox-300;select(dal.duck);scale(1 1);"
+	if d.Exit && d.Loops%2 == 1 {
+		if d.Curr == "W" {
+			flystr = "select(dal.duck);move(360 0);select(:clear);"
+			d.Curr = "E"
 		} else {
-			flystr = "dal.ox=dal.ox+300;select(dal.duck);scale(1 1);"
+			flystr = "select(dal.duck);move(-360 0);select(:clear);"
+			d.Curr = "W"
 		}
 	}
 	cmd := fmt.Sprintf(""+
-		"fp=open(\"pond.log\" \"a\");"+
 		"dal=at(ducks %d);"+
 		flystr+
 		"tal=list(:attr);"+
@@ -1676,10 +1683,7 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 		"tal.nsteps=10;"+
 		"tal.dx=int(rand(0,3))-1;"+
 		"tal.dy=int(rand(0,3))-1;"+
-		"dal.stepl,tal;"+
-		"print(tal :prefix \"SWIM tal:  \" :file fp);"+
-		"print(dal :prefix \"SWIM dal:  \" :file fp);"+
-		"close(fp)\n",
+		"dal.stepl,tal\n",
 		source[0].(*duck).ID)
 	writeCommand(h, s.rw, cmd)
 
@@ -1714,27 +1718,28 @@ func TestDuckPondC(t *testing.T) {
 	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
-	fgbase.RunTime = time.Second * 600
-	fgbase.TraceLevel = fgbase.VVV
+	fgbase.RunTime = time.Second * 1000
+	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestDuckPondC")
 
 	duckImport00 := fg.NewStream("duckImport00")
-	whatTheDuck := fg.NewStream("whatTheDuck")
-	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", false})
+	duckWait00 := fg.NewStream("duckWait00")
+	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", "W", false, false})
+	duckExport00 := fg.NewStream("duckExport00")
 
 	duckImport10 := fg.NewStream("duckImport10")
 	duckWait10 := fg.NewStream("duckWait10")
-	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", false})
+	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", "E", false, false})
+	duckExport10 := fg.NewStream("duckExport10")
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
-		ConnectResults(whatTheDuck)
-	fg.NewHub("waitW", flowgraph.Wait, nil).
-		ConnectSources(whatTheDuck, duckSinkW).ConnectResults(duckImport00)
+		ConnectResults(duckWait00)
+	fg.NewHub("shoreW", flowgraph.Wait, nil).
+		ConnectSources(duckWait00, duckSinkW).ConnectResults(duckImport00)
 	fg.NewHub("sinkW", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkW)
 
-	duckExport00 := fg.NewStream("duckExport00")
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
 	pond00.ConnectSources(duckImport00).ConnectResults(duckExport00)
 	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
@@ -1743,18 +1748,17 @@ func TestDuckPondC(t *testing.T) {
 	fg.NewHub("steer00", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckExport00).ConnectResults(duckSinkW, duckImport10)
 
-	duckExport10 := fg.NewStream("duckExport10")
 	pond10 := fg.NewGraphHub("pond10", flowgraph.While)
 	pond10.ConnectSources(duckImport10).ConnectResults(duckExport10)
 	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
 		SetNumSource(1).SetNumResult(1)
 	pond10.Loop()
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
-		ConnectSources(duckExport10).ConnectResults(duckImport00, duckSinkE)
+		ConnectSources(duckExport10).ConnectResults(duckSinkE, duckImport00)
 
 	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "E"}).
 		ConnectResults(duckWait10)
-	fg.NewHub("waitE", flowgraph.Wait, nil).
+	fg.NewHub("shoreE", flowgraph.Wait, nil).
 		ConnectSources(duckWait10, duckSinkE).ConnectResults(duckImport10)
 	fg.NewHub("sinkE", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkE)
