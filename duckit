@@ -1,6 +1,6 @@
 #!/bin/bash
 export DYLD_LIBRARY_PATH=/Users/scott/src/ACE_wrappers/ace
-rm -f pond.log
+rm -f swim.log
 rm -f tock.log
 ./duckmo --prequit
 /usr/local/bin/comdraw -geometry 1400x1000 >&comdraw.log &

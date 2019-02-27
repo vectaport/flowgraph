@@ -1532,13 +1532,13 @@ func TestDuckPondB(t *testing.T) {
 nestW()(duckImport00)
 sinkW(duckSinkW)()
 
-while(duckImport00)(duckExport00) {
-        pond(duckImport00)(duckExport00)
+pond00(duckImport00)(duckExport00) {
+        swim(duckImport00)(duckExport00)
 }
 steer00(duckExport00)(duckImport10, duckSinkW)
 
-while(duckImport10)(duckExport10) {
-        pond(duckImport10)(duckExport10)
+pond10(duckImport10)(duckExport10) {
+        swim(duckImport10)(duckExport10)
 }
 steer10(duckExport10)(duckImport00, duckSinkE)
 
@@ -1668,23 +1668,25 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	flystr := ""
 	if d.Exit && d.Loops%2 == 1 {
 		if d.Curr == "W" {
-			flystr = "select(dal.duck);move(360 0);select(:clear);"
+			flystr = "select(dal.duck);move(380 0);select(:clear);"
 			d.Curr = "E"
 		} else {
-			flystr = "select(dal.duck);move(-360 0);select(:clear);"
+			flystr = "select(dal.duck);move(-380 0);select(:clear);"
 			d.Curr = "W"
 		}
 	}
 	cmd := fmt.Sprintf(""+
 		"dal=at(ducks %d);"+
+		"dal.swim=1;"+
 		flystr+
 		"tal=list(:attr);"+
 		"tal.ID=dal.ID;"+
 		"tal.nsteps=10;"+
 		"tal.dx=int(rand(0,3))-1;"+
 		"tal.dy=int(rand(0,3))-1;"+
-		"dal.stepl,tal\n",
-		source[0].(*duck).ID)
+ 		"if(%t :then dal.swim=2);"+
+		"if(size(dal.stepl)==0 :then dal.stepl,tal)\n",
+		source[0].(*duck).ID, d.Exit)
 	writeCommand(h, s.rw, cmd)
 
 	// handle ack by new-line
@@ -1706,7 +1708,7 @@ func (k *sinkC) Sink(source []interface{}) {
 
 	// write command
 	id := source[0].(*duck).ID
-	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;dd=at(ducks %d);select(dd.duck);colors(12 11);if(false :then at(ducks %d :set nil);delete(dd.duck));update;select(:clear);colors(1 10)\n", id, id)
+	s := fmt.Sprintf("global(duckcnt)=duckcnt-1;dd=at(ducks %d);dd.swim=0;select(dd.duck);colors(12 11);if(false :then at(ducks %d :set nil);delete(dd.duck));update;select(:clear);colors(1 10)\n", id, id)
 	k.rw.WriteString(s)
 	k.rw.Flush()
 
