@@ -1364,13 +1364,13 @@ type duck struct {
 	Orig  string
 	Curr  string
 	Exit  bool
-	Flew bool
+	Flew  bool
 }
 
 func (d *duck) Break() bool {
 	t := d.Exit
 	if d.Exit {
-	        d.Flew = true
+		d.Flew = true
 	}
 	d.Exit = false
 	return t
@@ -1665,28 +1665,29 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	result = []interface{}{d}
 
 	// write command
-	flystr := ""
+	movstr := "tal.nsteps=10;" +
+		"tal.dx=int(rand(0,3))-1;" +
+		"tal.dy=int(rand(0,3))-1;"
+	fly := false
 	if d.Exit && d.Loops%2 == 1 {
+		fly = true
 		if d.Curr == "W" {
-			flystr = "select(dal.duck);move(380 0);select(:clear);"
+			movstr = "dal.ox=dal.ox-380;tal.nsteps=38;tal.dx=10;tal.dy=0;"
 			d.Curr = "E"
 		} else {
-			flystr = "select(dal.duck);move(-380 0);select(:clear);"
+			movstr = "dal.ox=dal.ox+380;tal.nsteps=38;tal.dx=-10;tal.dy=0;"
 			d.Curr = "W"
 		}
 	}
 	cmd := fmt.Sprintf(""+
 		"dal=at(ducks %d);"+
 		"dal.swim=1;"+
-		flystr+
 		"tal=list(:attr);"+
 		"tal.ID=dal.ID;"+
-		"tal.nsteps=10;"+
-		"tal.dx=int(rand(0,3))-1;"+
-		"tal.dy=int(rand(0,3))-1;"+
- 		"if(%t :then dal.swim=2);"+
-		"if(size(dal.stepl)==0 :then dal.stepl,tal)\n",
-		source[0].(*duck).ID, d.Exit)
+		movstr+
+		"if(%t :then dal.swim=2);"+
+		"if(size(dal.stepl)==0||%t :then dal.stepl,tal)\n",
+		source[0].(*duck).ID, d.Exit, fly)
 	writeCommand(h, s.rw, cmd)
 
 	// handle ack by new-line

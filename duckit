@@ -2,10 +2,12 @@
 export DYLD_LIBRARY_PATH=/Users/scott/src/ACE_wrappers/ace
 rm -f swim.log
 rm -f tock.log
+rm -f duckmodebug.log
+rm -f incrafterdebug.log
 ./duckmo --prequit
 /usr/local/bin/comdraw -geometry 1400x1000 >&comdraw.log &
 sleep 1
 ./duckmo >&duckmo.log &
 sleep 2
-testit DuckPondC -chansz 4 >& log
+testit DuckPondC -chansz 5 >& log
 

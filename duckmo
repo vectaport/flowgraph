@@ -51,10 +51,11 @@ tock=func( \
       tal.nsteps=tal.nsteps-1; \
       if(tal.nsteps==0 :then \
         newstepl=list(); \
+        jjmax=size(dal.stepl); \
+        for(jj=1 jj<jjmax jj=jj+1 newstepl,at(dal.stepl jj)); \
         dal.stepl=newstepl); \
       dal.tick = t; \
       trans(dal.duck tr))); \
-  print(\"tick = %d\" t :prefix \"\"); \
   update;\"TOCK\" \
 )"
 
