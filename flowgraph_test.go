@@ -1722,7 +1722,7 @@ func TestDuckPondC(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second * 1000
-	fgbase.TraceLevel = fgbase.V
+	fgbase.TraceLevel = fgbase.Q
 
 	fg := flowgraph.New("TestDuckPondC")
 
