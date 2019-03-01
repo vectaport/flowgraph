@@ -1629,7 +1629,7 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	s := fmt.Sprintf("global(duckcnt)=duckcnt+1;"+
 		"dal=list(:attr);"+
 		"dal.ID=%d;"+
-		"dal.duck=import(\"/Users/scott/Pictures/Sprites/MallardMale.drs\");"+
+		"dal.duck=import(\"MallardMale.drs\");"+
 		flipstr+
 		"g=text(dtos(gtod(dal.duck 0,0)) \"%02d\");"+
 		"dal.duck=growgroup(dal.duck g);"+
@@ -1672,10 +1672,10 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Exit && d.Loops%2 == 1 {
 		fly = true
 		if d.Curr == "W" {
-			movstr = "dal.ox=dal.ox-380;tal.nsteps=38;tal.dx=10;tal.dy=0;"
+			movstr = "tal.nsteps=40;tal.dx=(360-dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox-380;"
 			d.Curr = "E"
 		} else {
-			movstr = "dal.ox=dal.ox+380;tal.nsteps=38;tal.dx=-10;tal.dy=0;"
+			movstr = "tal.nsteps=40;tal.dx=-(360+dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox+380;"
 			d.Curr = "W"
 		}
 	}

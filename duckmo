@@ -30,10 +30,10 @@ if(prequit_flag :then
 cmdstr =
 " \
 global(ducks)=list();global(duckcnt)=0;handles(false); \
-import(\"/Users/scott/Pictures/Sprites/DuckNest.drs\"); move(-500 0);\
-import(\"/Users/scott/Pictures/Sprites/DuckNest.drs\"); move(500 0);\
-import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(-200 0);\
-import(\"/Users/scott/Pictures/Sprites/DuckPond.drs\"); move(200 0);\
+import(\"DuckNest.drs\"); move(-500 0);\
+import(\"DuckNest.drs\"); move(500 0);\
+import(\"DuckPond.drs\"); move(-200 0);\
+import(\"DuckPond.drs\"); move(200 0);\
 tock=func( \
   for(ii=0 ii<size(ducks) ii=ii+1 \
     dal = at(ducks ii); \
@@ -52,7 +52,7 @@ tock=func( \
       if(tal.nsteps==0 :then \
         newstepl=list(); \
         jjmax=size(dal.stepl); \
-        for(jj=1 jj<jjmax jj=jj+1 newstepl,at(dal.stepl jj)); \
+        for(jj=1 jj<jjmax jj++ newstepl,at(dal.stepl jj)); \
         dal.stepl=newstepl); \
       dal.tick = t; \
       trans(dal.duck tr))); \
