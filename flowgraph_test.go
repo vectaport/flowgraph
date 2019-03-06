@@ -6,6 +6,7 @@ import (
 
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"math/rand"
@@ -32,7 +33,10 @@ func max(a, b int) int {
 
 /*=====================================================================*/
 
+var gridLock = false
+
 func TestMain(m *testing.M) {
+	flag.BoolVar(&gridLock, "gridlock", false, "demo gridlock")
 	flowgraph.ParseFlags()
 	os.Exit(m.Run())
 }
@@ -1365,22 +1369,26 @@ type duck struct {
 	Curr  string
 	Exit  bool
 	Flew  bool
+	Steer int
+	Rando int
 }
 
 func (d *duck) Break() bool {
-	t := d.Exit
 	if d.Exit {
 		d.Flew = true
 	}
+	return d.Exit
+}
+
+func (d *duck) Clear() {
 	d.Exit = false
-	return t
 }
 
 type nest struct{}
 
 func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
-	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false}
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false, -1, rand.Intn(1000)}
 	return &d, nil
 }
 
@@ -1478,8 +1486,10 @@ type steerDuck struct {
 func (s *steerDuck) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	d := source[0].(*duck)
 	if d.Loops%2 == 0 {
+		d.Steer = 0
 		result = []interface{}{d, nil}
 	} else {
+		d.Steer = 1
 		result = []interface{}{nil, d}
 	}
 	return
@@ -1593,7 +1603,7 @@ type nestC struct {
 
 func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
-	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false}
+	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false, -1, rand.Intn(1000)}
 	result = &d
 
 	animstr := func() string {
@@ -1657,7 +1667,7 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 		s.Count++
 		d.Flew = false
 	}
-	d.Exit = rand.Intn(1000) >= 999
+	d.Exit = rand.Intn(1000) >= 996
 	if d.Exit {
 		s.Count--
 	}
@@ -1672,10 +1682,10 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Exit && d.Loops%2 == 1 {
 		fly = true
 		if d.Curr == "W" {
-			movstr = "tal.nsteps=40;tal.dx=(360-dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox-380;"
+			movstr = "tal.nsteps=40;tal.dx=(360-dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox-380;dal.curr=\"E\";"
 			d.Curr = "E"
 		} else {
-			movstr = "tal.nsteps=40;tal.dx=-(360+dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox+380;"
+			movstr = "tal.nsteps=40;tal.dx=-(360+dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox+380;dal.curr=\"W\";"
 			d.Curr = "W"
 		}
 	}
@@ -1705,7 +1715,7 @@ func (k *sinkC) Sink(source []interface{}) {
 	if source[0].(*duck).ID < 0 {
 		return
 	}
-	// fmt.Printf("// Duck %+v leaving pond\n", source[0])
+	fmt.Printf("// Duck %+v leaving pond\n", source[0])
 
 	// write command
 	id := source[0].(*duck).ID
@@ -1722,24 +1732,32 @@ func TestDuckPondC(t *testing.T) {
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second * 1000
-	fgbase.TraceLevel = fgbase.Q
+	fgbase.TraceLevel = fgbase.V
 
 	fg := flowgraph.New("TestDuckPondC")
 
 	duckImport00 := fg.NewStream("duckImport00")
 	duckWait00 := fg.NewStream("duckWait00")
-	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", "W", false, false})
+	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", "W", false, false, -1, rand.Intn(1000)})
+	duckFakeW := duckSinkW
+	if gridLock {
+		duckFakeW = fg.NewStream("duckFakeW").Const(&duck{-4, 0, "W", "W", false, false, -1, rand.Intn(1000)})
+	}
 	duckExport00 := fg.NewStream("duckExport00")
 
 	duckImport10 := fg.NewStream("duckImport10")
 	duckWait10 := fg.NewStream("duckWait10")
-	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", "E", false, false})
+	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", "E", false, false, -1, rand.Intn(1000)})
+	duckFakeE := duckSinkE
+	if gridLock {
+		duckFakeE = fg.NewStream("duckFakeE").Const(&duck{-3, 0, "E", "E", false, false, -1, rand.Intn(1000)})
+	}
 	duckExport10 := fg.NewStream("duckExport10")
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
 		ConnectResults(duckWait00)
 	fg.NewHub("shoreW", flowgraph.Wait, nil).
-		ConnectSources(duckWait00, duckSinkW).ConnectResults(duckImport00)
+		ConnectSources(duckWait00, duckFakeW).ConnectResults(duckImport00)
 	fg.NewHub("sinkW", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkW)
 
@@ -1762,7 +1780,7 @@ func TestDuckPondC(t *testing.T) {
 	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "E"}).
 		ConnectResults(duckWait10)
 	fg.NewHub("shoreE", flowgraph.Wait, nil).
-		ConnectSources(duckWait10, duckSinkE).ConnectResults(duckImport10)
+		ConnectSources(duckWait10, duckFakeE).ConnectResults(duckImport10)
 	fg.NewHub("sinkE", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkE)
 

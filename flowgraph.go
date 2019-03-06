@@ -605,10 +605,12 @@ func waitRdy(n *fgbase.Node) bool {
 		n.Aux = ws
 		elocal := n.Srcs[ns-1]
 		usnode := elocal.SrcNode(0)
-		for i := 0; i < len(usnode.Dsts); i++ {
-			if usnode.Dsts[i].Same(elocal) {
-				usnode.Dsts[i].RdyCnt += fgbase.ChannelSize - 1
-				break
+		if usnode != nil {
+			for i := 0; i < len(usnode.Dsts); i++ {
+				if usnode.Dsts[i].Same(elocal) {
+					usnode.Dsts[i].RdyCnt += fgbase.ChannelSize - 1
+					break
+				}
 			}
 		}
 	}
@@ -728,11 +730,19 @@ func crossFire(n *fgbase.Node) error {
 
 	if cs.out == 0 {
 		for i := 0; i < numrank; i++ {
-			n.Dsts[i].DstPut(n.Srcs[cs.in*numrank+i].SrcGet())
+			v := n.Srcs[cs.in*numrank+i].SrcGet()
+			if b, ok := v.(Breaker); ok {
+				b.Clear()
+			}
+			n.Dsts[i].DstPut(v)
 		}
 	} else {
 		for i := 0; i < numrank; i++ {
-			n.Dsts[numrank+i].DstPut(n.Srcs[cs.in*numrank+i].SrcGet())
+			v := n.Srcs[cs.in*numrank+i].SrcGet()
+			if b, ok := v.(Breaker); ok {
+				b.Clear()
+			}
+			n.Dsts[numrank+i].DstPut(v)
 		}
 	}
 	return nil
