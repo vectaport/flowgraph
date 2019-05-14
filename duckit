@@ -7,6 +7,5 @@ rm -f tock.log
 sleep 1
 ./duckmo >&duckmo.log &
 sleep 2
-#go test -run TestDuckPondC -args -chansz 5 >& duckpondc.log
-duck/pond2x1 -chansz 5 >&duckpondc.log
+duck/pond2x1 -chansz 5 >&duckpond2x1.log
 

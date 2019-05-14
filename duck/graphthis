@@ -1,0 +1,2 @@
+#!/bin/bash
+go run $1.go -dot >log;dotit log 1 >$1.dot;dot -Tpng $1.dot > $1.png

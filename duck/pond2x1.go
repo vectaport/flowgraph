@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-/* DuckPondC Flowgraph HDL *
+/* DuckPond2x1 Flowgraph HDL *
 
 nestW()(duckImport00)
 sinkW(duckSinkW)()
@@ -157,12 +157,42 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 	return
 }
 
-type swimC struct {
+type shore struct {
+	rw    *bufio.ReadWriter
+}
+
+func (s *shore) Transmit(h flowgraph.Hub, source interface{}) (err error) {
+	d := source.(*duck)
+
+	// write command
+	movstr := ""
+	if d.Orig == "W" {
+		movstr = "tal.nsteps=40;tal.dx=140/40;tal.dy=320/40;dal.ox=dal.ox-0;"
+	} else {
+		movstr = "tal.nsteps=40;tal.dx=-140/40;tal.dy=320/40;dal.ox=dal.ox+0;"
+	}
+	cmd := fmt.Sprintf(""+
+		"dal=at(ducks %d);"+
+		"dal.shore=1;"+
+		"tal=list(:attr);"+
+		"tal.ID=dal.ID;"+
+		movstr+
+		"dal.stepl,tal\n",
+		source.(*duck).ID)
+	writeCommand(h, s.rw, cmd)
+
+	// handle ack by new-line
+	readNewLineAck(h, s.rw)
+
+	return
+}
+
+type swim struct {
 	rw    *bufio.ReadWriter
 	Count int
 }
 
-func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
 	d := source[0].(*duck)
 	if d.Flew == true || d.Loops == 0 {
 		s.Count++
@@ -183,10 +213,10 @@ func (s *swimC) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 	if d.Exit && d.Loops%2 == 1 {
 		fly = true
 		if d.Curr == "W" {
-			movstr = "tal.nsteps=40;tal.dx=(360-dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox-380;dal.curr=\"E\";"
+			movstr = "tal.nsteps=40;tal.dx=360/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox-380;dal.curr=\"E\";"
 			d.Curr = "E"
 		} else {
-			movstr = "tal.nsteps=40;tal.dx=-(360+dal.ox)/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox+380;dal.curr=\"W\";"
+			movstr = "tal.nsteps=40;tal.dx=-360/40;tal.dy=(300-dal.oy)/40;dal.ox=dal.ox+380;dal.curr=\"W\";"
 			d.Curr = "W"
 		}
 	}
@@ -244,7 +274,6 @@ func (k *sinkC) Sink(source []interface{}) {
 }
 
 func main() {
-	fmt.Printf("BEGIN:  TestDuckPondC\n")
 	var gridLock = false
 	flag.BoolVar(&gridLock, "gridlock", false, "demo gridlock")
 	flowgraph.ParseFlags()
@@ -254,7 +283,7 @@ func main() {
 	fgbase.RunTime = time.Second * 1000
 	fgbase.TraceLevel = fgbase.V
 
-	fg := flowgraph.New("TestDuckPondC")
+	fg := flowgraph.New("DuckPond2x1")
 
 	duckImport00 := fg.NewStream("duckImport00")
 	duckWait00 := fg.NewStream("duckWait00")
@@ -276,14 +305,14 @@ func main() {
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
 		ConnectResults(duckWait00)
-	fg.NewHub("shoreW", flowgraph.Wait, nil).
+	fg.NewHub("shoreW", flowgraph.Wait, &shore{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckWait00, duckFakeW).ConnectResults(duckImport00)
 	fg.NewHub("sinkW", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkW)
 
 	pond00 := fg.NewGraphHub("pond00", flowgraph.While)
 	pond00.ConnectSources(duckImport00).ConnectResults(duckExport00)
-	pond00.NewHub("swim00", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
+	pond00.NewHub("swim00", flowgraph.AllOf, &swim{rw: buffConn("localhost:20002")}).
 		SetNumSource(1).SetNumResult(1)
 	pond00.Loop()
 	fg.NewHub("steer00", flowgraph.AllOf, &steerDuck{}).
@@ -291,7 +320,7 @@ func main() {
 
 	pond10 := fg.NewGraphHub("pond10", flowgraph.While)
 	pond10.ConnectSources(duckImport10).ConnectResults(duckExport10)
-	pond10.NewHub("swim10", flowgraph.AllOf, &swimC{rw: buffConn("localhost:20002")}).
+	pond10.NewHub("swim10", flowgraph.AllOf, &swim{rw: buffConn("localhost:20002")}).
 		SetNumSource(1).SetNumResult(1)
 	pond10.Loop()
 	fg.NewHub("steer10", flowgraph.AllOf, &steerDuck{}).
@@ -299,7 +328,7 @@ func main() {
 
 	fg.NewHub("nestE", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "E"}).
 		ConnectResults(duckWait10)
-	fg.NewHub("shoreE", flowgraph.Wait, nil).
+	fg.NewHub("shoreE", flowgraph.Wait, &shore{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckWait10, duckFakeE).ConnectResults(duckImport10)
 	fg.NewHub("sinkE", flowgraph.Sink, &sinkC{rw: buffConn("localhost:20002")}).
 		ConnectSources(duckSinkE)
@@ -308,5 +337,4 @@ func main() {
 
 	fgbase.RunTime = oldRunTime
 	fgbase.TraceLevel = oldTraceLevel
-	fmt.Printf("END:    TestDuckPondC\n")
 }
