@@ -14,9 +14,11 @@ import (
 // End of flow. Transmitted when end-of-file occurs, and promises no more
 // data to follow.
 type Error string
+
 func (e Error) Error() string {
-        return string(e)
-	}
+	return string(e)
+}
+
 const EOF = Error("EOF")
 
 // ParseFlags parses the command line flags for this package
@@ -184,7 +186,7 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 	// Control Hubs
 	case Wait:
 		if _, ok := init.(Transmitter); ok {
-		         init = &fgTransmitter{fg, init.(Transmitter)}
+			init = &fgTransmitter{fg, init.(Transmitter)}
 		}
 		n = fgbase.MakeNode(name, nil, nil, waitRdy, waitFire)
 
@@ -593,7 +595,7 @@ func transmitFire(n *fgbase.Node) error {
 }
 
 type waitStruct struct {
-	Request int
+	Request  int
 	Transmit *fgTransmitter
 }
 
@@ -608,8 +610,8 @@ func waitRdy(n *fgbase.Node) bool {
 
 	ws, init := n.Aux.(waitStruct)
 	if !init {
-	        tr,_ := n.Aux.(*fgTransmitter)
-		ws = waitStruct{Request: fgbase.ChannelSize - 1, Transmit:tr}
+		tr, _ := n.Aux.(*fgTransmitter)
+		ws = waitStruct{Request: fgbase.ChannelSize - 1, Transmit: tr}
 		n.Aux = ws
 		elocal := n.Srcs[ns-1]
 		usnode := elocal.SrcNode(0)
@@ -644,15 +646,15 @@ func waitRdy(n *fgbase.Node) bool {
 
 func waitFire(n *fgbase.Node) error {
 	ws := n.Aux.(waitStruct)
-	if ws.Transmit!=nil {
-  	        transmitter := ws.Transmit.t
-	        fg := ws.Transmit.fg
-	        err := transmitter.Transmit(&hub{n, fg, Transmit}, n.Srcs[0].SrcGet())
-	        if err!=nil {
-	                 n.LogError("Error in waitFire use of transmitter:  %s\n", err)
-   	        }
+	if ws.Transmit != nil {
+		transmitter := ws.Transmit.t
+		fg := ws.Transmit.fg
+		err := transmitter.Transmit(&hub{n, fg, Transmit}, n.Srcs[0].SrcGet())
+		if err != nil {
+			n.LogError("Error in waitFire use of transmitter:  %s\n", err)
+		}
 	}
-	
+
 	ns := n.SrcCnt()
 	for i := 0; i < ns-1; i++ {
 		n.Dsts[i].DstPut(n.Srcs[i].SrcGet())
