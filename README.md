@@ -11,6 +11,7 @@ go test
 
 * [![GoDoc](https://godoc.org/github.com/vectaport/flowgraph?status.svg)](https://godoc.org/github.com/vectaport/flowgraph)
 * [Wiki](https://github.com/vectaport/flowgraph/wiki)
+* [Slides](https://www.youtube.com/watch?v=awAsZUBncG8) from [Minneapolis Golang Meetup, May 22nd 2019](https://www.meetup.com/Minneapolis-Golang/events/259276080/)
 
 ### Overview
 
