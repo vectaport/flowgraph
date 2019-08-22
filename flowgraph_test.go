@@ -215,8 +215,8 @@ func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interf
 
 func TestChain(t *testing.T) {
 	fmt.Printf("BEGIN:  TestChain\n")
-	oldRunTime := fgbase.RunTime
-	fgbase.RunTime = 0
+	// oldRunTime := fgbase.RunTime
+	// fgbase.RunTime = 0
 
 	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
@@ -225,7 +225,7 @@ func TestChain(t *testing.T) {
 	array := fg.NewHub("array", flowgraph.Array, arr)
 	array.SetResultNames("X")
 
-	l := 1024
+	l := 16 // 1024
 	p := make([]flowgraph.Hub, l)
 
 	for i := 0; i < l; i++ {
@@ -258,7 +258,7 @@ func TestChain(t *testing.T) {
 		t.Fatalf("SinkStats.Sum %d != sum(arr)\n", s.Sum)
 	}
 
-	fgbase.RunTime = oldRunTime
+	// fgbase.RunTime = oldRunTime
 	fmt.Printf("END:    TestChain\n")
 }
 
