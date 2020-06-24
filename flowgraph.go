@@ -21,9 +21,9 @@ func (e Error) Error() string {
 // data to follow.
 const EOF = Error("EOF")
 
-// ParseFlags parses the command line flags for this package
 var flatDot = false
 
+// ParseFlags parses the command line flags for this package
 func ParseFlags() {
 	flag.BoolVar(&flatDot, "flatdot", false, "flatten dot output")
 	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
