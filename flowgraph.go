@@ -11,14 +11,14 @@ import (
 	"log"
 )
 
-// End of flow. Transmitted when end-of-file occurs, and promises no more
-// data to follow.
 type Error string
 
 func (e Error) Error() string {
 	return string(e)
 }
 
+// End of flow. Transmitted when end-of-file occurs, and promises no more
+// data to follow.
 const EOF = Error("EOF")
 
 // ParseFlags parses the command line flags for this package
