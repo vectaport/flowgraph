@@ -21,6 +21,7 @@ func main() {
 	fgbase.TraceLevel = fgbase.V
 	fgbase.TracePorts = true
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
 	fg := flowgraph.New("simple")
 

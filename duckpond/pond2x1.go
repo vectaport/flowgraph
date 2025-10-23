@@ -22,12 +22,12 @@ sinkW(duckSinkW)()
 pond00(duckImport00)(duckExport00) {
         swim(duckImport00)(duckExport00)
 }
-steer00(duckExport00)(duckImport10, duckSinkW)
+steer00(duckExport00)(duckImport10 duckSinkW)
 
 pond10(duckImport10)(duckExport10) {
         swim(duckImport10)(duckExport10)
 }
-steer10(duckExport10)(duckImport00, duckSinkE)
+steer10(duckExport10)(duckImport00 duckSinkE)
 
 nestE()(duckExport10)
 sinkE(duckSinkE)()

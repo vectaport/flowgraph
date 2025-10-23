@@ -29,6 +29,7 @@ func main() {
 	fgbase.RunTime = time.Second
 	fgbase.TraceLevel = fgbase.VVV
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
 	fg := flowgraph.New("TestIterator5")
 

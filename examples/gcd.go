@@ -37,6 +37,7 @@ func main() {
 	fgbase.RunTime = time.Second * 1
 	fgbase.TraceLevel = fgbase.V
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
 	fg := flowgraph.New("gcd")
 

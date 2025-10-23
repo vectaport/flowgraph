@@ -37,6 +37,7 @@ func main() {
 	fgbase.TracePorts = true
 	fgbase.TraceLevel = fgbase.V
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
 	fg := flowgraph.New("loop2")
 

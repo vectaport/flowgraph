@@ -31,8 +31,9 @@ func main() {
 	fgbase.RunTime = time.Second
 	fgbase.TraceLevel = fgbase.V
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
-	fg := flowgraph.New("chained")
+        fg := flowgraph.New("chained")
 
 	firstval1 := fg.NewStream("firstval1")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).

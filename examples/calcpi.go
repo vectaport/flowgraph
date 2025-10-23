@@ -63,10 +63,11 @@ func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
 }
 
 func main() {
-	fgbase.RunTime = time.Second / 10
+	fgbase.RunTime = time.Second * 10
 	fgbase.TraceLevel = fgbase.V
 	fgbase.TracePorts = true
 	fgbase.TraceStyle = fgbase.New
+	fgbase.ConfigByFlag(nil)
 
 	fg := flowgraph.New("calcpi")
 

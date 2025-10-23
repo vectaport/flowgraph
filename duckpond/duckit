@@ -1,11 +1,11 @@
 #!/bin/bash
-export DYLD_LIBRARY_PATH=/Users/scott/src/ACE_wrappers/ace
+#export DYLD_LIBRARY_PATH=/Users/scott/src/ACE_wrappers/ace
 rm -f swim.log
 rm -f tock.log
 ./duckmo --prequit
 /usr/local/bin/comdraw -geometry 1400x1000 >&comdraw.log &
-sleep 1
+sleep 3
 ./duckmo >&duckmo.log &
-sleep 2
+sleep 3
 ./pond2x1 -chansz 5 >&duckpond2x1.log
 
