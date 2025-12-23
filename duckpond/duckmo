@@ -20,22 +20,38 @@ for(i=1 i<narg() i++
     :dummmy2 dummy2_flag=true;if(substr(arg(i+1) 2)=="--" :then continue);i++;dummy2_val=arg(i)
     :default print("duckmo:  Unknown argument %s\n" arg(i) :err)))
 
-
+/* open command socket to comdraw */
 sock=socket("localhost" 20002)
 
 if(prequit_flag :then
   remote(sock "exit\n");
   exit)
 
+/* command string to initiate comdraw graphics for duckpond */
 cmdstr =
 " \
-global(ducks)=list();global(duckcnt)=0;handles(false); \
+global(ducks)=list();global(duckcnt)=0;handles(false) \
+"
+print(cmdstr :prefix "")
+remote(sock cmdstr)
+
+/* command string to initiate comdraw graphics for duckpond */
+/* 2 x 1 pond layout */
+cmdstr =
+" \
 import(\"DuckNest.drs\"); move(-500 0);\
 import(\"DuckNest.drs\"); move(500 0);\
 import(\"DuckPond.drs\"); move(-200 0);\
-import(\"DuckPond.drs\"); move(200 0);\
+import(\"DuckPond.drs\"); move(200 0)\
+"
+print(cmdstr :prefix "")
+remote(sock cmdstr)
+
+/* command string to create "tock" func to send to comdraw to remotely execute */
+cmdstr =
+" \
 tock=func( \
-  tockstr=print(\"t:%d  \" t :str); \
+  tockstr=print(\"txx:%d  \" t :str); \
   for(ii=0 ii<size(ducks) ii=ii+1 \
     dal = at(ducks ii); \
     if(dal == nil :then continue); \
@@ -67,3 +83,5 @@ remote(sock cmdstr)
 i=0
 while(1
   print(remote(sock print("tock(:t %d)" i :str)));print("\n");usleep(1+33333*0);i++)
+
+
