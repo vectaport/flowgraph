@@ -1,5 +1,5 @@
 // Package flowgraph for scalable asynchronous development.
-// Build systems out of hubs interconnected by streams of data.
+// Build systems out of hubs interconnected by pipes of data.
 // https://github.com/vectaport/flowgraph/wiki
 package flowgraph
 
@@ -30,7 +30,7 @@ func ParseFlags() {
 	fgbase.TraceStyle = fgbase.New
 }
 
-// Flowgraph interface for flowgraphs assembled out of hubs and streams
+// Flowgraph interface for flowgraphs assembled out of hubs and pipes
 type Flowgraph interface {
 
 	// Title returns the title of this flowgraph
@@ -39,20 +39,20 @@ type Flowgraph interface {
 	// Hub returns a hub by index
 	Hub(n int) Hub
 
-	// Stream returns a stream by index
-	Stream(n int) Stream
+	// Pipe returns a pipe by index
+	Pipe(n int) Pipe
 
 	// NumHub returns the number of hubs
 	NumHub() int
 
-	// NumStream returns the number of streams
-	NumStream() int
+	// NumPipe returns the number of pipes
+	NumPipe() int
 
 	// NewHub returns a new unconnected hub
 	NewHub(name string, code HubCode, init interface{}) Hub
 
-	// NewStream returns a new unconnected stream
-	NewStream(name string) Stream
+	// NewPipe returns a new unconnected pipe
+	NewPipe(name string) Pipe
 
 	// NewGraphHub returns a hub with a flowgraph inside
 	NewGraphHub(name string, code HubCode) GraphHub
@@ -60,38 +60,38 @@ type Flowgraph interface {
 	// FindHub finds a hub by name
 	FindHub(name string) Hub
 
-	// FindStream finds a stream by name
-	FindStream(name string) Stream
+	// FindPipe finds a pipe by name
+	FindPipe(name string) Pipe
 
 	// Connect connects two hubs via named (string) or indexed (int) ports
 	Connect(
 		upstream Hub, upstreamPort interface{},
-		dnstream Hub, dnstreamPort interface{}) Stream
+		dnstream Hub, dnstreamPort interface{}) Pipe
 
 	// ConnectInit connects two hubs via named (string) or indexed (int) ports
 	// and sets an initial value for flow
 	ConnectInit(
 		upstream Hub, upstreamPort interface{},
 		dnstream Hub, dnstreamPort interface{},
-		init interface{}) Stream
+		init interface{}) Pipe
 
 	// Run runs the flowgraph
 	Run()
 }
 
 type flowgraph struct {
-	title        string
-	hubs         []Hub
-	streams      []Stream
-	nameToHub    map[string]Hub
-	nameToStream map[string]Stream
+	title      string
+	hubs       []Hub
+	pipes      []Pipe
+	nameToHub  map[string]Hub
+	nameToPipe map[string]Pipe
 }
 
 // New returns a titled flowgraph
 func New(title string) Flowgraph {
 	nameToHub := make(map[string]Hub)
-	nameToStream := make(map[string]Stream)
-	fg := flowgraph{title, nil, nil, nameToHub, nameToStream}
+	nameToPipe := make(map[string]Pipe)
+	fg := flowgraph{title, nil, nil, nameToHub, nameToPipe}
 	return &fg
 }
 
@@ -105,9 +105,9 @@ func (fg *flowgraph) Hub(n int) Hub {
 	return fg.hubs[n]
 }
 
-// Stream returns a stream by index
-func (fg *flowgraph) Stream(n int) Stream {
-	return fg.streams[n]
+// Pipe returns a pipe by index
+func (fg *flowgraph) Pipe(n int) Pipe {
+	return fg.pipes[n]
 }
 
 // NumHub returns the number of hubs
@@ -115,9 +115,9 @@ func (fg *flowgraph) NumHub() int {
 	return len(fg.hubs)
 }
 
-// NumStream returns the number of hubs
-func (fg *flowgraph) NumStream() int {
-	return len(fg.streams)
+// NumPipe returns the number of hubs
+func (fg *flowgraph) NumPipe() int {
+	return len(fg.pipes)
 }
 
 type fgTransformer struct {
@@ -265,12 +265,12 @@ func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
 	return h
 }
 
-// NewStream returns a new unconnected stream
-func (fg *flowgraph) NewStream(name string) Stream {
+// NewPipe returns a new unconnected pipe
+func (fg *flowgraph) NewPipe(name string) Pipe {
 	e := fgbase.MakeEdge(name, nil)
-	s := &stream{&e, fg}
-	fg.streams = append(fg.streams, s)
-	fg.nameToStream[name] = s
+	s := &pipe{&e, fg}
+	fg.pipes = append(fg.pipes, s)
+	fg.nameToPipe[name] = s
 	return s
 }
 
@@ -302,15 +302,15 @@ func (fg *flowgraph) FindHub(name string) Hub {
 	return fg.nameToHub[name]
 }
 
-// FindStream finds a Stream by name
-func (fg *flowgraph) FindStream(name string) Stream {
-	return fg.nameToStream[name]
+// FindPipe finds a Pipe by name
+func (fg *flowgraph) FindPipe(name string) Pipe {
+	return fg.nameToPipe[name]
 }
 
 // Connect connects two hubs via named (string) or indexed (int) ports
 func (fg *flowgraph) Connect(
 	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{}) Stream {
+	dnstream Hub, dnstreamPort interface{}) Pipe {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, nil)
 }
 
@@ -319,7 +319,7 @@ func (fg *flowgraph) Connect(
 func (fg *flowgraph) ConnectInit(
 	upstream Hub, upstreamPort interface{},
 	dnstream Hub, dnstreamPort interface{},
-	init interface{}) Stream {
+	init interface{}) Pipe {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, init)
 }
 
@@ -328,12 +328,12 @@ func (fg *flowgraph) ConnectInit(
 func (fg *flowgraph) connectInit(
 	upstream Hub, upstreamPort interface{},
 	dnstream Hub, dnstreamPort interface{},
-	init interface{}) Stream {
+	init interface{}) Pipe {
 
 	checkInternalHub(fg, upstream)
 	checkInternalHub(fg, dnstream)
 
-	var us Stream
+	var us Pipe
 	var usok bool
 	switch v := upstreamPort.(type) {
 	case string:
@@ -351,7 +351,7 @@ func (fg *flowgraph) connectInit(
 		upstream.Panicf("Need string or int to specify port on upstream Hub \"%s\"\n", upstream.Name())
 	}
 
-	var ds Stream
+	var ds Pipe
 	var dsok bool
 	switch v := dnstreamPort.(type) {
 	case string:
@@ -370,9 +370,9 @@ func (fg *flowgraph) connectInit(
 	}
 
 	if us.Empty() && ds.Empty() {
-		s := fg.NewStream("")
+		s := fg.NewPipe("")
 		s.Init(init)
-		fg.streams = append(fg.streams, s)
+		fg.pipes = append(fg.pipes, s)
 		upstream.SetResult(upstreamPort, s)
 		dnstream.SetSource(dnstreamPort, s)
 		return s
@@ -386,7 +386,7 @@ func (fg *flowgraph) connectInit(
 		return us
 	}
 	/*
-		upstream.Panicf("Unexpected that with two ports to connect (%s:%v(%s) and %s:%v(%s() that they both are already connected to another stream as well",
+		upstream.Panicf("Unexpected that with two ports to connect (%s:%v(%s) and %s:%v(%s() that they both are already connected to another pipe as well",
 			upstream.Name(), upstreamPort, us.Name(), dnstream.Name(), dnstreamPort, ds.Name())
 	*/
 	return nil
@@ -423,33 +423,33 @@ func checkExternalHub(fg Flowgraph, h Hub) {
 	}
 }
 
-// checkInternalStream checks that the flowgraph associated with a Stream matches
-func checkInternalStream(fg Flowgraph, s Stream) {
+// checkInternalPipe checks that the flowgraph associated with a Pipe matches
+func checkInternalPipe(fg Flowgraph, s Pipe) {
 	if s == nil {
 		return
 	}
 	fgknown := fg
 	fgtest := s.Flowgraph()
 	if fgknown != fgtest {
-		panic(fmt.Sprintf("Stream %q created by flowgraph %q (expected it to be created by flowgraph %q)",
+		panic(fmt.Sprintf("Pipe %q created by flowgraph %q (expected it to be created by flowgraph %q)",
 			s.Name(), fgtest.Title(), fgknown.Title()))
 	}
 }
 
-// checkExternalStream checks that the flowgraph associated with a Stream doesn't match
-func checkExternalStream(fg Flowgraph, s Stream) {
+// checkExternalPipe checks that the flowgraph associated with a Pipe doesn't match
+func checkExternalPipe(fg Flowgraph, s Pipe) {
 	if s == nil {
 		return
 	}
 	fgknown := fg
 	fgtest := s.Flowgraph()
 	if fgknown == fgtest {
-		panic(fmt.Sprintf("External Stream %q created by same flowgraph %q",
+		panic(fmt.Sprintf("External Pipe %q created by same flowgraph %q",
 			s.Name(), fgtest.Title()))
 	}
 }
 
-// flatten connects GraphHub external ports to internal dangling streams
+// flatten connects GraphHub external ports to internal dangling pipes
 func (fg *flowgraph) flatten() []*fgbase.Node {
 	if flatDot {
 		fgbase.DotOutput = true

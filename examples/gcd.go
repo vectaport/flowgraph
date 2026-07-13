@@ -41,10 +41,10 @@ func main() {
 
 	fg := flowgraph.New("gcd")
 
-	mval := fg.NewStream("mval")
-	nval := fg.NewStream("nval")
-	tcond := fg.NewStream("tcond")
-	gcd := fg.NewStream("gcd")
+	mval := fg.NewPipe("mval")
+	nval := fg.NewPipe("nval")
+	tcond := fg.NewPipe("tcond")
+	gcd := fg.NewPipe("gcd")
 
 	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(mval)
