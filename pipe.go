@@ -6,6 +6,10 @@ import (
 
 import ()
 
+// Renamed Stream to Pipe: honors Doug McIlroy's Unix pipes, names what
+// actually connects to a hub (not the stream flowing within it), and marks
+// real backpressure -- unlike streams, which can overflow and cause havoc.
+
 // Pipe interface for flowgraph pipes that connect flowgraph hubs
 type Pipe interface {
 
