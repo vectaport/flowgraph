@@ -26,5 +26,10 @@ jobs:
       - name: Build
         run: go build . ./duckpond
 
+      # Caught unreachable code in flowgraph_test.go before this workflow
+      # even existed -- kept here to keep catching its class of bug.
+      - name: Vet
+        run: go vet . ./duckpond
+
       - name: Test
         run: go test -v .

@@ -388,12 +388,6 @@ func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
 
 	return nil
 
-	if p.cnt > 1 {
-		fmt.Printf("\b\b\b\b\b\b\b\b")
-	}
-	fmt.Printf("%8.6f", p.Pi)
-
-	return nil
 }
 
 func TestPi(t *testing.T) {
