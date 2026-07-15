@@ -284,11 +284,11 @@ func TestDotNaming(t *testing.T) {
 	fg.Connect(h0, "XYZ", h1, "ABC")
 
 	if h0.Result(0).Empty() {
-		t.Fatalf("ERROR Unable to find stream at result port numbered 0 on hub %s\n", h0.Name())
+		t.Fatalf("ERROR Unable to find pipe at result port numbered 0 on hub %s\n", h0.Name())
 	}
 
 	if h1.Source(0).Empty() {
-		t.Fatalf("ERROR Unable to find stream at source port numbered 0\n")
+		t.Fatalf("ERROR Unable to find pipe at source port numbered 0\n")
 	}
 
 	fg.Run()
@@ -617,11 +617,11 @@ func TestIterator2(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator2")
 
-	firstval := fg.NewStream("firstval")
-	lastval := fg.NewStream("lastval").Init(0)
-	oldval := fg.NewStream("oldval")
-	oneval := fg.NewStream("oneval").Const(1)
-	newval := fg.NewStream("newval")
+	firstval := fg.NewPipe("firstval")
+	lastval := fg.NewPipe("lastval").Init(0)
+	oldval := fg.NewPipe("oldval")
+	oneval := fg.NewPipe("oneval").Const(1)
+	newval := fg.NewPipe("newval")
 
 	fg.NewHub("ten", flowgraph.Constant, 10).
 		ConnectResults(firstval)
@@ -682,8 +682,8 @@ func TestIterator3(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator3")
 
-	firstval := fg.NewStream("firstval")
-	lastval := fg.NewStream("lastval")
+	firstval := fg.NewPipe("firstval")
+	lastval := fg.NewPipe("lastval")
 
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
@@ -692,7 +692,7 @@ func TestIterator3(t *testing.T) {
 	while.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	oneval := while.NewStream("oneval").Const(1)
+	oneval := while.NewPipe("oneval").Const(1)
 	while.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
 	while.Loop()
@@ -733,32 +733,32 @@ func TestIterator4(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator4")
 
-	firstval1 := fg.NewStream("firstval1")
+	firstval1 := fg.NewPipe("firstval1")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
-	lastval1 := fg.NewStream("lastval1")
+	lastval1 := fg.NewPipe("lastval1")
 	while1 := fg.NewGraphHub("while1", flowgraph.While)
 	while1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
 
-	oneval1 := while1.NewStream("oneval1").Const(1)
+	oneval1 := while1.NewPipe("oneval1").Const(1)
 	while1.NewHub("sub1", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval1)
 	while1.Loop()
 
-	tenval := fg.NewStream("tenval").Const(10)
-	firstval2 := fg.NewStream("firstval2")
+	tenval := fg.NewPipe("tenval").Const(10)
+	firstval2 := fg.NewPipe("firstval2")
 	fg.NewHub("wait", flowgraph.Wait, 1).
 		ConnectSources(tenval, lastval1).
 		ConnectResults(firstval2)
 
-	lastval2 := fg.NewStream("lastval2")
+	lastval2 := fg.NewPipe("lastval2")
 	while2 := fg.NewGraphHub("while2", flowgraph.While)
 	while2.ConnectSources(firstval2).
 		ConnectResults(lastval2)
 
-	oneval2 := while2.NewStream("oneval2").Const(1)
+	oneval2 := while2.NewPipe("oneval2").Const(1)
 	while2.NewHub("sub2", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval2)
 	while2.Loop()
@@ -796,11 +796,11 @@ func TestIterator5(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator5")
 
-	firstval1 := fg.NewStream("firstval1")
+	firstval1 := fg.NewPipe("firstval1")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
-	lastval1 := fg.NewStream("lastval1")
+	lastval1 := fg.NewPipe("lastval1")
 	while1 := fg.NewGraphHub("while1", flowgraph.While)
 	while1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
@@ -809,7 +809,7 @@ func TestIterator5(t *testing.T) {
 	while2.SetNumSource(1).SetNumResult(1) // could be detected
 	while1.Loop()
 
-	oneval := while2.NewStream("oneval").Const(1)
+	oneval := while2.NewPipe("oneval").Const(1)
 	while2.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
 	while2.Loop()
@@ -849,11 +849,11 @@ func TestIterator6(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator6")
 
-	firstval1 := fg.NewStream("firstval1")
+	firstval1 := fg.NewPipe("firstval1")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval1)
 
-	lastval1 := fg.NewStream("lastval1")
+	lastval1 := fg.NewPipe("lastval1")
 	while1 := fg.NewGraphHub("while1", flowgraph.While)
 	while1.ConnectSources(firstval1).
 		ConnectResults(lastval1)
@@ -866,7 +866,7 @@ func TestIterator6(t *testing.T) {
 	while3.SetNumSource(1).SetNumResult(1) // could be detected
 	while2.Loop()
 
-	oneval := while3.NewStream("oneval").Const(1)
+	oneval := while3.NewPipe("oneval").Const(1)
 	while3.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
 	while3.Loop()
@@ -908,11 +908,11 @@ func TestIterator7(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator7")
 
-	firstval := fg.NewStream("firstval")
+	firstval := fg.NewPipe("firstval")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
 
-	lastval := fg.NewStream("lastval")
+	lastval := fg.NewPipe("lastval")
 	while1 := fg.NewGraphHub("while1", flowgraph.While)
 	while1.ConnectSources(firstval).
 		ConnectResults(lastval)
@@ -929,7 +929,7 @@ func TestIterator7(t *testing.T) {
 	while4.SetNumSource(1).SetNumResult(1) // could be detected
 	while3.Loop()
 
-	oneval := while4.NewStream("oneval").Const(1)
+	oneval := while4.NewPipe("oneval").Const(1)
 	while4.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
 	while4.Loop()
@@ -972,24 +972,24 @@ func TestIterator8(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator8")
 
-	firstval := fg.NewStream("firstval")
+	firstval := fg.NewPipe("firstval")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
 
-	lastval := fg.NewStream("lastval")
+	lastval := fg.NewPipe("lastval")
 	while1 := fg.NewGraphHub("while1", flowgraph.While)
 	while1.ConnectSources(firstval).
 		ConnectResults(lastval)
 
 	while2 := while1.NewGraphHub("while2", flowgraph.While)
 	while2.SetNumSource(1).SetNumResult(1) // could be detected
-	oneval := while1.NewStream("oneval").Const(1)
+	oneval := while1.NewPipe("oneval").Const(1)
 	add := while1.NewHub("add", flowgraph.Add, nil).
 		ConnectSources(nil, oneval)
 	while1.Connect(add, 0, while2, 0).SetName("bumpval")
 	while1.Loop()
 
-	oneval2 := while2.NewStream("oneval2").Const(1)
+	oneval2 := while2.NewPipe("oneval2").Const(1)
 	while2.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval2)
 	while2.Loop()
@@ -1063,8 +1063,8 @@ func TestIterator9(t *testing.T) {
 
 	fg := flowgraph.New("TestIterator9")
 
-	firstval := fg.NewStream("firstval")
-	lastval := fg.NewStream("lastval")
+	firstval := fg.NewPipe("firstval")
+	lastval := fg.NewPipe("lastval")
 
 	fg.NewHub("tbtens", flowgraph.Retrieve, &tbtens{}).
 		ConnectResults(firstval)
@@ -1073,7 +1073,7 @@ func TestIterator9(t *testing.T) {
 	while.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	oneval := while.NewStream("oneval").Const(1)
+	oneval := while.NewPipe("oneval").Const(1)
 	while.NewHub("subber", flowgraph.AllOf, &subber{}).
 		ConnectSources(nil, oneval).
 		SetNumResult(1)
@@ -1125,10 +1125,10 @@ func TestGCD(t *testing.T) {
 
 	fg := flowgraph.New("TestGCD")
 
-	mval := fg.NewStream("mval")
-	nval := fg.NewStream("nval")
-	tcond := fg.NewStream("tcond")
-	gcd := fg.NewStream("gcd")
+	mval := fg.NewPipe("mval")
+	nval := fg.NewPipe("nval")
+	tcond := fg.NewPipe("tcond")
+	gcd := fg.NewPipe("gcd")
 
 	fg.NewHub("rand100", flowgraph.Retrieve, &rand100{}).
 		ConnectResults(mval)
@@ -1217,19 +1217,19 @@ func TestGoRound(t *testing.T) {
 
 	fg := flowgraph.New("TestGoRound")
 
-	ival := fg.NewStream("ival")
-	jval := fg.NewStream("jval")
-	kval := fg.NewStream("kval")
-	lval := fg.NewStream("lval")
-	mval := fg.NewStream("mval")
-	nval := fg.NewStream("nval")
+	ival := fg.NewPipe("ival")
+	jval := fg.NewPipe("jval")
+	kval := fg.NewPipe("kval")
+	lval := fg.NewPipe("lval")
+	mval := fg.NewPipe("mval")
+	nval := fg.NewPipe("nval")
 
-	iout := fg.NewStream("iout")
-	jout := fg.NewStream("jout")
-	kout := fg.NewStream("kout")
-	lout := fg.NewStream("lout")
-	mout := fg.NewStream("mout")
-	nout := fg.NewStream("nout")
+	iout := fg.NewPipe("iout")
+	jout := fg.NewPipe("jout")
+	kout := fg.NewPipe("kout")
+	lout := fg.NewPipe("lout")
+	mout := fg.NewPipe("mout")
+	nout := fg.NewPipe("nout")
 
 	fg.NewHub("tbcar", flowgraph.Retrieve, &tbcar{}).
 		ConnectResults(ival)
@@ -1304,14 +1304,14 @@ func TestCross(t *testing.T) {
 
 	fg := flowgraph.New("TestCross")
 
-	ival := fg.NewStream("ival")
-	jval := fg.NewStream("jval")
-	kval := fg.NewStream("kval")
-	lval := fg.NewStream("lval")
-	iout := fg.NewStream("iout")
-	jout := fg.NewStream("jout")
-	kout := fg.NewStream("kout")
-	lout := fg.NewStream("lout")
+	ival := fg.NewPipe("ival")
+	jval := fg.NewPipe("jval")
+	kval := fg.NewPipe("kval")
+	lval := fg.NewPipe("lval")
+	iout := fg.NewPipe("iout")
+	jout := fg.NewPipe("jout")
+	kout := fg.NewPipe("kout")
+	lout := fg.NewPipe("lout")
 
 	fg.NewHub("tbtoggle", flowgraph.Retrieve, &tbtoggle{}).
 		ConnectResults(ival)
@@ -1419,11 +1419,11 @@ func TestDuckPondA(t *testing.T) {
 
 	fg := flowgraph.New("TestDuckPondA")
 
-	newduck := fg.NewStream("newduck")
+	newduck := fg.NewPipe("newduck")
 	fg.NewHub("nest", flowgraph.Retrieve, &nest{}).
 		ConnectResults(newduck)
 
-	oldduck := fg.NewStream("oldduck")
+	oldduck := fg.NewPipe("oldduck")
 	pond := fg.NewGraphHub("pond", flowgraph.While)
 	pond.ConnectSources(newduck).ConnectResults(oldduck)
 
@@ -1498,13 +1498,13 @@ func TestDuckPondB(t *testing.T) {
 
 	fg := flowgraph.New("TestDuckPondB")
 
-	duckNW := fg.NewStream("duckNW")
+	duckNW := fg.NewPipe("duckNW")
 	fg.NewHub("nestN", flowgraph.Retrieve, &nest{}).
 		ConnectResults(duckNW)
 	fg.NewHub("nestW", flowgraph.Retrieve, &nest{}).
 		ConnectResults(duckNW)
 
-	duckSE := fg.NewStream("duckSE")
+	duckSE := fg.NewPipe("duckSE")
 	pond := fg.NewGraphHub("pond", flowgraph.While)
 	pond.ConnectSources(duckNW).ConnectResults(duckSE)
 
@@ -1512,8 +1512,8 @@ func TestDuckPondB(t *testing.T) {
 		SetNumSource(1).SetNumResult(1)
 	pond.Loop()
 
-	duckS := fg.NewStream("duckS")
-	duckE := fg.NewStream("duckE")
+	duckS := fg.NewPipe("duckS")
+	duckE := fg.NewPipe("duckE")
 	fg.NewHub("steer", flowgraph.AllOf, &steerDuck{}).
 		ConnectSources(duckSE).ConnectResults(duckS, duckE)
 

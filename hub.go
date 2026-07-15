@@ -4,7 +4,7 @@ import (
 	"github.com/vectaport/fgbase"
 )
 
-// Hub interface for flowgraph hubs that are connected by flowgraph streams
+// Hub interface for flowgraph hubs that are connected by flowgraph pipes
 type Hub interface {
 
 	// Name returns the hub name
@@ -22,23 +22,23 @@ type Hub interface {
 	// Panicf for logging of panic messages.  Uses atomic log mechanism.
 	Panicf(format string, v ...interface{})
 
-	// Source returns source stream selected by string or int
-	Source(port interface{}) Stream
+	// Source returns source pipe selected by string or int
+	Source(port interface{}) Pipe
 
-	// Result returns result stream selected by string or int
-	Result(port interface{}) Stream
+	// Result returns result pipe selected by string or int
+	Result(port interface{}) Pipe
 
-	// SetSource sets a stream on a source port selected by string or int
-	SetSource(port interface{}, s Stream) Hub
+	// SetSource sets a pipe on a source port selected by string or int
+	SetSource(port interface{}, s Pipe) Hub
 
-	// SetResult sets a stream on a result port selected by string or int
-	SetResult(port interface{}, s Stream) Hub
+	// SetResult sets a pipe on a result port selected by string or int
+	SetResult(port interface{}, s Pipe) Hub
 
-	// AddSources adds a source port for each stream
-	AddSources(s ...Stream) Hub
+	// AddSources adds a source port for each pipe
+	AddSources(s ...Pipe) Hub
 
-	// AddResults adds a result port for each stream
-	AddResults(s ...Stream) Hub
+	// AddResults adds a result port for each pipe
+	AddResults(s ...Pipe) Hub
 
 	// NumSource returns the number of source ports
 	NumSource() int
@@ -64,17 +64,17 @@ type Hub interface {
 	// SetResultNames names the result ports
 	SetResultNames(nm ...string) Hub
 
-	// SourceIndex returns the index of a source port selected by string or Stream
+	// SourceIndex returns the index of a source port selected by string or Pipe
 	SourceIndex(port interface{}) int
 
-	// ResultIndex returns the index of a result port selected by string or Stream
+	// ResultIndex returns the index of a result port selected by string or Pipe
 	ResultIndex(port interface{}) int
 
-	// ConnectSources connects a list of source Streams to this hub
-	ConnectSources(source ...Stream) Hub
+	// ConnectSources connects a list of source Pipes to this hub
+	ConnectSources(source ...Pipe) Hub
 
-	// ConnectResults connects a list of result Streams to this hub
-	ConnectResults(result ...Stream) Hub
+	// ConnectResults connects a list of result Pipes to this hub
+	ConnectResults(result ...Pipe) Hub
 
 	// HubCode returns code associated with hub.
 	HubCode() HubCode
@@ -121,8 +121,8 @@ func (h *hub) SetName(name string) {
 	h.base.Name = name
 }
 
-// Source returns source stream selected by int or string
-func (h *hub) Source(port interface{}) Stream {
+// Source returns source pipe selected by int or string
+func (h *hub) Source(port interface{}) Pipe {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -133,18 +133,18 @@ func (h *hub) Source(port interface{}) Stream {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Panicf("Need string or int to select port on Hub %s to get source stream\n", h.Name())
+		h.Panicf("Need string or int to select port on Hub %s to get source pipe\n", h.Name())
 	}
 
 	if !ok {
 		h.Panicf("Source port %v not found on Hub %v\n", port, h.Name())
 	}
 
-	return &stream{h.base.Src(i), h.fg}
+	return &pipe{h.base.Src(i), h.fg}
 }
 
-// Result returns result stream selected by int or string
-func (h *hub) Result(port interface{}) Stream {
+// Result returns result pipe selected by int or string
+func (h *hub) Result(port interface{}) Pipe {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -155,19 +155,19 @@ func (h *hub) Result(port interface{}) Stream {
 		ok = v >= 0 && v < h.NumResult()
 		i = v
 	default:
-		h.Panicf("Need string or int to select port on Hub %s to get result stream\n", h.Name())
+		h.Panicf("Need string or int to select port on Hub %s to get result pipe\n", h.Name())
 	}
 
 	if !ok {
 		h.Panicf("Result port %v not found on Hub %v\n", port, h.Name())
 	}
 
-	return &stream{h.base.Dst(i), h.fg}
+	return &pipe{h.base.Dst(i), h.fg}
 }
 
-// SetSource sets a stream on a source port selected by string or int
-func (h *hub) SetSource(port interface{}, s Stream) Hub {
-	checkInternalStream(h.Flowgraph(), s)
+// SetSource sets a pipe on a source port selected by string or int
+func (h *hub) SetSource(port interface{}, s Pipe) Hub {
+	checkInternalPipe(h.Flowgraph(), s)
 
 	var i int
 	var ok bool
@@ -179,7 +179,7 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 		ok = v >= 0 && v < h.NumSource()
 		i = v
 	default:
-		h.Panicf("Need string or int to select port on Hub %s to set source stream\n", h.Name())
+		h.Panicf("Need string or int to select port on Hub %s to set source pipe\n", h.Name())
 	}
 
 	if !ok {
@@ -194,9 +194,9 @@ func (h *hub) SetSource(port interface{}, s Stream) Hub {
 
 }
 
-// SetResult sets a stream on a result port selected by string or int
-func (h *hub) SetResult(port interface{}, s Stream) Hub {
-	checkInternalStream(h.Flowgraph(), s)
+// SetResult sets a pipe on a result port selected by string or int
+func (h *hub) SetResult(port interface{}, s Pipe) Hub {
+	checkInternalPipe(h.Flowgraph(), s)
 
 	var i int
 	var ok bool
@@ -208,7 +208,7 @@ func (h *hub) SetResult(port interface{}, s Stream) Hub {
 		ok = v >= 0 && v < h.NumResult()
 		i = v
 	default:
-		h.Panicf("Need string or int to select result port on hub %s to set result stream\n", h.Name())
+		h.Panicf("Need string or int to select result port on hub %s to set result pipe\n", h.Name())
 	}
 
 	if !ok {
@@ -221,19 +221,19 @@ func (h *hub) SetResult(port interface{}, s Stream) Hub {
 	return h
 }
 
-// AddSources adds a source port for each stream
-func (h *hub) AddSources(s ...Stream) Hub {
+// AddSources adds a source port for each pipe
+func (h *hub) AddSources(s ...Pipe) Hub {
 	for _, sv := range s {
-		checkInternalStream(h.Flowgraph(), sv)
+		checkInternalPipe(h.Flowgraph(), sv)
 		h.Base().(*fgbase.Node).SrcAppend(sv.Base().(*fgbase.Edge))
 	}
 	return h
 }
 
-// AddResults adds a result port for each stream
-func (h *hub) AddResults(s ...Stream) Hub {
+// AddResults adds a result port for each pipe
+func (h *hub) AddResults(s ...Pipe) Hub {
 	for _, sv := range s {
-		checkInternalStream(h.Flowgraph(), sv)
+		checkInternalPipe(h.Flowgraph(), sv)
 		h.Base().(*fgbase.Node).DstAppend(sv.Base().(*fgbase.Edge))
 	}
 	return h
@@ -283,7 +283,7 @@ func (h *hub) SetResultNames(nm ...string) Hub {
 	return h
 }
 
-// SourceIndex returns the index of a source port selected by string or stream
+// SourceIndex returns the index of a source port selected by string or pipe
 func (h *hub) SourceIndex(port interface{}) int {
 	var i int
 	var ok bool
@@ -292,7 +292,7 @@ func (h *hub) SourceIndex(port interface{}) int {
 		i, ok = h.base.FindSrcIndex(v)
 	case int:
 		i, ok = v, true
-	case Stream:
+	case Pipe:
 		for j := 0; j < h.NumSource(); j++ {
 			if v.Same(h.Source(j)) {
 				i, ok = j, true
@@ -300,11 +300,11 @@ func (h *hub) SourceIndex(port interface{}) int {
 			}
 		}
 		if !ok {
-			h.Panicf("Source port for Stream %s not found on Hub %s\n", v.Name(), h.Name())
+			h.Panicf("Source port for Pipe %s not found on Hub %s\n", v.Name(), h.Name())
 		}
 
 	default:
-		h.Panicf("Need string, int or Stream to select port on Hub %s\n", h.Name())
+		h.Panicf("Need string, int or Pipe to select port on Hub %s\n", h.Name())
 	}
 
 	if !ok {
@@ -313,7 +313,7 @@ func (h *hub) SourceIndex(port interface{}) int {
 	return i
 }
 
-// ResultIndex returns the index of a result port selected by string or stream
+// ResultIndex returns the index of a result port selected by string or pipe
 func (h *hub) ResultIndex(port interface{}) int {
 	var i int
 	var ok bool
@@ -322,7 +322,7 @@ func (h *hub) ResultIndex(port interface{}) int {
 		i, ok = h.base.FindDstIndex(v)
 	case int:
 		i, ok = v, true
-	case Stream:
+	case Pipe:
 		for j := 0; j < h.NumResult(); j++ {
 			if v.Same(h.Result(j)) {
 				i, ok = j, true
@@ -330,11 +330,11 @@ func (h *hub) ResultIndex(port interface{}) int {
 			}
 		}
 		if !ok {
-			h.Panicf("Result port for Stream %s not found on Hub %s\n", v.Name(), h.Name())
+			h.Panicf("Result port for Pipe %s not found on Hub %s\n", v.Name(), h.Name())
 		}
 
 	default:
-		h.Panicf("Need string, int or Stream to select port on Hub %s\n", h.Name())
+		h.Panicf("Need string, int or Pipe to select port on Hub %s\n", h.Name())
 	}
 
 	if !ok {
@@ -343,8 +343,8 @@ func (h *hub) ResultIndex(port interface{}) int {
 	return i
 }
 
-// ConnectSources connects a list of source streams to this hub
-func (h *hub) ConnectSources(source ...Stream) Hub {
+// ConnectSources connects a list of source pipes to this hub
+func (h *hub) ConnectSources(source ...Pipe) Hub {
 	h.SetNumSource(len(source))
 	for i, v := range source {
 		h.SetSource(i, v)
@@ -352,8 +352,8 @@ func (h *hub) ConnectSources(source ...Stream) Hub {
 	return h
 }
 
-// ConnectResults connects a list of result streams to this hub
-func (h *hub) ConnectResults(result ...Stream) Hub {
+// ConnectResults connects a list of result pipes to this hub
+func (h *hub) ConnectResults(result ...Pipe) Hub {
 	h.SetNumResult(len(result))
 	for i, v := range result {
 		h.SetResult(i, v)

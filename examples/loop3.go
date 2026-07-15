@@ -42,8 +42,8 @@ func main() {
 
 	fg := flowgraph.New("loop3")
 
-	firstval := fg.NewStream("firstval")
-	lastval := fg.NewStream("lastval")
+	firstval := fg.NewPipe("firstval")
+	lastval := fg.NewPipe("lastval")
 
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).
 		ConnectResults(firstval)
@@ -52,7 +52,7 @@ func main() {
 	while.ConnectSources(firstval).
 		ConnectResults(lastval)
 
-	oneval := while.NewStream("oneval").Const(1)
+	oneval := while.NewPipe("oneval").Const(1)
 	while.NewHub("sub", flowgraph.Subtract, nil).
 		ConnectSources(nil, oneval)
 	while.Loop()

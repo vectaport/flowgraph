@@ -285,23 +285,23 @@ func main() {
 
 	fg := flowgraph.New("DuckPond2x1")
 
-	duckImport00 := fg.NewStream("duckImport00")
-	duckWait00 := fg.NewStream("duckWait00")
-	duckSinkW := fg.NewStream("duckSinkW").Init(&duck{-2, 0, "W", "W", false, false, -1, rand.Intn(1000)})
+	duckImport00 := fg.NewPipe("duckImport00")
+	duckWait00 := fg.NewPipe("duckWait00")
+	duckSinkW := fg.NewPipe("duckSinkW").Init(&duck{-2, 0, "W", "W", false, false, -1, rand.Intn(1000)})
 	duckFakeW := duckSinkW
 	if gridLock {
-		duckFakeW = fg.NewStream("duckFakeW").Const(&duck{-4, 0, "W", "W", false, false, -1, rand.Intn(1000)})
+		duckFakeW = fg.NewPipe("duckFakeW").Const(&duck{-4, 0, "W", "W", false, false, -1, rand.Intn(1000)})
 	}
-	duckExport00 := fg.NewStream("duckExport00")
+	duckExport00 := fg.NewPipe("duckExport00")
 
-	duckImport10 := fg.NewStream("duckImport10")
-	duckWait10 := fg.NewStream("duckWait10")
-	duckSinkE := fg.NewStream("duckSinkE").Init(&duck{-1, 0, "E", "E", false, false, -1, rand.Intn(1000)})
+	duckImport10 := fg.NewPipe("duckImport10")
+	duckWait10 := fg.NewPipe("duckWait10")
+	duckSinkE := fg.NewPipe("duckSinkE").Init(&duck{-1, 0, "E", "E", false, false, -1, rand.Intn(1000)})
 	duckFakeE := duckSinkE
 	if gridLock {
-		duckFakeE = fg.NewStream("duckFakeE").Const(&duck{-3, 0, "E", "E", false, false, -1, rand.Intn(1000)})
+		duckFakeE = fg.NewPipe("duckFakeE").Const(&duck{-3, 0, "E", "E", false, false, -1, rand.Intn(1000)})
 	}
-	duckExport10 := fg.NewStream("duckExport10")
+	duckExport10 := fg.NewPipe("duckExport10")
 
 	fg.NewHub("nestW", flowgraph.Retrieve, &nestC{rw: buffConn("localhost:20002"), loc: "W"}).
 		ConnectResults(duckWait00)

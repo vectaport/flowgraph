@@ -41,11 +41,11 @@ func main() {
 
 	fg := flowgraph.New("loop2")
 
-	firstval := fg.NewStream("firstval")
-	lastval := fg.NewStream("lastval").Init(0)
-	oldval := fg.NewStream("oldval")
-	oneval := fg.NewStream("oneval").Const(1)
-	newval := fg.NewStream("newval")
+	firstval := fg.NewPipe("firstval")
+	lastval := fg.NewPipe("lastval").Init(0)
+	oldval := fg.NewPipe("oldval")
+	oneval := fg.NewPipe("oneval").Const(1)
+	newval := fg.NewPipe("newval")
 
 	fg.NewHub("ten", flowgraph.Constant, 10).
 		ConnectResults(firstval)
