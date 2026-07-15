@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.20"
+          cache: true
+
+      # examples/ holds standalone HDL demo snippets -- one `main` per file,
+      # meant to be run individually (`go run examples/<name>.go`) -- so it
+      # does not compile as a single package and is excluded here.
+      - name: Build
+        run: go build . ./duckpond
+
+      - name: Test
+        run: go test -v .
