@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,3 +33,13 @@ jobs:
 
       - name: Test
         run: go test -v .
+
+      # Non-blocking: known unsynchronized access in the loop back-edge
+      # bookkeeping (flowgraph.go, waitStruct/RdyCnt init) and in fgbase's
+      # Run() returning before all spawned goroutines have exited. Kept
+      # running (report-only) so regressions are visible without gating
+      # merges until those are fixed upstream/here.
+      - name: Test (race detector, informational)
+        timeout-minutes: 8
+        continue-on-error: true
+        run: go test -race -v .
