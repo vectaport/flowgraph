@@ -34,11 +34,20 @@ jobs:
       - name: Test
         run: go test -v .
 
-      # Non-blocking: known unsynchronized access in the loop back-edge
-      # bookkeeping (flowgraph.go, waitStruct/RdyCnt init) and in fgbase's
-      # Run() returning before all spawned goroutines have exited. Kept
-      # running (report-only) so regressions are visible without gating
-      # merges until those are fixed upstream/here.
+      # Non-blocking, two known race families -- kept report-only so new
+      # regressions are visible without gating merges on these:
+      #  1. flowgraph.go ~621: waitStruct init on a loop back-edge writes
+      #     usnode.Dsts[i].RdyCnt from the downstream node's goroutine, with
+      #     no sync against the upstream node's own goroutine.
+      #  2. fgbase.runAll (node.go ~792): when RunTime > 0 it sleeps for the
+      #     deadline and returns WITHOUT wg.Wait()-ing the per-node
+      #     goroutines it spawned (the wg.Wait() call only runs in the
+      #     RunTime == 0 branch). So RunGraph()/fg.Run() can return to the
+      #     caller while a node goroutine is still alive -- e.g. still
+      #     reading the package-global TraceLevel/RunTime/TracePorts that
+      #     the next sequential test then writes. Fix belongs in fgbase:
+      #     always wg.Wait() after the deadline sleep, not just when there
+      #     is no deadline.
       - name: Test (race detector, informational)
         timeout-minutes: 8
         continue-on-error: true
