@@ -498,7 +498,7 @@ func allOfFire(n *fgbase.Node) error {
 	eofflag := false
 	for i, _ := range a {
 		a[i] = n.Srcs[i].SrcGet()
-		if v, ok := a[i].(error); ok && v == EOF {
+		if v, ok := a[i].(error); ok && v.Error() == "EOF" {
 			n.Srcs[i].Flow = false
 			eofflag = true
 		}
@@ -549,7 +549,7 @@ func oneOfFire(n *fgbase.Node) error {
 	for i, _ := range a {
 		if n.Srcs[i].SrcRdy(n) {
 			a[i] = n.Srcs[i].SrcGet()
-			if v, ok := a[i].(error); ok && v == EOF {
+			if v, ok := a[i].(error); ok && v.Error() == "EOF" {
 				n.Srcs[i].Flow = false
 				eofflag = true
 			}
