@@ -6,20 +6,18 @@ package flowgraph
 import (
 	"github.com/vectaport/fgbase"
 
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 )
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
-// End of flow. Transmitted when end-of-file occurs, and promises no more
-// data to follow.
-const EOF = Error("EOF")
+// EOF is flowgraph's own name for fgbase.EOS -- the same value, not a
+// separate one, so a Transform/Retrieve/Transmit implementation can
+// return flowgraph.EOF and have it recognized as end-of-stream by any
+// fgbase-native hub, and vice versa. Transmitted when end-of-file
+// occurs, and promises no more data to follow.
+var EOF = fgbase.EOS
 
 var flatDot = false
 
@@ -498,7 +496,7 @@ func allOfFire(n *fgbase.Node) error {
 	eofflag := false
 	for i, _ := range a {
 		a[i] = n.Srcs[i].SrcGet()
-		if v, ok := a[i].(error); ok && v.Error() == "EOF" {
+		if v, ok := a[i].(error); ok && errors.Is(v, fgbase.EOS) {
 			n.Srcs[i].Flow = false
 			eofflag = true
 		}
@@ -549,7 +547,7 @@ func oneOfFire(n *fgbase.Node) error {
 	for i, _ := range a {
 		if n.Srcs[i].SrcRdy(n) {
 			a[i] = n.Srcs[i].SrcGet()
-			if v, ok := a[i].(error); ok && v.Error() == "EOF" {
+			if v, ok := a[i].(error); ok && errors.Is(v, fgbase.EOS) {
 				n.Srcs[i].Flow = false
 				eofflag = true
 			}
