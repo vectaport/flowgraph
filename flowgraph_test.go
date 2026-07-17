@@ -1107,7 +1107,7 @@ func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 		// (*t).init = true
 		return rand.Intn(100) + 1, nil
 	}
-	return flowgraph.EOF, flowgraph.EOF
+	return flowgraph.EOS, flowgraph.EOS
 }
 
 func TestGCD(t *testing.T) {
