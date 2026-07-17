@@ -12,12 +12,12 @@ import (
 	"log"
 )
 
-// EOF is flowgraph's own name for fgbase.EOS -- the same value, not a
+// EOS is flowgraph's own name for fgbase.EOS -- the same value, not a
 // separate one, so a Transform/Retrieve/Transmit implementation can
-// return flowgraph.EOF and have it recognized as end-of-stream by any
+// return flowgraph.EOS and have it recognized as end-of-stream by any
 // fgbase-native hub, and vice versa. Transmitted when end-of-file
 // occurs, and promises no more data to follow.
-var EOF = fgbase.EOS
+var EOS = fgbase.EOS
 
 var flatDot = false
 
@@ -504,7 +504,7 @@ func allOfFire(n *fgbase.Node) error {
 	x, _ := t.Transform(&hub{n, fg, AllOf}, a)
 	for i, _ := range x {
 		if eofflag {
-			n.Dsts[i].DstPut(EOF)
+			n.Dsts[i].DstPut(EOS)
 		} else {
 			if x[i] != nil {
 				n.Dsts[i].DstPut(x[i])
@@ -512,7 +512,7 @@ func allOfFire(n *fgbase.Node) error {
 		}
 	}
 	if eofflag {
-		return EOF
+		return EOS
 	} else {
 		return nil
 	}
@@ -557,7 +557,7 @@ func oneOfFire(n *fgbase.Node) error {
 	x, _ := t.Transform(&hub{n, fg, OneOf}, a)
 	for i, _ := range x {
 		if eofflag {
-			n.Dsts[i].DstPut(EOF)
+			n.Dsts[i].DstPut(EOS)
 		} else {
 			if x[i] != nil {
 				n.Dsts[i].DstPut(x[i])
@@ -565,7 +565,7 @@ func oneOfFire(n *fgbase.Node) error {
 		}
 	}
 	if eofflag {
-		return EOF
+		return EOS
 	} else {
 		return nil
 	}
