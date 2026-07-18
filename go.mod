@@ -2,7 +2,7 @@ module github.com/vectaport/flowgraph
 
 go 1.20
 
-require github.com/vectaport/fgbase v0.0.0-20260718163615-72d78b54b9d8
+require github.com/vectaport/fgbase v0.0.0-20260718172349-2448656f90cb
 
 require (
 	golang.org/x/crypto v0.9.0 // indirect
