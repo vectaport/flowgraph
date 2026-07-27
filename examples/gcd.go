@@ -18,7 +18,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"math/rand"
-	"time"
 )
 
 type rand100 struct {
@@ -34,10 +33,11 @@ func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 }
 
 func main() {
-	fgbase.RunTime = time.Second * 1
-	fgbase.TraceLevel = fgbase.V
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace": "V",
+		"sec":   1,
+	})
 
 	fg := flowgraph.New("gcd")
 

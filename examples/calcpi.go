@@ -14,7 +14,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"math/rand"
-	"time"
 )
 
 type randOne struct{}
@@ -63,11 +62,13 @@ func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
 }
 
 func main() {
-	fgbase.RunTime = time.Second * 10
-	fgbase.TraceLevel = fgbase.V
-	fgbase.TracePorts = true
-	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.TraceStyle = fgbase.New // not flag-backed, fine as a direct preset
+
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace":  "V",
+		"sec":    10,
+		"trport": true,
+	})
 
 	fg := flowgraph.New("calcpi")
 
