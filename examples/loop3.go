@@ -15,7 +15,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"fmt"
-	"time"
 )
 
 type ten struct{}
@@ -34,11 +33,12 @@ func (st *sinkIterator3) Sink(source []interface{}) {
 }
 
 func main() {
-	fgbase.RunTime = time.Second * 10
-	fgbase.TracePorts = true
-	fgbase.TraceLevel = fgbase.V
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace":  "V",
+		"sec":    10,
+		"trport": true,
+	})
 
 	fg := flowgraph.New("loop3")
 

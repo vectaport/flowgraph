@@ -17,11 +17,12 @@ import (
 )
 
 func main() {
-	fgbase.RunTime = time.Second / 1000
-	fgbase.TraceLevel = fgbase.V
-	fgbase.TracePorts = true
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace":  "V",
+		"trport": true,
+	})
+	fgbase.RunTime = time.Second / 1000 // sub-second; not expressible via -sec (whole seconds only)
 
 	fg := flowgraph.New("simple")
 

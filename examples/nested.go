@@ -15,8 +15,6 @@ package main
 import (
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
-
-	"time"
 )
 
 type ten struct{}
@@ -26,10 +24,11 @@ func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 }
 
 func main() {
-	fgbase.RunTime = time.Second
-	fgbase.TraceLevel = fgbase.VVV
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace": "VVV",
+		"sec":   1,
+	})
 
 	fg := flowgraph.New("TestIterator5")
 

@@ -14,7 +14,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"math/rand"
-	"time"
 )
 
 type weight struct{
@@ -75,11 +74,12 @@ func (p *result) Transmit(hub flowgraph.Hub, source interface{}) error {
 }
 
 func main() {
-	fgbase.RunTime = time.Second / 1
-	fgbase.TraceLevel = fgbase.V
-	fgbase.TracePorts = true
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(nil)
+	fgbase.ConfigByFlag(map[string]interface{}{
+		"trace":  "V",
+		"sec":    1,
+		"trport": true,
+	})
 
 	fg := flowgraph.New("neuralnet")
 
