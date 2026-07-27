@@ -12,17 +12,15 @@ package main
 import (
 	"github.com/vectaport/fgbase"
 	"github.com/vectaport/flowgraph"
-
-	"time"
 )
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
 	fgbase.ConfigByFlag(map[string]interface{}{
 		"trace":  "V",
+		"sec":    0.001,
 		"trport": true,
 	})
-	fgbase.RunTime = time.Second / 1000 // sub-second; not expressible via -sec (whole seconds only)
 
 	fg := flowgraph.New("simple")
 

@@ -14,7 +14,6 @@ import (
 	"github.com/vectaport/flowgraph"
 
 	"math/rand"
-	"time"
 )
 
 type input struct{
@@ -77,9 +76,9 @@ func main() {
 	fgbase.TraceStyle = fgbase.New
 	fgbase.ConfigByFlag(map[string]interface{}{
 		"trace":  "V",
+		"sec":    0.1,
 		"trport": true,
 	})
-	fgbase.RunTime = time.Second / 10 // sub-second; not expressible via -sec (whole seconds only)
 
 	fg := flowgraph.New("neuralnet")
 
