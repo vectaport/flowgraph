@@ -24,7 +24,7 @@ var flatDot = false
 // ParseFlags parses the command line flags for this package
 func ParseFlags() {
 	flag.BoolVar(&flatDot, "flatdot", false, "flatten dot output")
-	fgbase.ConfigByFlag(map[string]interface{}{"trace": "V"})
+	fgbase.ConfigByFlag(map[string]any{"trace": "V"})
 	fgbase.TraceStyle = fgbase.New
 }
 
@@ -47,7 +47,7 @@ type Flowgraph interface {
 	NumPipe() int
 
 	// NewHub returns a new unconnected hub
-	NewHub(name string, code HubCode, init interface{}) Hub
+	NewHub(name string, code HubCode, init any) Hub
 
 	// NewPipe returns a new unconnected pipe
 	NewPipe(name string) Pipe
@@ -63,15 +63,15 @@ type Flowgraph interface {
 
 	// Connect connects two hubs via named (string) or indexed (int) ports
 	Connect(
-		upstream Hub, upstreamPort interface{},
-		dnstream Hub, dnstreamPort interface{}) Pipe
+		upstream Hub, upstreamPort any,
+		dnstream Hub, dnstreamPort any) Pipe
 
 	// ConnectInit connects two hubs via named (string) or indexed (int) ports
 	// and sets an initial value for flow
 	ConnectInit(
-		upstream Hub, upstreamPort interface{},
-		dnstream Hub, dnstreamPort interface{},
-		init interface{}) Pipe
+		upstream Hub, upstreamPort any,
+		dnstream Hub, dnstreamPort any,
+		init any) Pipe
 
 	// Run runs the flowgraph
 	Run()
@@ -146,7 +146,7 @@ func (f *fgTransmitter) String() string {
 }
 
 // NewHub returns a new unconnected hub
-func (fg *flowgraph) NewHub(name string, code HubCode, init interface{}) Hub {
+func (fg *flowgraph) NewHub(name string, code HubCode, init any) Hub {
 
 	var n fgbase.Node
 
@@ -307,26 +307,26 @@ func (fg *flowgraph) FindPipe(name string) Pipe {
 
 // Connect connects two hubs via named (string) or indexed (int) ports
 func (fg *flowgraph) Connect(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{}) Pipe {
+	upstream Hub, upstreamPort any,
+	dnstream Hub, dnstreamPort any) Pipe {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, nil)
 }
 
 // ConnectInit connects two hubs via named (string) or indexed (int) ports
 // and sets an initial value for flow
 func (fg *flowgraph) ConnectInit(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{},
-	init interface{}) Pipe {
+	upstream Hub, upstreamPort any,
+	dnstream Hub, dnstreamPort any,
+	init any) Pipe {
 	return fg.connectInit(upstream, upstreamPort, dnstream, dnstreamPort, init)
 }
 
 // connectInit connects two hubs via named (string) or indexed (int) ports
 // and sets an initial value for flow
 func (fg *flowgraph) connectInit(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{},
-	init interface{}) Pipe {
+	upstream Hub, upstreamPort any,
+	dnstream Hub, dnstreamPort any,
+	init any) Pipe {
 
 	checkInternalHub(fg, upstream)
 	checkInternalHub(fg, dnstream)
@@ -489,8 +489,8 @@ func (fg *flowgraph) run() {
 }
 
 func allOfFire(n *fgbase.Node) error {
-	var a []interface{}
-	a = make([]interface{}, len(n.Srcs))
+	var a []any
+	a = make([]any, len(n.Srcs))
 	t := n.Aux.(*fgTransformer).t
 	fg := n.Aux.(*fgTransformer).fg
 	eofflag := false
@@ -539,8 +539,8 @@ func oneOfRdy(n *fgbase.Node) bool {
 }
 
 func oneOfFire(n *fgbase.Node) error {
-	var a []interface{}
-	a = make([]interface{}, len(n.Srcs))
+	var a []any
+	a = make([]any, len(n.Srcs))
 	t := n.Aux.(*fgTransformer).t
 	fg := n.Aux.(*fgTransformer).fg
 	eofflag := false

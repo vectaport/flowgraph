@@ -102,7 +102,7 @@ type nestC struct {
 	wcnt, ecnt int
 }
 
-func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
+func (n *nestC) Retrieve(h flowgraph.Hub) (result any, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
 	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false, -1, rand.Intn(1000)}
 	result = &d
@@ -158,10 +158,10 @@ func (n *nestC) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
 }
 
 type shore struct {
-	rw    *bufio.ReadWriter
+	rw *bufio.ReadWriter
 }
 
-func (s *shore) Transmit(h flowgraph.Hub, source interface{}) (err error) {
+func (s *shore) Transmit(h flowgraph.Hub, source any) (err error) {
 	d := source.(*duck)
 
 	// write command
@@ -192,7 +192,7 @@ type swim struct {
 	Count int
 }
 
-func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *swim) Transform(h flowgraph.Hub, source []any) (result []any, err error) {
 	d := source[0].(*duck)
 	if d.Flew == true || d.Loops == 0 {
 		s.Count++
@@ -203,7 +203,7 @@ func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interf
 		s.Count--
 	}
 	d.Loops++
-	result = []interface{}{d}
+	result = []any{d}
 
 	// write command
 	movstr := "tal.nsteps=10;" +
@@ -240,14 +240,14 @@ func (s *swim) Transform(h flowgraph.Hub, source []interface{}) (result []interf
 type steerDuck struct {
 }
 
-func (s *steerDuck) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *steerDuck) Transform(h flowgraph.Hub, source []any) (result []any, err error) {
 	d := source[0].(*duck)
 	if d.Loops%2 == 0 {
 		d.Steer = 0
-		result = []interface{}{d, nil}
+		result = []any{d, nil}
 	} else {
 		d.Steer = 1
-		result = []interface{}{nil, d}
+		result = []any{nil, d}
 	}
 	return
 }
@@ -256,7 +256,7 @@ type sinkC struct {
 	rw *bufio.ReadWriter
 }
 
-func (k *sinkC) Sink(source []interface{}) {
+func (k *sinkC) Sink(source []any) {
 
 	if source[0].(*duck).ID < 0 {
 		return
@@ -277,7 +277,7 @@ func main() {
 	var gridLock = false
 	flag.BoolVar(&gridLock, "gridlock", false, "demo gridlock")
 	flowgraph.ParseFlags()
-	
+
 	oldRunTime := fgbase.RunTime
 	oldTraceLevel := fgbase.TraceLevel
 	fgbase.RunTime = time.Second * 1000

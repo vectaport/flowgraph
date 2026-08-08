@@ -4,8 +4,6 @@ import (
 	"github.com/vectaport/fgbase"
 )
 
-import ()
-
 // Renamed Stream to Pipe: honors Doug McIlroy's Unix pipes, names what
 // actually connects to a hub (not the stream flowing within it), and marks
 // real backpressure -- unlike streams, which can overflow and cause havoc.
@@ -32,10 +30,10 @@ type Pipe interface {
 	NumDownstream() int
 
 	// Init sets an initial value for flow
-	Init(v interface{}) Pipe
+	Init(v any) Pipe
 
 	// Const sets a value for continual flow
-	Const(v interface{}) Pipe
+	Const(v any) Pipe
 
 	// Sink sets a pipe to be a sink
 	Sink() Pipe
@@ -56,7 +54,7 @@ type Pipe interface {
 	Flowgraph() Flowgraph
 
 	// Base returns value of underlying implementation
-	Base() interface{}
+	Base() any
 }
 
 // Pipe implementation
@@ -102,13 +100,13 @@ func (s *pipe) NumDownstream() int {
 }
 
 // Init sets an initial value for flow
-func (s *pipe) Init(v interface{}) Pipe {
+func (s *pipe) Init(v any) Pipe {
 	s.Base().(*fgbase.Edge).Val = v
 	return s
 }
 
 // Const sets a value for continual flow
-func (s *pipe) Const(v interface{}) Pipe {
+func (s *pipe) Const(v any) Pipe {
 	s.Base().(*fgbase.Edge).Const(v)
 	return s
 }
@@ -153,6 +151,6 @@ func (s *pipe) Flowgraph() Flowgraph {
 }
 
 // Base returns value of underlying implementation
-func (s *pipe) Base() interface{} {
+func (s *pipe) Base() any {
 	return s.base
 }

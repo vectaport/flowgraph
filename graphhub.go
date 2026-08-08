@@ -69,7 +69,7 @@ func (gh *graphhub) NumPipe() int {
 }
 
 // NewHub returns a new unconnected hub
-func (gh *graphhub) NewHub(name string, code HubCode, init interface{}) Hub {
+func (gh *graphhub) NewHub(name string, code HubCode, init any) Hub {
 	return gh.fg.NewHub(name, code, init)
 }
 
@@ -95,17 +95,17 @@ func (gh *graphhub) FindPipe(name string) Pipe {
 
 // Connect connects two hubs via named (string) or indexed (int) ports
 func (gh *graphhub) Connect(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{}) Pipe {
+	upstream Hub, upstreamPort any,
+	dnstream Hub, dnstreamPort any) Pipe {
 	return gh.fg.Connect(upstream, upstreamPort, dnstream, dnstreamPort)
 }
 
 // ConnectInit connects two hubs via named (string) or indexed (int) ports
 // and sets an initial value for flow
 func (gh *graphhub) ConnectInit(
-	upstream Hub, upstreamPort interface{},
-	dnstream Hub, dnstreamPort interface{},
-	init interface{}) Pipe {
+	upstream Hub, upstreamPort any,
+	dnstream Hub, dnstreamPort any,
+	init any) Pipe {
 	return gh.fg.ConnectInit(upstream, upstreamPort, dnstream, dnstreamPort, init)
 }
 
@@ -115,37 +115,37 @@ func (gh *graphhub) Run() {
 }
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
-func (gh *graphhub) Tracef(format string, v ...interface{}) {
+func (gh *graphhub) Tracef(format string, v ...any) {
 	gh.hub.Tracef(format, v...)
 }
 
 // LogError for logging of error messages.  Uses atomic log mechanism.
-func (gh *graphhub) LogError(format string, v ...interface{}) {
+func (gh *graphhub) LogError(format string, v ...any) {
 	gh.hub.LogError(format, v...)
 }
 
 // Panicf for logging of panic messages.  Uses atomic log mechanism.
-func (gh *graphhub) Panicf(format string, v ...interface{}) {
+func (gh *graphhub) Panicf(format string, v ...any) {
 	gh.hub.Panicf(format, v...)
 }
 
 // Source returns source pipe selected by string or int
-func (gh *graphhub) Source(port interface{}) Pipe {
+func (gh *graphhub) Source(port any) Pipe {
 	return gh.hub.Source(port)
 }
 
 // Result returns result pipe selected by string or int
-func (gh *graphhub) Result(port interface{}) Pipe {
+func (gh *graphhub) Result(port any) Pipe {
 	return gh.hub.Result(port)
 }
 
 // SetSource sets a pipe on a source port selected by string or int
-func (gh *graphhub) SetSource(port interface{}, s Pipe) Hub {
+func (gh *graphhub) SetSource(port any, s Pipe) Hub {
 	return gh.hub.SetSource(port, s)
 }
 
 // SetResult sets a pipe on a result port selected by string or int
-func (gh *graphhub) SetResult(port interface{}, s Pipe) Hub {
+func (gh *graphhub) SetResult(port any, s Pipe) Hub {
 	return gh.hub.SetResult(port, s)
 }
 
@@ -200,12 +200,12 @@ func (gh *graphhub) SetResultNames(nm ...string) Hub {
 }
 
 // SourceIndex returns the index of a source port selected by string or Pipe
-func (gh *graphhub) SourceIndex(port interface{}) int {
+func (gh *graphhub) SourceIndex(port any) int {
 	return gh.hub.SourceIndex(port)
 }
 
 // ResultIndex returns the index of a source port selected by string or Pipe
-func (gh *graphhub) ResultIndex(port interface{}) int {
+func (gh *graphhub) ResultIndex(port any) int {
 	return gh.hub.ResultIndex(port)
 }
 
@@ -236,7 +236,7 @@ func (gh *graphhub) Empty() bool {
 }
 
 // Base returns value of underlying implementation
-func (gh *graphhub) Base() interface{} {
+func (gh *graphhub) Base() any {
 	return gh.hub.Base()
 }
 

@@ -16,7 +16,7 @@ import (
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    0.001,
 		"trport": true,

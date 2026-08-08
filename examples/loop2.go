@@ -21,7 +21,7 @@ type sinkIterator2 struct {
 	i int
 }
 
-func (st *sinkIterator2) Sink(source []interface{}) {
+func (st *sinkIterator2) Sink(source []any) {
 	(*st).i = (*st).i - 1
 	if (*st).i != source[0].(int) {
 		fmt.Printf("ERROR loop2 FAILED\n")
@@ -33,7 +33,7 @@ func (st *sinkIterator2) Sink(source []interface{}) {
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    1,
 		"trport": true,

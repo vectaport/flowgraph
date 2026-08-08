@@ -21,18 +21,18 @@ import (
 
 type ten struct{}
 
-func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *ten) Retrieve(n flowgraph.Hub) (result any, err error) {
 	return 10, nil
 }
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace": "V",
 		"sec":   1,
 	})
 
-        fg := flowgraph.New("chained")
+	fg := flowgraph.New("chained")
 
 	firstval1 := fg.NewPipe("firstval1")
 	fg.NewHub("ten", flowgraph.Retrieve, &ten{}).

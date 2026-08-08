@@ -18,16 +18,16 @@ import (
 
 type randOne struct{}
 
-func (r *randOne) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
+func (r *randOne) Retrieve(hub flowgraph.Hub) (result any, err error) {
 	return rand.Float64(), nil
 }
 
 type checkSumSquare struct{}
 
-func (e *checkSumSquare) Transform(n flowgraph.Hub, source []interface{}) (
-	result []interface{}, err error) {
+func (e *checkSumSquare) Transform(n flowgraph.Hub, source []any) (
+	result []any, err error) {
 
-	result = make([]interface{}, 1)
+	result = make([]any, 1)
 	a := source[0].(float64)
 	b := source[1].(float64)
 	x := a*a + b*b
@@ -41,7 +41,7 @@ type piCalc struct {
 	Pi  float64
 }
 
-func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
+func (p *piCalc) Transmit(hub flowgraph.Hub, source any) error {
 	p.cnt++
 
 	t := source.(bool)
@@ -64,7 +64,7 @@ func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
 func main() {
 	fgbase.TraceStyle = fgbase.New // not flag-backed, fine as a direct preset
 
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    10,
 		"trport": true,

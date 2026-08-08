@@ -1,7 +1,5 @@
 package flowgraph
 
-import ()
-
 // HubCode is code arg to NewHub()
 type HubCode int
 
@@ -22,8 +20,8 @@ const (
 	Steer  // 	nil		2|1,2	steer last source by first source
 	Cross  // 	nil           2*n,2*n   steer left or right rank by first source of each
 
-	Array    //	[]interface{}	0,1	produce array of values then EOS
-	Constant //	interface{}	0,1	produce constant values forever
+	Array    //	[]any	0,1	produce array of values then EOS
+	Constant //	any	0,1	produce constant values forever
 	Pass     //	nil		1,1	pass value
 	Split    //	nil		1,n     split slice into values
 	Join     //	nil		n,1     join values into slice

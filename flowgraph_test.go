@@ -68,7 +68,7 @@ type getter struct {
 	cnt int
 }
 
-func (g *getter) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
+func (g *getter) Retrieve(hub flowgraph.Hub) (result any, err error) {
 	i := g.cnt
 	g.cnt++
 	return i, nil
@@ -101,7 +101,7 @@ type putter struct {
 	sum int
 }
 
-func (p *putter) Transmit(hub flowgraph.Hub, source interface{}) error {
+func (p *putter) Transmit(hub flowgraph.Hub, source any) error {
 	p.sum += source.(int)
 	return nil
 }
@@ -132,9 +132,9 @@ func TestOutgoing(t *testing.T) {
 
 type transformer struct{}
 
-func (t *transformer) Transform(hub flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (t *transformer) Transform(hub flowgraph.Hub, source []any) (result []any, err error) {
 	xv := source[0].(int) * 2
-	return []interface{}{xv}, nil
+	return []any{xv}, nil
 }
 
 func TestAllOf(t *testing.T) {
@@ -173,7 +173,7 @@ func TestArray(t *testing.T) {
 
 	fg := flowgraph.New("TestArray")
 
-	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	arr := []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	array := fg.NewHub("array", flowgraph.Array, arr)
 	array.SetResultNames("X")
 
@@ -205,10 +205,10 @@ func TestArray(t *testing.T) {
 
 type pass struct{}
 
-func (p *pass) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (p *pass) Transform(n flowgraph.Hub, source []any) (result []any, err error) {
 	v := source[n.SourceIndex("A")]
 	i := n.ResultIndex("X")
-	r := make([]interface{}, i+1)
+	r := make([]any, i+1)
 	r[i] = v
 	return r, nil
 }
@@ -218,7 +218,7 @@ func TestChain(t *testing.T) {
 	// oldRunTime := fgbase.RunTime
 	// fgbase.RunTime = 0
 
-	arr := []interface{}{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	arr := []any{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 
 	fg := flowgraph.New("TestChain")
 
@@ -305,7 +305,7 @@ type sinkAdd struct {
 	t *testing.T
 }
 
-func (st *sinkAdd) Sink(source []interface{}) {
+func (st *sinkAdd) Sink(source []any) {
 	if source[0].(int) != 101 {
 		st.t.Fatalf("ERROR Add result is not 101 as expected %d.\n", source[0].(int))
 	}
@@ -352,17 +352,17 @@ func TestAdd(t *testing.T) {
 type randOne struct{}
 
 func (r *randOne) Retrieve(hub flowgraph.Hub) (
-	result interface{}, err error) {
+	result any, err error) {
 
 	return rand.Float64(), nil
 }
 
 type checkSumSquare struct{}
 
-func (e *checkSumSquare) Transform(n flowgraph.Hub, source []interface{}) (
-	result []interface{}, err error) {
+func (e *checkSumSquare) Transform(n flowgraph.Hub, source []any) (
+	result []any, err error) {
 
-	result = make([]interface{}, 1)
+	result = make([]any, 1)
 	a := source[0].(float64)
 	b := source[1].(float64)
 	x := a*a + b*b
@@ -376,7 +376,7 @@ type piCalc struct {
 	Pi  float64
 }
 
-func (p *piCalc) Transmit(hub flowgraph.Hub, source interface{}) error {
+func (p *piCalc) Transmit(hub flowgraph.Hub, source any) error {
 	p.cnt++
 
 	t := source.(bool)
@@ -430,10 +430,10 @@ func TestPi(t *testing.T) {
 
 type sinkLineEq struct {
 	t  *testing.T
-	gt []interface{}
+	gt []any
 }
 
-func (st *sinkLineEq) Sink(source []interface{}) {
+func (st *sinkLineEq) Sink(source []any) {
 	if source[0].(int) != st.gt[0] {
 		st.t.Fatalf("ERROR LineEq result is not %d as expected (%d).\n", source[0].(int), st.gt[0])
 	}
@@ -451,10 +451,10 @@ func TestLineEq(t *testing.T) {
 
 	fg := flowgraph.New("TestLineEq")
 
-	marr := []interface{}{-100, -10, -1, 0, 1, 10, 100}
-	xarr := []interface{}{0, 10, 20, 30, -10, -20, -30}
-	barr := []interface{}{40, 20, 10, 0, -10, -20, -40}
-	yarr := make([]interface{}, len(marr))
+	marr := []any{-100, -10, -1, 0, 1, 10, 100}
+	xarr := []any{0, 10, 20, 30, -10, -20, -30}
+	barr := []any{40, 20, 10, 0, -10, -20, -40}
+	yarr := make([]any, len(marr))
 	for i := range marr {
 		yarr[i] = marr[i].(int)*xarr[i].(int) + barr[i].(int)
 	}
@@ -507,7 +507,7 @@ sink(.A(lastval))()
 
 type ten struct{}
 
-func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *ten) Retrieve(n flowgraph.Hub) (result any, err error) {
 	return 10, nil
 }
 
@@ -515,7 +515,7 @@ type sinkIterator1 struct {
 	t *testing.T
 }
 
-func (st *sinkIterator1) Sink(source []interface{}) {
+func (st *sinkIterator1) Sink(source []any) {
 	if source[0].(int) != 0 {
 		st.t.Fatalf("ERROR Iterator1 FAILED\n")
 	}
@@ -590,7 +590,7 @@ type sinkIterator2 struct {
 	i int
 }
 
-func (st *sinkIterator2) Sink(source []interface{}) {
+func (st *sinkIterator2) Sink(source []any) {
 	(*st).i = (*st).i - 1
 	if (*st).i != source[0].(int) {
 		st.t.Fatalf("ERROR Iterator2 FAILED\n")
@@ -659,7 +659,7 @@ type sinkIterator3 struct {
 	t *testing.T
 }
 
-func (st *sinkIterator3) Sink(source []interface{}) {
+func (st *sinkIterator3) Sink(source []any) {
 	if source[0].(int) != 0 {
 		st.t.Fatalf("ERROR Iterator3 FAILED\n")
 	}
@@ -1023,7 +1023,7 @@ type tbtens struct{}
 
 var tbtensID int
 
-func (t *tbtens) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *tbtens) Retrieve(n flowgraph.Hub) (result any, err error) {
 	id := tbtensID
 	tbtensID++
 	return &valIterator9{10, id}, nil
@@ -1034,7 +1034,7 @@ type sinkIterator9 struct {
 	c int
 }
 
-func (st *sinkIterator9) Sink(source []interface{}) {
+func (st *sinkIterator9) Sink(source []any) {
 	if source[0].(*valIterator9).Count != 0 {
 		st.t.Fatalf("ERROR Iterator9 FAILED\n")
 	}
@@ -1043,8 +1043,8 @@ func (st *sinkIterator9) Sink(source []interface{}) {
 
 type subber struct{}
 
-func (s *subber) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	result = make([]interface{}, 1)
+func (s *subber) Transform(n flowgraph.Hub, source []any) (result []any, err error) {
+	result = make([]any, 1)
 	a := source[0].(*valIterator9).Count
 	b := source[1].(int)
 	x := a - b
@@ -1102,7 +1102,7 @@ type rand100 struct {
 	init bool
 }
 
-func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *rand100) Retrieve(n flowgraph.Hub) (result any, err error) {
 	if !(*t).init {
 		// (*t).init = true
 		return rand.Intn(100) + 1, nil
@@ -1182,14 +1182,14 @@ func (c *car) Break() bool {
 type tbcar struct {
 }
 
-func (t *tbcar) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
+func (t *tbcar) Retrieve(h flowgraph.Hub) (result any, err error) {
 	return &car{h.Base().(*fgbase.Node).ID, rand.Intn(100) + 1, -1}, nil
 }
 
 type onelap struct{}
 
-func (l *onelap) Transform(n flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
-	result = make([]interface{}, len(source))
+func (l *onelap) Transform(n flowgraph.Hub, source []any) (result []any, err error) {
+	result = make([]any, len(source))
 	for i := range source {
 		cprev := source[i].(*car)
 		cnext := &car{cprev.number, max(0, cprev.distance-rand.Intn(6)+1), -1}
@@ -1283,7 +1283,7 @@ type tbtoggle struct {
 	last bool
 }
 
-func (t *tbtoggle) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *tbtoggle) Retrieve(n flowgraph.Hub) (result any, err error) {
 	f := t.last
 	t.last = !f
 	return f, nil
@@ -1374,7 +1374,7 @@ func (d *duck) Clear() {
 
 type nest struct{}
 
-func (n *nest) Retrieve(h flowgraph.Hub) (result interface{}, err error) {
+func (n *nest) Retrieve(h flowgraph.Hub) (result any, err error) {
 	dc := atomic.AddInt64(&duckCnt, 1)
 	d := duck{dc, 0, h.Name()[len(h.Name())-1:], h.Name()[len(h.Name())-1:], false, false, -1, rand.Intn(1000)}
 	return &d, nil
@@ -1384,7 +1384,7 @@ type swimA struct {
 	Count int
 }
 
-func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *swimA) Transform(h flowgraph.Hub, source []any) (result []any, err error) {
 	d := source[0].(*duck)
 	if d.Loops == 0 {
 		s.Count++
@@ -1394,13 +1394,13 @@ func (s *swimA) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 		s.Count--
 	}
 	d.Loops++
-	result = []interface{}{d}
+	result = []any{d}
 	return
 }
 
 type sink struct{}
 
-func (s *sink) Sink(source []interface{}) {
+func (s *sink) Sink(source []any) {
 	fmt.Printf("Duck %+v leaving pond\n", source[0])
 }
 
@@ -1454,7 +1454,7 @@ type swimB struct {
 	Count int
 }
 
-func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *swimB) Transform(h flowgraph.Hub, source []any) (result []any, err error) {
 	d := source[0].(*duck)
 	if d.Loops == 0 {
 		s.Count++
@@ -1464,21 +1464,21 @@ func (s *swimB) Transform(h flowgraph.Hub, source []interface{}) (result []inter
 		s.Count--
 	}
 	d.Loops++
-	result = []interface{}{d}
+	result = []any{d}
 	return
 }
 
 type steerDuck struct {
 }
 
-func (s *steerDuck) Transform(h flowgraph.Hub, source []interface{}) (result []interface{}, err error) {
+func (s *steerDuck) Transform(h flowgraph.Hub, source []any) (result []any, err error) {
 	d := source[0].(*duck)
 	if d.Loops%2 == 0 {
 		d.Steer = 0
-		result = []interface{}{d, nil}
+		result = []any{d, nil}
 	} else {
 		d.Steer = 1
-		result = []interface{}{nil, d}
+		result = []any{nil, d}
 	}
 	return
 }
