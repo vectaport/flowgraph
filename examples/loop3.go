@@ -19,14 +19,14 @@ import (
 
 type ten struct{}
 
-func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *ten) Retrieve(n flowgraph.Hub) (result any, err error) {
 	return 10, nil
 }
 
 type sinkIterator3 struct {
 }
 
-func (st *sinkIterator3) Sink(source []interface{}) {
+func (st *sinkIterator3) Sink(source []any) {
 	if source[0].(int) != 0 {
 		fmt.Printf("ERROR Iterator3 FAILED\n")
 	}
@@ -34,7 +34,7 @@ func (st *sinkIterator3) Sink(source []interface{}) {
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    10,
 		"trport": true,

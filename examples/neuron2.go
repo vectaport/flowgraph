@@ -16,47 +16,47 @@ import (
 	"math/rand"
 )
 
-type input struct{
+type input struct {
 }
 
-func (w *input) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
-        m := float64(rand.Intn(3))
+func (w *input) Retrieve(hub flowgraph.Hub) (result any, err error) {
+	m := float64(rand.Intn(3))
 	return m, nil
 }
 
-type neuron struct{
-     bias float64
-     weights []float64
-     currval float64
-     actfunc func(float64) float64
+type neuron struct {
+	bias    float64
+	weights []float64
+	currval float64
+	actfunc func(float64) float64
 }
 
-func (e *neuron) Transform(n flowgraph.Hub, source []interface{}) (
-	result []interface{}, err error) {
+func (e *neuron) Transform(n flowgraph.Hub, source []any) (
+	result []any, err error) {
 
-	result = make([]interface{}, 1)
+	result = make([]any, 1)
 	var sum float64
 	for i, v := range source {
-	        val, valok := v.(float64)
+		val, valok := v.(float64)
 		n.Tracef("I %v, VAL %v, VALOK %v\n", i, val, valok)
 		if !valok {
-		        val = e.weights[i]
+			val = e.weights[i]
 		} else {
-		        e.weights[i] = val
+			e.weights[i] = val
 		}
 		sum += val
 	}
 
 	x := sum * e.bias
-	
-        if e.actfunc != nil {
-	        x = e.actfunc(x)
+
+	if e.actfunc != nil {
+		x = e.actfunc(x)
 	}
 
 	if x != e.currval {
 		e.currval = x
 		result[0] = x
-	n.Tracef("CURRVAL %v\n", e.currval)
+		n.Tracef("CURRVAL %v\n", e.currval)
 	}
 	return
 }
@@ -64,17 +64,17 @@ func (e *neuron) Transform(n flowgraph.Hub, source []interface{}) (
 type result struct {
 }
 
-func (p *result) Transmit(hub flowgraph.Hub, source interface{}) error {
+func (p *result) Transmit(hub flowgraph.Hub, source any) error {
 
 	t := source.(float64)
-        hub.Tracef("RESULT %v\n", t)
+	hub.Tracef("RESULT %v\n", t)
 
-        return nil
+	return nil
 }
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    0.1,
 		"trport": true,
@@ -88,23 +88,47 @@ func main() {
 	in1 := fg.NewHub("input1", flowgraph.Retrieve, &input{}).
 		SetResultNames("X")
 
-	nA := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0/3.0, make([]float64, 2), 0.0,
-	        func(f float64) float64 { if f>0 {return f} else {return 0.0} }}).
+	nA := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0 / 3.0, make([]float64, 2), 0.0,
+		func(f float64) float64 {
+			if f > 0 {
+				return f
+			} else {
+				return 0.0
+			}
+		}}).
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 
-	nB := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0/3.0, make([]float64, 2), 0.0,
-	        func(f float64) float64 { if f>0 {return f} else {return 0.0} }}).
+	nB := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0 / 3.0, make([]float64, 2), 0.0,
+		func(f float64) float64 {
+			if f > 0 {
+				return f
+			} else {
+				return 0.0
+			}
+		}}).
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 
-	nC := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0/3.0, make([]float64, 2), 0.0,
-	        func(f float64) float64 { if f>0 {return f} else {return 0.0} }}).
+	nC := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0 / 3.0, make([]float64, 2), 0.0,
+		func(f float64) float64 {
+			if f > 0 {
+				return f
+			} else {
+				return 0.0
+			}
+		}}).
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 
-	nD := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0/3.0, make([]float64, 2), 0.0,
-	        func(f float64) float64 { if f>0 {return f} else {return 0.0} }}).
+	nD := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0 / 3.0, make([]float64, 2), 0.0,
+		func(f float64) float64 {
+			if f > 0 {
+				return f
+			} else {
+				return 0.0
+			}
+		}}).
 		SetSourceNames("A", "B").
 		SetResultNames("X")
 

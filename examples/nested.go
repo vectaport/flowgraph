@@ -19,13 +19,13 @@ import (
 
 type ten struct{}
 
-func (t *ten) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *ten) Retrieve(n flowgraph.Hub) (result any, err error) {
 	return 10, nil
 }
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace": "VVV",
 		"sec":   1,
 	})

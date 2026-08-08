@@ -24,7 +24,7 @@ type rand100 struct {
 	init bool
 }
 
-func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
+func (t *rand100) Retrieve(n flowgraph.Hub) (result any, err error) {
 	if !(*t).init {
 		// (*t).init = true
 		return rand.Intn(100) + 1, nil
@@ -34,7 +34,7 @@ func (t *rand100) Retrieve(n flowgraph.Hub) (result interface{}, err error) {
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace": "V",
 		"sec":   1,
 	})

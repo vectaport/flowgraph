@@ -16,43 +16,57 @@ import (
 	"math/rand"
 )
 
-type weight struct{
-        w float64
+type weight struct {
+	w float64
 	d float64
 }
 
-func (w *weight) Retrieve(hub flowgraph.Hub) (result interface{}, err error) {
-        f := w.w
-        m := rand.Intn(3) + 1
+func (w *weight) Retrieve(hub flowgraph.Hub) (result any, err error) {
+	f := w.w
+	m := rand.Intn(3) + 1
 	switch m {
-	       case 0: f += w.d
-	       case 1: f -= w.d
-	       case 2:
+	case 0:
+		f += w.d
+	case 1:
+		f -= w.d
+	case 2:
 	}
 	if f == w.w {
-	        return nil, nil
+		return nil, nil
 	}
 	w.w = f
 	return f, nil
 }
 
-type neuron struct{
-     bias float64
-     weights []float64
-     currval float64 
+type neuron struct {
+	bias    float64
+	weights []float64
+	currval float64
 }
 
-func (e *neuron) Transform(n flowgraph.Hub, source []interface{}) (
-	result []interface{}, err error) {
+func (e *neuron) Transform(n flowgraph.Hub, source []any) (
+	result []any, err error) {
 
-	result = make([]interface{}, 1)
+	result = make([]any, 1)
 	a, aok := source[0].(float64)
 	b, bok := source[1].(float64)
 	c, cok := source[2].(float64)
-	if !aok { a = e.weights[0] } else { e.weights[0] = a }
-	if !bok { b = e.weights[1] } else { e.weights[1] = b }
-	if !cok { c = e.weights[2] } else { e.weights[2] = c }
-	x := (a + b + c)*e.bias
+	if !aok {
+		a = e.weights[0]
+	} else {
+		e.weights[0] = a
+	}
+	if !bok {
+		b = e.weights[1]
+	} else {
+		e.weights[1] = b
+	}
+	if !cok {
+		c = e.weights[2]
+	} else {
+		e.weights[2] = c
+	}
+	x := (a + b + c) * e.bias
 	n.Tracef("AOK %v BOK %v COK %v\n", aok, bok, cok)
 	n.Tracef("X %v  CURR %v\n", x, e.currval)
 	if x != e.currval {
@@ -65,17 +79,17 @@ func (e *neuron) Transform(n flowgraph.Hub, source []interface{}) (
 type result struct {
 }
 
-func (p *result) Transmit(hub flowgraph.Hub, source interface{}) error {
+func (p *result) Transmit(hub flowgraph.Hub, source any) error {
 
 	t := source.(float64)
-        hub.Tracef("RESULT %v\n", t)
+	hub.Tracef("RESULT %v\n", t)
 
-        return nil
+	return nil
 }
 
 func main() {
 	fgbase.TraceStyle = fgbase.New
-	fgbase.ConfigByFlag(map[string]interface{}{
+	fgbase.ConfigByFlag(map[string]any{
 		"trace":  "V",
 		"sec":    1,
 		"trport": true,
@@ -92,7 +106,7 @@ func main() {
 	w2 := fg.NewHub("weight2", flowgraph.Retrieve, &weight{.8, .01}).
 		SetResultNames("X")
 
-	nA := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0/3.0, make([]float64, 3), 0.0}).
+	nA := fg.NewHub("neuronA", flowgraph.OneOf, &neuron{1.0 / 3.0, make([]float64, 3), 0.0}).
 		SetSourceNames("A", "B", "C").
 		SetResultNames("X")
 

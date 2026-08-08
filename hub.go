@@ -14,25 +14,25 @@ type Hub interface {
 	SetName(name string)
 
 	// Tracef for debug trace printing.  Uses atomic log mechanism.
-	Tracef(format string, v ...interface{})
+	Tracef(format string, v ...any)
 
 	// LogError for logging of error messages.  Uses atomic log mechanism.
-	LogError(format string, v ...interface{})
+	LogError(format string, v ...any)
 
 	// Panicf for logging of panic messages.  Uses atomic log mechanism.
-	Panicf(format string, v ...interface{})
+	Panicf(format string, v ...any)
 
 	// Source returns source pipe selected by string or int
-	Source(port interface{}) Pipe
+	Source(port any) Pipe
 
 	// Result returns result pipe selected by string or int
-	Result(port interface{}) Pipe
+	Result(port any) Pipe
 
 	// SetSource sets a pipe on a source port selected by string or int
-	SetSource(port interface{}, s Pipe) Hub
+	SetSource(port any, s Pipe) Hub
 
 	// SetResult sets a pipe on a result port selected by string or int
-	SetResult(port interface{}, s Pipe) Hub
+	SetResult(port any, s Pipe) Hub
 
 	// AddSources adds a source port for each pipe
 	AddSources(s ...Pipe) Hub
@@ -65,10 +65,10 @@ type Hub interface {
 	SetResultNames(nm ...string) Hub
 
 	// SourceIndex returns the index of a source port selected by string or Pipe
-	SourceIndex(port interface{}) int
+	SourceIndex(port any) int
 
 	// ResultIndex returns the index of a result port selected by string or Pipe
-	ResultIndex(port interface{}) int
+	ResultIndex(port any) int
 
 	// ConnectSources connects a list of source Pipes to this hub
 	ConnectSources(source ...Pipe) Hub
@@ -86,7 +86,7 @@ type Hub interface {
 	Flowgraph() Flowgraph
 
 	// Base returns value of underlying implementation
-	Base() interface{}
+	Base() any
 }
 
 // Hub implementation
@@ -97,17 +97,17 @@ type hub struct {
 }
 
 // Tracef for debug trace printing.  Uses atomic log mechanism.
-func (h *hub) Tracef(format string, v ...interface{}) {
+func (h *hub) Tracef(format string, v ...any) {
 	h.base.Tracef(format, v...)
 }
 
 // LogError for logging of error messages.  Uses atomic log mechanism.
-func (h *hub) LogError(format string, v ...interface{}) {
+func (h *hub) LogError(format string, v ...any) {
 	h.base.LogError(format, v...)
 }
 
 // Panicf for logging of panic messages.  Uses atomic log mechanism.
-func (h *hub) Panicf(format string, v ...interface{}) {
+func (h *hub) Panicf(format string, v ...any) {
 	h.base.Panicf(format, v...)
 }
 
@@ -122,7 +122,7 @@ func (h *hub) SetName(name string) {
 }
 
 // Source returns source pipe selected by int or string
-func (h *hub) Source(port interface{}) Pipe {
+func (h *hub) Source(port any) Pipe {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -144,7 +144,7 @@ func (h *hub) Source(port interface{}) Pipe {
 }
 
 // Result returns result pipe selected by int or string
-func (h *hub) Result(port interface{}) Pipe {
+func (h *hub) Result(port any) Pipe {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -166,7 +166,7 @@ func (h *hub) Result(port interface{}) Pipe {
 }
 
 // SetSource sets a pipe on a source port selected by string or int
-func (h *hub) SetSource(port interface{}, s Pipe) Hub {
+func (h *hub) SetSource(port any, s Pipe) Hub {
 	checkInternalPipe(h.Flowgraph(), s)
 
 	var i int
@@ -195,7 +195,7 @@ func (h *hub) SetSource(port interface{}, s Pipe) Hub {
 }
 
 // SetResult sets a pipe on a result port selected by string or int
-func (h *hub) SetResult(port interface{}, s Pipe) Hub {
+func (h *hub) SetResult(port any, s Pipe) Hub {
 	checkInternalPipe(h.Flowgraph(), s)
 
 	var i int
@@ -284,7 +284,7 @@ func (h *hub) SetResultNames(nm ...string) Hub {
 }
 
 // SourceIndex returns the index of a source port selected by string or pipe
-func (h *hub) SourceIndex(port interface{}) int {
+func (h *hub) SourceIndex(port any) int {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -314,7 +314,7 @@ func (h *hub) SourceIndex(port interface{}) int {
 }
 
 // ResultIndex returns the index of a result port selected by string or pipe
-func (h *hub) ResultIndex(port interface{}) int {
+func (h *hub) ResultIndex(port any) int {
 	var i int
 	var ok bool
 	switch v := port.(type) {
@@ -377,6 +377,6 @@ func (h *hub) Flowgraph() Flowgraph {
 }
 
 // Base returns value of underlying implementation
-func (h *hub) Base() interface{} {
+func (h *hub) Base() any {
 	return h.base
 }
