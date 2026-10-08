@@ -91,7 +91,9 @@ func (p *proplist) Delete(key string) (any, bool) {
 		return nil, false
 	}
 	v := p.entries[i]["val"]
-	p.entries = append(p.entries[:i], p.entries[i+1:]...)
+	copy(p.entries[i:], p.entries[i+1:])
+	p.entries[len(p.entries)-1] = nil
+	p.entries = p.entries[:len(p.entries)-1]
 	return v, true
 }
 
@@ -144,8 +146,12 @@ func (p *proplist) GetField(key, field string) (any, bool) {
 	return v, ok
 }
 
-// SetField writes an auxiliary field into key's entry
+// SetField writes an auxiliary field into key's entry. field may not be
+// "key" or "val" -- those belong to Set, not an auxiliary stat.
 func (p *proplist) SetField(key, field string, v any) bool {
+	if field == "key" || field == "val" {
+		return false
+	}
 	i := p.indexOf(key)
 	if i < 0 {
 		return false

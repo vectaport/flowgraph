@@ -40,4 +40,22 @@ func TestPropListSmoke(t *testing.T) {
 	if p.Touch("nope") {
 		t.Fatalf("Touch(nope) = true, want false")
 	}
+
+	p.Set("b", 22)
+	if v, ok := p.Get("b"); !ok || v != 22 {
+		t.Fatalf("Get(b) after update = %v,%v, want 22,true", v, ok)
+	}
+	if p.Len() != 2 {
+		t.Fatalf("Len() after updating existing key = %d, want 2", p.Len())
+	}
+	if v, ok := p.GetField("b", "hits"); !ok || v != 1 {
+		t.Fatalf("GetField(b,hits) after Set update = %v,%v, want 1,true (update must not reset fields)", v, ok)
+	}
+
+	if ok := p.SetField("b", "key", "hijacked"); ok {
+		t.Fatalf("SetField(b,key,...) = true, want false (key/val are reserved)")
+	}
+	if ok := p.SetField("b", "val", "hijacked"); ok {
+		t.Fatalf("SetField(b,val,...) = true, want false (key/val are reserved)")
+	}
 }
