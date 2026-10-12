@@ -69,13 +69,74 @@ func TestDupPropList(t *testing.T) {
 	if got := clone.Keys(); len(got) != 3 || got[0] != "b" || got[1] != "c" || got[2] != "a" {
 		t.Fatalf("Keys() = %v, want [b c a]", got)
 	}
-	if v, ok := clone.Get("a"); !ok || v != 1 {
-		t.Fatalf("Get(a) = %v,%v, want 1,true", v, ok)
+	for _, want := range []struct {
+		key string
+		val any
+	}{{"a", 1}, {"b", 2}, {"c", 3}} {
+		if v, ok := clone.Get(want.key); !ok || v != want.val {
+			t.Fatalf("Get(%s) = %v,%v, want %v,true", want.key, v, ok, want.val)
+		}
 	}
 
 	// clone is independent of src
 	clone.Set("a", 99)
 	if v, _ := src.Get("a"); v != 1 {
 		t.Fatalf("src.Get(a) = %v after cloning, want unchanged 1", v)
+	}
+}
+
+// slicePropList is a second PropList implementation, distinct from
+// proplist's own storage, so DupPropList's test proves it clones
+// through the interface (At) rather than happening to work only
+// because both sides share one concrete type.
+type slicePropList struct {
+	keys []string
+	vals []any
+}
+
+func (p *slicePropList) Get(key string) (any, bool) {
+	for i, k := range p.keys {
+		if k == key {
+			return p.vals[i], true
+		}
+	}
+	return nil, false
+}
+func (p *slicePropList) Set(key string, v any) PropList {
+	p.keys = append(p.keys, key)
+	p.vals = append(p.vals, v)
+	return p
+}
+func (p *slicePropList) Delete(string) (any, bool) { return nil, false }
+func (p *slicePropList) Has(string) bool           { return false }
+func (p *slicePropList) Len() int                  { return len(p.keys) }
+func (p *slicePropList) Keys() []string            { return p.keys }
+func (p *slicePropList) Touch(string) bool         { return false }
+func (p *slicePropList) At(i int) (string, any, bool) {
+	if i < 0 || i >= len(p.keys) {
+		return "", nil, false
+	}
+	return p.keys[i], p.vals[i], true
+}
+func (p *slicePropList) GetField(string, string) (any, bool) { return nil, false }
+func (p *slicePropList) SetField(string, string, any) bool   { return false }
+func (p *slicePropList) Empty() bool                         { return p == nil }
+func (p *slicePropList) Base() any                           { return p }
+
+func TestDupPropListFromAlternateSource(t *testing.T) {
+	src := &slicePropList{}
+	src.Set("x", 10).Set("y", 20).Set("z", 30)
+
+	clone := DupPropList(src)
+	for _, want := range []struct {
+		key string
+		val any
+	}{{"x", 10}, {"y", 20}, {"z", 30}} {
+		if v, ok := clone.Get(want.key); !ok || v != want.val {
+			t.Fatalf("Get(%s) = %v,%v, want %v,true", want.key, v, ok, want.val)
+		}
+	}
+	if got := clone.Keys(); len(got) != 3 || got[0] != "x" || got[1] != "y" || got[2] != "z" {
+		t.Fatalf("Keys() = %v, want [x y z]", got)
 	}
 }
