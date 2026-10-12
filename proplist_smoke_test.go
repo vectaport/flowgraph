@@ -59,3 +59,23 @@ func TestPropListSmoke(t *testing.T) {
 		t.Fatalf("SetField(b,val,...) = true, want false (key/val are reserved)")
 	}
 }
+
+func TestDupPropList(t *testing.T) {
+	src := NewPropList()
+	src.Set("a", 1).Set("b", 2).Set("c", 3)
+	src.Touch("a")
+
+	clone := DupPropList(src)
+	if got := clone.Keys(); len(got) != 3 || got[0] != "b" || got[1] != "c" || got[2] != "a" {
+		t.Fatalf("Keys() = %v, want [b c a]", got)
+	}
+	if v, ok := clone.Get("a"); !ok || v != 1 {
+		t.Fatalf("Get(a) = %v,%v, want 1,true", v, ok)
+	}
+
+	// clone is independent of src
+	clone.Set("a", 99)
+	if v, _ := src.Get("a"); v != 1 {
+		t.Fatalf("src.Get(a) = %v after cloning, want unchanged 1", v)
+	}
+}

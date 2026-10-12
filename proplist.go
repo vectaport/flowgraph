@@ -56,6 +56,20 @@ func NewPropList() PropList {
 	return &proplist{}
 }
 
+// DupPropList returns a native PropList populated from src via the
+// PropList interface alone (At, not the underlying storage), so any
+// other implementation's own Dup... constructor can clone the same
+// way -- switching implementations is then a one-line constructor swap.
+func DupPropList(src PropList) PropList {
+	p := &proplist{}
+	for i := 0; i < src.Len(); i++ {
+		if k, v, ok := src.At(i); ok {
+			p.Set(k, v)
+		}
+	}
+	return p
+}
+
 func (p *proplist) indexOf(key string) int {
 	for i, e := range p.entries {
 		if e["key"] == key {
