@@ -56,6 +56,19 @@ func NewPropList() PropList {
 	return &proplist{}
 }
 
+// DupPropList copies src's key/val pairs via the PropList interface
+// (At) alone; fields and shared reference values are not deep-copied.
+func DupPropList(src PropList) PropList {
+	n := src.Len()
+	p := &proplist{entries: make([]map[string]any, 0, n)}
+	for i := 0; i < n; i++ {
+		if k, v, ok := src.At(i); ok {
+			p.entries = append(p.entries, map[string]any{"key": k, "val": v})
+		}
+	}
+	return p
+}
+
 func (p *proplist) indexOf(key string) int {
 	for i, e := range p.entries {
 		if e["key"] == key {
